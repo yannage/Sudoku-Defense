@@ -253,30 +253,29 @@ const Game = (function() {
     /**
      * Set up the Sudoku board
      */
-    function setupBoard() {
-        // Clear any existing board
-        clearBoard();
-        
-        // Create cells
-        for (let row = 0; row < 9; row++) {
-            for (let col = 0; col < 9; col++) {
-                const cell = document.createElement('div');
-                cell.className = 'sudoku-cell';
-                cell.dataset.row = row;
-                cell.dataset.col = col;
-                
-                // Add click event listener
-                cell.addEventListener('click', function() {
-                    handleCellClick(row, col);
-                });
-                
-                boardElement.appendChild(cell);
-            }
+  function setupBoard() {
+    // Clear any existing board
+    clearBoard();
+    
+    // Create cells - make sure this loop runs for all 81 cells
+    for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+            const cell = document.createElement('div');
+            cell.className = 'sudoku-cell';
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+            
+            cell.addEventListener('click', function() {
+                handleCellClick(row, col);
+            });
+            
+            boardElement.appendChild(cell);
         }
-        
-        // Update board with initial values
-        updateBoard();
     }
+    
+    // This is critical - make sure to call updateBoard() here
+    updateBoard();
+}
     
     /**
      * Clear the Sudoku board
