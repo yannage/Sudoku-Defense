@@ -752,3 +752,144 @@ window.Game = Game;
     
     console.log("Number highlighting feature installed successfully!");
 })();
+
+
+/**
+ * Comprehensive fix for incorrect tower visuals
+ * This addresses issues with the cell background color and X marker
+ */
+(function() {
+    // Add stronger CSS for the incorrect tower indicators
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Force all existing incorrect tower styles to be overridden */
+        .sudoku-cell.incorrect-tower {
+            background-color: rgba(255, 0, 0, 0.6) !important;
+            box-shadow: inset 0 0 0 2px #ff0000 !important;
+            z-index: 5 !important;
+        }
+        
+        /* Reset any hover effects that might override our styling */
+        .sudoku-cell.incorrect-tower:hover {
+            background-color: rgba(255, 0, 0, 0.7) !important;
+        }
+        
+        /* Make X mark more visible */
+        .incorrect-marker {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            font-size: 2em !important;
+            color: #ff0000 !important;
+            font-weight: bold !important;
+            pointer-events: none !important;
+            z-index: 100 !important;
+            text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Directly override the updateBoard function in Game module
+    if (window.Game && typeof window.Game.updateBoard === 'function') {
+        const originalUpdateBoard = window.Game.updateBoard;
+        
+        window.Game.updateBoard = function() {
+            // Call original function
+            originalUpdateBoard.apply(this, arguments);
+            
+            // Direct manipulation after board update
+            setTimeout(() => {
+                applyIncorrectTowerIndicators();
+            }, 10);
+        };
+    }
+    
+    // Create a function to apply incorrect tower indicators
+    function applyIncorrectTowerIndicators() {
+        const boardElement = document.getElementById('sudoku-board');
+        if (!boardElement) return;
+        
+        // First, clear all indicators
+        const allCells = boardElement.querySelectorAll('.sudoku-cell');
+        allCells.forEach(cell => {
+            cell.classList.remove('incorrect-tower');
+            const xMark = cell.querySelector('.incorrect-marker');
+            if (xMark) xMark.remove();
+        });
+        
+        // Get all towers
+        if (!window.TowersModule || typeof window.TowersModule.getTowers !== 'function') return;
+        
+        const towers = window.TowersModule.getTowers();
+        
+        // Apply indicators to incorrect towers
+        towers.forEach(tower => {
+            if (tower.isCorrect === false) {
+                const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+                if (cell) {
+                    // Apply incorrect tower class
+                    cell.classList.add('incorrect-tower');
+                    
+                    // Add X mark
+                    if (!cell.querySelector('.incorrect-marker')) {
+                        const xMark = document.createElement('div');
+                        xMark.className = 'incorrect-marker';
+                        xMark.textContent = '❌';
+                        cell.appendChild(xMark);
+                    }
+                }
+            }
+        });
+    }
+    
+    // Hook into tower placement event
+    EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
+        setTimeout(() => {
+            applyIncorrectTowerIndicators();
+        }, 50);
+    });
+    
+    // Apply on cell click
+    const sudokuBoard = document.getElementById('sudoku-board');
+    if (sudokuBoard) {
+        const originalClickHandler = sudokuBoard.onclick;
+        
+        sudokuBoard.onclick = function(event) {
+            // Call original handler if it exists
+            if (typeof originalClickHandler === 'function') {
+                originalClickHandler.apply(this, arguments);
+            }
+            
+            // Apply our indicators after a short delay
+            setTimeout(() => {
+                applyIncorrectTowerIndicators();
+            }, 50);
+        };
+    }
+    
+    // Apply on game init
+    EventSystem.subscribe(GameEvents.GAME_INIT, function() {
+        setTimeout(() => {
+            applyIncorrectTowerIndicators();
+        }, 500);
+    });
+    
+    // Apply on wave complete
+    EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
+        setTimeout(() => {
+            applyIncorrectTowerIndicators();
+        }, 200);
+    });
+    
+    // Apply immediately
+    setTimeout(() => {
+        applyIncorrectTowerIndicators();
+    }, 100);
+    
+    console.log("Comprehensive incorrect tower visual fix applied!");
+})();
