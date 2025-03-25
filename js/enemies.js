@@ -111,9 +111,13 @@ const enemyTypes = {
         
         isWaveActive = true;
         
-        // Calculate number of enemies based on wave number
-        const baseEnemyCount = 10;
-        const enemyCount = baseEnemyCount + (waveNumber - 1) * 5;
+        
+        // Calculate number of enemies based on wave number - MODIFIED FOR EASIER PROGRESSION
+const baseEnemyCount = 6; 
+// Was 10
+const enemyCount = baseEnemyCount + Math.floor((waveNumber - 1) * 3); 
+// Was (waveNumber - 1) * 5
+
         enemiesRemaining = enemyCount;
         
         // Determine which enemy types to use in this wave
