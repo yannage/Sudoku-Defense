@@ -50,6 +50,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         highScoreDiv.id = 'high-score';
                         highScoreDiv.innerHTML = 'High Score: <span id="high-score-value">' + highScore + '</span>';
                         gameHeader.appendChild(highScoreDiv);
+                        
+                        // Add high score styles if not already present
+                        if (!document.getElementById('high-score-styles')) {
+                            const style = document.createElement('style');
+                            style.id = 'high-score-styles';
+                            style.textContent = `
+                                #high-score {
+                                    color: white;
+                                    font-weight: bold;
+                                }
+                                
+                                #high-score-value {
+                                    color: gold;
+                                }
+                            `;
+                            document.head.appendChild(style);
+                        }
                     }
                 } else {
                     // Update existing high score element
@@ -97,7 +114,30 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.classList.add('active');
         };
         
-        // 3. Add high score styles
+        // 3. Make sure high score is loaded on game start and reset
+        const originalReset = Game.reset;
+        if (typeof originalReset === 'function') {
+            Game.reset = function() {
+                // Call original reset
+                originalReset.apply(this, arguments);
+                
+                // Update UI to show high score
+                setTimeout(() => {
+                    if (typeof Game.updateUI === 'function') {
+                        Game.updateUI();
+                    }
+                }, 100);
+            };
+        }
+        
+        // 4. Make sure scores are saved when game ends or browser closes
+        window.addEventListener('beforeunload', function() {
+            if (window.SaveSystem && typeof SaveSystem.saveScore === 'function') {
+                SaveSystem.saveScore();
+            }
+        });
+        
+        // 5. Add level completion modal styles
         const style = document.createElement('style');
         style.textContent = `
             #high-score {
@@ -157,7 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         document.head.appendChild(style);
         
-        // 4. Fix LevelsModule to not restart after 5 waves
+        // 6. Fix LevelsModule to not restart after 5 waves
         // This requires a deeper modification - overriding event handlers
         EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
             // Check if this is a duplicate subscription
@@ -182,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, true);
         window._waveHandlerFixed = true;
         
-        // 5. Add completion modal trigger
+        // 7. Add completion modal trigger
         EventSystem.subscribe(GameEvents.SUDOKU_COMPLETE, function() {
             const currentLevel = LevelsModule.getCurrentLevel();
             const currentScore = PlayerModule.getState().score;
@@ -194,6 +234,100 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, 500);
         });
+        
+        // 8. Add debug tools for saving system
+        window.debugSaveSystem = {
+            // Display current save state in the console
+            showSavedData: function() {
+                if (!window.SaveSystem) {
+                    console.error("SaveSystem not available");
+                    return;
+                }
+                
+                const state = SaveSystem.getLastSavedState();
+                console.log("%cCurrent Save State:", "color: blue; font-weight: bold;");
+                console.table(state);
+                return state;
+            },
+            
+            // Force saving the current score
+            forceSave: function() {
+                if (!window.SaveSystem) {
+                    console.error("SaveSystem not available");
+                    return;
+                }
+                
+                SaveSystem.saveScore();
+                console.log("%cGame state saved!", "color: green; font-weight: bold;");
+                return this.showSavedData();
+            },
+            
+            // Set a specific high score (for testing)
+            setHighScore: function(score) {
+                if (!window.SaveSystem) {
+                    console.error("SaveSystem not available");
+                    return;
+                }
+                
+                // Direct access to localStorage
+                localStorage.setItem('sudoku_td_high_score', score);
+                console.log(`%cHigh score set to ${score}`, "color: green; font-weight: bold;");
+                
+                // Update UI if possible
+                if (window.Game && typeof Game.updateUI === 'function') {
+                    Game.updateUI();
+                }
+                
+                return this.showSavedData();
+            },
+            
+            // Reset all saved data
+            resetAll: function() {
+                if (!window.SaveSystem) {
+                    console.error("SaveSystem not available");
+                    return;
+                }
+                
+                SaveSystem.clearSavedData();
+                console.log("%cAll saved data cleared", "color: orange; font-weight: bold;");
+                
+                // Update UI if possible
+                if (window.Game && typeof Game.updateUI === 'function') {
+                    Game.updateUI();
+                }
+                
+                return this.showSavedData();
+            },
+            
+            // Fix high score display
+            fixHighScoreDisplay: function() {
+                const gameHeader = document.getElementById('game-header');
+                if (!gameHeader) {
+                    console.error("Game header not found");
+                    return;
+                }
+                
+                // Remove existing high score if present
+                const existingHighScore = document.getElementById('high-score');
+                if (existingHighScore) {
+                    existingHighScore.remove();
+                }
+                
+                // Create new high score element
+                const highScore = SaveSystem.getHighScore();
+                const highScoreDiv = document.createElement('div');
+                highScoreDiv.id = 'high-score';
+                highScoreDiv.innerHTML = 'High Score: <span id="high-score-value">' + highScore + '</span>';
+                highScoreDiv.style.color = 'white';
+                highScoreDiv.style.fontWeight = 'bold';
+                
+                // Add to game header
+                gameHeader.appendChild(highScoreDiv);
+                
+                console.log("%cHigh score display fixed", "color: green; font-weight: bold;");
+                return highScore;
+            }
+        };
         
         console.log("Game fixes and enhancements applied successfully!");
     }
