@@ -314,16 +314,55 @@ const EnemiesModule = (function() {
      * Handle wave completion
      */
     function waveComplete() {
-        isWaveActive = false;
-        
-        // Publish wave complete event
-        EventSystem.publish(GameEvents.WAVE_COMPLETE, {
-            waveNumber: waveNumber
-        });
-        
-        // Increment wave number
-        waveNumber++;
-        
+    isWaveActive = false;
+    
+    // Clear any enemies that might still be around
+    enemies = [];
+    
+    // Publish wave complete event
+    EventSystem.publish(GameEvents.WAVE_COMPLETE, {
+        waveNumber: waveNumber
+    });
+    
+    // Increment wave number
+    waveNumber++;
+    
+    EventSystem.publish(GameEvents.UI_UPDATE, {
+        waveNumber: waveNumber
+    });
+    
+    // Generate new path for the next wave immediately
+    // (instead of waiting for startWave to be called)
+    setTimeout(() => {
+        if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
+            // Clear existing path
+            const pathCells = SudokuModule.getPathCells();
+            if (pathCells && typeof pathCells.clear === 'function') {
+                pathCells.clear();
+            }
+            
+            // Generate new path
+            SudokuModule.generateEnemyPath();
+            console.log("New path generated after wave " + (waveNumber-1) + " completion");
+            
+            // Update the board to show the new path
+            if (window.Game && typeof Game.updateBoard === 'function') {
+                Game.updateBoard();
+            }
+            
+            // Notify other modules of the path change
+            if (typeof SudokuModule.getPathArray === 'function') {
+                const newPath = SudokuModule.getPathArray();
+                EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
+                    pathCells: newPath
+                });
+                
+                // Also publish a specific event for path updates
+                EventSystem.publish('path:updated', newPath);
+            }
+        }
+    }, 500); // Short delay to make sure the wave completion processing is done
+}
         EventSystem.publish(GameEvents.UI_UPDATE, {
             waveNumber: waveNumber
         });
