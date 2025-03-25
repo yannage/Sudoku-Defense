@@ -188,7 +188,7 @@ const EnemiesModule = (function() {
     }
     
     /**
-     * Move an enemy along the path
+     * Move an enemy along the path with improved grid alignment
      * @param {Object} enemy - The enemy to move
      * @param {number} deltaTime - Time elapsed since last update
      */
@@ -206,16 +206,23 @@ const EnemiesModule = (function() {
         const currentCell = path[enemy.pathIndex];
         const nextCell = path[enemy.pathIndex + 1];
         
-        // Calculate cell centers
+        // Calculate cell centers - ensure these match the grid precisely
         const currentX = currentCell[1] * cellSize + cellSize / 2;
         const currentY = currentCell[0] * cellSize + cellSize / 2;
         const nextX = nextCell[1] * cellSize + cellSize / 2;
         const nextY = nextCell[0] * cellSize + cellSize / 2;
         
         // Update progress along current path segment
-        enemy.progress += moveSpeed / Math.sqrt(
+        const distance = Math.sqrt(
             Math.pow(nextX - currentX, 2) + Math.pow(nextY - currentY, 2)
         );
+        
+        // Update progress - ensure we don't divide by zero
+        if (distance > 0) {
+            enemy.progress += moveSpeed / distance;
+        } else {
+            enemy.progress = 1; // Skip to next segment if current and next are the same
+        }
         
         // Move to next path segment if progress is complete
         if (enemy.progress >= 1) {
@@ -233,11 +240,13 @@ const EnemiesModule = (function() {
         const currentSegment = path[enemy.pathIndex];
         const nextSegment = path[enemy.pathIndex + 1];
         
+        // Get precise grid positions
         const startX = currentSegment[1] * cellSize + cellSize / 2;
         const startY = currentSegment[0] * cellSize + cellSize / 2;
         const endX = nextSegment[1] * cellSize + cellSize / 2;
         const endY = nextSegment[0] * cellSize + cellSize / 2;
         
+        // Use precise linear interpolation with no rounding
         enemy.x = startX + (endX - startX) * enemy.progress;
         enemy.y = startY + (endY - startY) * enemy.progress;
     }
@@ -442,6 +451,57 @@ const EnemiesModule = (function() {
     
     // Initialize event listeners
     initEventListeners();
+    
+    /**
+     * Add responsive handling for window resizing and ensuring enemies stay on path
+     */
+    function initResponsiveHandling() {
+        // Update all enemy positions when the cell size changes
+        function updateEnemyPositions() {
+            enemies.forEach(enemy => {
+                if (!enemy.active) return;
+                
+                // Get the path cells for this enemy's current position
+                const currentSegment = path[enemy.pathIndex] || path[0];
+                const nextSegmentIndex = Math.min(enemy.pathIndex + 1, path.length - 1);
+                const nextSegment = path[nextSegmentIndex];
+                
+                // Calculate the precise positions based on current cell size
+                const startX = currentSegment[1] * cellSize + cellSize / 2;
+                const startY = currentSegment[0] * cellSize + cellSize / 2;
+                
+                if (nextSegment) {
+                    const endX = nextSegment[1] * cellSize + cellSize / 2;
+                    const endY = nextSegment[0] * cellSize + cellSize / 2;
+                    
+                    // Update position using the same progress value
+                    enemy.x = startX + (endX - startX) * enemy.progress;
+                    enemy.y = startY + (endY - startY) * enemy.progress;
+                } else {
+                    // If there's no next segment, just position at the current cell
+                    enemy.x = startX;
+                    enemy.y = startY;
+                }
+            });
+        }
+        
+        // Add resize listener
+        window.addEventListener('resize', updateEnemyPositions);
+        
+        // Also listen for orientation changes on mobile
+        window.addEventListener('orientationchange', updateEnemyPositions);
+        
+        // Listen for cell size changes from the game
+        EventSystem.subscribe('cellSize:updated', function(newCellSize) {
+            if (newCellSize && newCellSize > 0) {
+                cellSize = newCellSize;
+                updateEnemyPositions();
+            }
+        });
+    }
+    
+    // Initialize responsive handling
+    initResponsiveHandling();
     
     // Public API
     return {
