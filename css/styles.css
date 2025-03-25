@@ -22,6 +22,9 @@
     --success-color: #69db7c;
     --grid-border: #333;
     --inner-grid: #aaa;
+    --incorrect-tower-bg: rgba(255, 102, 102, 0.3);
+    --number-highlight-bg: rgba(135, 206, 250, 0.4);
+    --number-highlight-border: #2196F3;
 }
 
 body {
@@ -107,13 +110,27 @@ h1 {
     cursor: not-allowed;
 }
 
-.sudoku-cell.number-highlighted {
-    background-color: rgba(135, 206, 250, 0.4); /* Change highlight color */
-    box-shadow: inset 0 0 0 2px #2196F3; /* Change border color/size */
-}
-
 .sudoku-cell.path {
     background-color: var(--path-color);
+}
+
+/* Number highlighting feature */
+.sudoku-cell.number-highlighted {
+    background-color: var(--number-highlight-bg) !important;
+    box-shadow: inset 0 0 0 2px var(--number-highlight-border);
+    transition: all 0.2s ease;
+}
+
+/* Incorrect tower feature */
+.sudoku-cell.incorrect-tower {
+    background-color: var(--incorrect-tower-bg) !important;
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 
 /* Grid lines for 3x3 boxes */
