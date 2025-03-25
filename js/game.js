@@ -431,13 +431,14 @@ const Game = (function() {
             reset();
         });
         
-        // Subscribe to events for UI updates
-        EventSystem.subscribe(GameEvents.PLAYER_UPDATE, function(data) {
-            // Update UI with player data
-            document.getElementById('score-value').textContent = data.score;
-            document.getElementById('lives-value').textContent = data.lives;
-            document.getElementById('currency-value').textContent = data.currency;
-        });
+
+    // Subscribe to events for UI updates
+    EventSystem.subscribe(GameEvents.PLAYER_UPDATE, function(data) {
+        // Update UI with player data
+        document.getElementById('score-value').textContent = data.score;
+        document.getElementById('lives-value').textContent = data.lives;
+        document.getElementById('currency-value').textContent = data.currency;
+    });
         
         EventSystem.subscribe(GameEvents.UI_UPDATE, function(data) {
             // Update wave display
