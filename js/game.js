@@ -320,6 +320,7 @@ const Game = (function() {
     
     /**
      * Update the Sudoku board display
+     * This function has been modified to properly handle path cells with numbers
      */
     function updateBoard() {
         console.log("Updating board display");
@@ -349,7 +350,7 @@ const Game = (function() {
                     cellElement.classList.add('fixed');
                 }
                 
-                // Mark path cells
+                // Mark path cells - a cell can be both a path and have a number
                 if (pathCells.has(`${row},${col}`)) {
                     cellElement.classList.add('path');
                 }
@@ -549,8 +550,8 @@ const Game = (function() {
             reset();
         });
         
-        EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function() {
-            // Update the board when a new puzzle is generated
+        EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function(data) {
+            // Update the board when a new puzzle is generated or path changes
             updateBoard();
         });
         
@@ -576,6 +577,12 @@ const Game = (function() {
         EventSystem.subscribe(GameEvents.ENEMY_REACHED_END, function() {
             // Update UI to reflect lives change
             updateUI();
+        });
+        
+        // Listen for specific path updates
+        EventSystem.subscribe('path:updated', function() {
+            // Update the board to show the new path
+            updateBoard();
         });
         
         // Listen for window resize to adjust cell size
@@ -616,7 +623,8 @@ const Game = (function() {
         resume,
         stop,
         reset,
-        updateUI // Export updateUI for manual refreshes if needed
+        updateUI, // Export updateUI for manual refreshes if needed
+        updateBoard // Export updateBoard so it can be called from other modules
     };
 })();
 
@@ -752,9 +760,6 @@ window.Game = Game;
     
     console.log("Number highlighting feature installed successfully!");
 })();
-
-
-// Add this to the end of your game.js file
 
 /**
  * Comprehensive fix for incorrect tower visuals with semi-transparent X mark
