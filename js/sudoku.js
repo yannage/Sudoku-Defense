@@ -223,17 +223,16 @@ const SudokuModule = (function() {
 
 /**
  * Generate a path for enemies to follow
- * Creates a varied path from a starting point to an end point
- * Path can now start and end at different rows
+ * Creates a non-overlapping path from a starting point to an end point
  */
 function generateEnemyPath() {
     pathCells.clear();
     
+    // Only use horizontal and vertical movements to avoid diagonal overlaps
     const directions = [
         [-1, 0], // up
         [1, 0],  // down
-        [0, -1], // left
-        [0, 1]   // right
+        [0, 1]   // right - only move right, never left to prevent overlaps
     ];
     
     // Start at a random position on the left edge
@@ -241,22 +240,18 @@ function generateEnemyPath() {
     let currentRow = startRow;
     let currentCol = 0;
     
-    // Choose a different end row for more varied paths
+    // Choose an end row for the right edge
     let endRow = Math.floor(Math.random() * 9);
-    // Ensure end row is different from start row at least half the time
-    if (Math.random() > 0.5) {
-        while (endRow === startRow) {
-            endRow = Math.floor(Math.random() * 9);
-        }
-    }
     
     // Mark the starting position
     pathCells.add(`${currentRow},${currentCol}`);
     
-    // Generate path to the right edge
+    // Keep track of visited columns to ensure we always make progress
+    const visitedColumns = new Set([0]);
+    
+    // Generate path until we reach the last column
     while (currentCol < 8) {
-        let possibleDirs = [];
-        let priorityDirs = [];
+        let possibleMoves = [];
         
         // Check each direction
         for (let [dr, dc] of directions) {
@@ -269,87 +264,186 @@ function generateEnemyPath() {
                 newCol >= 0 && newCol < 9 && 
                 !pathCells.has(`${newRow},${newCol}`)
             ) {
-                possibleDirs.push([dr, dc]);
-                
-                // Prioritize moving toward the end row
-                if (dc > 0) {
-                    priorityDirs.push([dr, dc]); // Moving right is always a priority
-                }
-                
-                // Prioritize vertical movement that gets us closer to endRow
-                if (dc === 0) { // For vertical moves
-                    if ((newRow > currentRow && newRow <= endRow) || // Moving down toward endRow
-                        (newRow < currentRow && newRow >= endRow)) { // Moving up toward endRow
-                        priorityDirs.push([dr, dc]);
+                // If we're already at the target column, only allow vertical moves
+                if (currentCol === 7 && newCol > currentCol) {
+                    // We've reached column 7, only allow moving to endRow
+                    if (newRow === endRow) {
+                        possibleMoves = [[dr, dc]];
+                        break;
                     }
+                } else {
+                    // Otherwise, consider this move
+                    possibleMoves.push([dr, dc]);
                 }
             }
         }
         
-        // If there's no valid direction, try to force move right
-        if (possibleDirs.length === 0) {
-            // Try forcing a move right even if we've been there
-            const forceRight = [0, 1];
-            const newRow = currentRow + forceRight[0];
-            const newCol = currentCol + forceRight[1];
+        // If no valid moves, force a move right
+        if (possibleMoves.length === 0) {
+            // Try to move right
+            let newRow = currentRow;
+            let newCol = currentCol + 1;
             
-            if (newRow >= 0 && newRow < 9 && newCol >= 0 && newCol < 9) {
+            if (newCol < 9 && !pathCells.has(`${newRow},${newCol}`)) {
                 currentRow = newRow;
                 currentCol = newCol;
                 pathCells.add(`${currentRow},${currentCol}`);
+                visitedColumns.add(currentCol);
+                continue;
+            } else {
+                // If we can't move right, try to find any non-visited cell
+                let found = false;
+                for (let r = 0; r < 9; r++) {
+                    for (let c = currentCol; c < 9; c++) {
+                        if (!pathCells.has(`${r},${c}`)) {
+                            // Check if we can connect to this cell without crossing the path
+                            if (canConnect(currentRow, currentCol, r, c, pathCells)) {
+                                // Add connecting cells
+                                const connectingCells = getConnectingCells(currentRow, currentCol, r, c);
+                                for (const cell of connectingCells) {
+                                    pathCells.add(cell);
+                                }
+                                currentRow = r;
+                                currentCol = c;
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (found) break;
+                }
+                
+                if (!found) {
+                    // If still no valid moves, break and use what we have
+                    break;
+                }
                 continue;
             }
-            
-            // If we can't force right, we're stuck
-            break;
         }
         
-        // Choose direction with priority to moving right & toward end row
-        let chosenDir;
+        // Prefer moving toward the end
+        let bestMoves = [];
         
-        // If we're far from the target row, focus on vertical movement
-        const verticalDistanceToEnd = Math.abs(currentRow - endRow);
-        
-        if (verticalDistanceToEnd > 0 && currentCol < 6 && Math.random() < 0.7) {
-            // Find vertical moves that get us closer to endRow
-            const verticalMoves = possibleDirs.filter(([dr, dc]) => {
-                return dc === 0 && ((dr > 0 && currentRow < endRow) || (dr < 0 && currentRow > endRow));
-            });
-            
-            if (verticalMoves.length > 0) {
-                chosenDir = verticalMoves[Math.floor(Math.random() * verticalMoves.length)];
-            }
-        }
-        
-        // If no vertical move was chosen or we're close to endRow, prefer moving right
-        if (!chosenDir) {
-            if (priorityDirs.length > 0 && Math.random() < 0.8) {
-                chosenDir = priorityDirs[Math.floor(Math.random() * priorityDirs.length)];
+        // If we're not in the last column, prioritize moving right
+        if (currentCol < 7) {
+            // Prefer moving right
+            const rightMoves = possibleMoves.filter(([dr, dc]) => dc > 0);
+            if (rightMoves.length > 0) {
+                bestMoves = rightMoves;
             } else {
-                chosenDir = possibleDirs[Math.floor(Math.random() * possibleDirs.length)];
+                // If we can't move right, prefer moving vertically toward endRow
+                const verticalMoves = possibleMoves.filter(([dr, dc]) => dc === 0);
+                if (verticalMoves.length > 0) {
+                    const movesTowardEnd = verticalMoves.filter(([dr, dc]) => 
+                        (dr > 0 && currentRow < endRow) || (dr < 0 && currentRow > endRow)
+                    );
+                    
+                    bestMoves = movesTowardEnd.length > 0 ? movesTowardEnd : verticalMoves;
+                } else {
+                    bestMoves = possibleMoves;
+                }
+            }
+        } else {
+            // In the last column, prioritize getting to endRow
+            const verticalMoves = possibleMoves.filter(([dr, dc]) => dc === 0);
+            if (verticalMoves.length > 0) {
+                const movesTowardEnd = verticalMoves.filter(([dr, dc]) => 
+                    (dr > 0 && currentRow < endRow) || (dr < 0 && currentRow > endRow)
+                );
+                
+                bestMoves = movesTowardEnd.length > 0 ? movesTowardEnd : verticalMoves;
+            } else {
+                bestMoves = possibleMoves;
             }
         }
+        
+        // Choose a move
+        const [dr, dc] = bestMoves[Math.floor(Math.random() * bestMoves.length)];
         
         // Move to the new position
-        currentRow += chosenDir[0];
-        currentCol += chosenDir[1];
+        currentRow += dr;
+        currentCol += dc;
         pathCells.add(`${currentRow},${currentCol}`);
         
-        // If we've reached the target column (8), ensure we're at or moving toward the end row
-        if (currentCol === 8 && currentRow !== endRow) {
-            // Add one final move to reach the end row if possible
-            if (endRow > currentRow && currentRow < 8) {
-                currentRow += 1;
-                pathCells.add(`${currentRow},${currentCol}`);
-            } else if (endRow < currentRow && currentRow > 0) {
-                currentRow -= 1;
-                pathCells.add(`${currentRow},${currentCol}`);
+        // Track visited columns
+        visitedColumns.add(currentCol);
+    }
+    
+    // If we haven't reached the end row in the last column, add a straight path to it
+    if (currentCol === 8 && currentRow !== endRow) {
+        // Add a path from current position to the end position
+        const step = currentRow < endRow ? 1 : -1;
+        for (let r = currentRow + step; step > 0 ? r <= endRow : r >= endRow; r += step) {
+            if (!pathCells.has(`${r},${currentCol}`)) {
+                pathCells.add(`${r},${currentCol}`);
             }
         }
     }
     
     // Log path information for debugging
-    console.log(`Created path with ${pathCells.size} cells, from row ${startRow} to row ${currentRow} at right edge`);
+    console.log(`Created non-overlapping path with ${pathCells.size} cells, from (${startRow},0) to (${endRow},8)`);
+}
+
+/**
+ * Check if we can connect two cells without crossing the existing path
+ */
+function canConnect(row1, col1, row2, col2, existingPath) {
+    // For simplicity, only allow connecting in a straight line (horizontal or vertical)
+    if (row1 !== row2 && col1 !== col2) {
+        return false;
+    }
+    
+    // Check if there's a clear path
+    if (row1 === row2) {
+        // Horizontal path
+        const minCol = Math.min(col1, col2);
+        const maxCol = Math.max(col1, col2);
+        
+        for (let c = minCol + 1; c < maxCol; c++) {
+            if (existingPath.has(`${row1},${c}`)) {
+                return false;
+            }
+        }
+        return true;
+    } else {
+        // Vertical path
+        const minRow = Math.min(row1, row2);
+        const maxRow = Math.max(row1, row2);
+        
+        for (let r = minRow + 1; r < maxRow; r++) {
+            if (existingPath.has(`${r},${col1}`)) {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+
+/**
+ * Get connecting cells between two points
+ */
+function getConnectingCells(row1, col1, row2, col2) {
+    const cells = [];
+    
+    if (row1 === row2) {
+        // Horizontal path
+        const minCol = Math.min(col1, col2);
+        const maxCol = Math.max(col1, col2);
+        
+        for (let c = minCol + 1; c <= maxCol; c++) {
+            cells.push(`${row1},${c}`);
+        }
+    } else if (col1 === col2) {
+        // Vertical path
+        const minRow = Math.min(row1, row2);
+        const maxRow = Math.max(row1, row2);
+        
+        for (let r = minRow + 1; r <= maxRow; r++) {
+            cells.push(`${r},${col1}`);
+        }
+    }
+    
+    return cells;
 }
     
     /**
