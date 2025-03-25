@@ -622,3 +622,133 @@ const Game = (function() {
 
 // Make module available globally
 window.Game = Game;
+
+
+// Function to add highlighting feature to the game
+(function() {
+    // Add CSS for highlighting
+    const style = document.createElement('style');
+    style.textContent = `
+        .sudoku-cell.number-highlighted {
+            background-color: rgba(135, 206, 250, 0.4) !important; /* Light blue highlight */
+            box-shadow: inset 0 0 0 2px #2196F3; /* Blue border */
+            transition: all 0.2s ease;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Track the currently highlighted number
+    let highlightedNumber = null;
+    
+    // Function to highlight all cells with a specific number
+    function highlightNumberCells(number) {
+        // Clear any existing highlights
+        clearHighlights();
+        
+        if (!number || number === highlightedNumber) {
+            highlightedNumber = null;
+            return;
+        }
+        
+        highlightedNumber = number;
+        
+        // Get the board element
+        const boardElement = document.getElementById('sudoku-board');
+        if (!boardElement) return;
+        
+        // Get all cells
+        const cells = boardElement.querySelectorAll('.sudoku-cell');
+        
+        // Highlight cells with the matching number
+        cells.forEach(cell => {
+            // Check if the cell contains the number
+            // We need to check both text content and if it has a tower with that number
+            const cellText = cell.textContent.trim();
+            
+            if (cellText === number.toString() || cellText === `${number}️⃣`) {
+                cell.classList.add('number-highlighted');
+            } else {
+                // Check for towers (might have additional elements inside)
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                
+                // If we have access to the tower data directly
+                if (window.TowersModule && typeof TowersModule.getTowerAt === 'function') {
+                    const tower = TowersModule.getTowerAt(row, col);
+                    if (tower && tower.type == number) {
+                        cell.classList.add('number-highlighted');
+                    }
+                }
+            }
+        });
+    }
+    
+    // Function to clear all highlights
+    function clearHighlights() {
+        const highlightedCells = document.querySelectorAll('.sudoku-cell.number-highlighted');
+        highlightedCells.forEach(cell => {
+            cell.classList.remove('number-highlighted');
+        });
+    }
+    
+    // Override the tower selection event
+    // First, store the original event listeners
+    const towerOptions = document.querySelectorAll('.tower-option');
+    
+    // Remove existing event listeners and add new ones
+    towerOptions.forEach(option => {
+        // Clone the element to remove all event listeners
+        const newOption = option.cloneNode(true);
+        option.parentNode.replaceChild(newOption, option);
+        
+        // Add our new event listener
+        newOption.addEventListener('click', function() {
+            const towerType = this.dataset.towerType;
+            const cost = TowersModule.getTowerCost(towerType);
+            
+            // Remove selected class from all options
+            towerOptions.forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked option
+            this.classList.add('selected');
+            
+            // Select the tower in the game logic
+            PlayerModule.selectTower(towerType);
+            
+            // Show status message
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
+            
+            // Highlight matching numbers
+            if (towerType !== 'special') {
+                highlightNumberCells(parseInt(towerType));
+            } else {
+                clearHighlights();
+            }
+        });
+    });
+    
+    // Also update the board when new towers are placed
+    EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
+        if (highlightedNumber && tower.type == highlightedNumber) {
+            // Update highlights after a brief delay to ensure the DOM is updated
+            setTimeout(() => highlightNumberCells(highlightedNumber), 50);
+        }
+    });
+    
+    // Update highlights when the board is updated (such as after placing a tower)
+    const originalUpdateBoard = Game.updateBoard || window.updateBoard;
+    if (typeof originalUpdateBoard === 'function') {
+        Game.updateBoard = function() {
+            originalUpdateBoard.apply(this, arguments);
+            // Reapply highlighting after board update
+            if (highlightedNumber) {
+                highlightNumberCells(highlightedNumber);
+            }
+        };
+    }
+    
+    console.log("Number highlighting feature installed successfully!");
+})();
