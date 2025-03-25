@@ -64,10 +64,40 @@ const TowersModule = (function() {
             return null;
         }
         
-        // Place the number in the Sudoku grid
+        // Check if the cell is on a fixed cell or path
+        const fixedCells = SudokuModule.getFixedCells();
+        const pathCells = SudokuModule.getPathCells();
+        
+        if (fixedCells[row][col]) {
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on a fixed Sudoku cell!");
+            return null;
+        }
+        
+        if (pathCells.has(`${row},${col}`)) {
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on the enemy path!");
+            return null;
+        }
+        
+        // For number towers, validate according to Sudoku rules
         const numberValue = parseInt(type);
         if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9) {
             console.log("Setting cell value in Sudoku:", numberValue);
+            
+            // Check if this number is valid for this cell
+            if (!SudokuModule.isValidMove(row, col, numberValue)) {
+                // Get possible values for this cell
+                const validNumbers = SudokuModule.getPossibleValues(row, col);
+                if (validNumbers.length > 0) {
+                    EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                        `Cannot place ${numberValue} here. Valid options: ${validNumbers.join(', ')}`);
+                } else {
+                    EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                        `No valid numbers can be placed in this cell.`);
+                }
+                return null;
+            }
+            
+            // Try to set the cell value
             if (!SudokuModule.setCellValue(row, col, numberValue)) {
                 console.log("SudokuModule.setCellValue returned false");
                 return null;
