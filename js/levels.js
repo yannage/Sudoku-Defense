@@ -51,49 +51,48 @@ const LevelsModule = (function() {
      * Start a wave
      */
     function startWave() {
-    if (EnemiesModule.isWaveInProgress()) {
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Wave already in progress!");
-        return;
-    }
-    
-    // For the first wave, we need to generate a path
-    // For subsequent waves, the path was already generated when the previous wave completed
-    if (currentWave === 1) {
-        // Clear existing path before generating a new one
-        if (window.SudokuModule && typeof SudokuModule.getPathCells === 'function') {
-            const pathCells = SudokuModule.getPathCells();
-            if (pathCells && typeof pathCells.clear === 'function') {
-                pathCells.clear();
-            }
+        if (EnemiesModule.isWaveInProgress()) {
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Wave already in progress!");
+            return;
         }
         
-        // Generate a new path for this wave
-        if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
-            SudokuModule.generateEnemyPath();
-            console.log("New path generated for first wave");
-            
-            // Tell the game to update the board display to show the new path
-            if (window.Game && typeof Game.updateBoard === 'function') {
-                Game.updateBoard();
+        // For the first wave, we need to generate a path
+        // For subsequent waves, the path was already generated when the previous wave completed
+        if (currentWave === 1) {
+            // Clear existing path before generating a new one
+            if (window.SudokuModule && typeof SudokuModule.getPathCells === 'function') {
+                const pathCells = SudokuModule.getPathCells();
+                if (pathCells && typeof pathCells.clear === 'function') {
+                    pathCells.clear();
+                }
             }
             
-            // Make sure the Enemies module is aware of the new path
-            if (typeof SudokuModule.getPathArray === 'function') {
-                const newPath = SudokuModule.getPathArray();
-                EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
-                    pathCells: newPath
-                });
+            // Generate a new path for this wave
+            if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
+                SudokuModule.generateEnemyPath();
+                console.log("New path generated for first wave");
                 
-                // Also publish a specific event for path updates
-                EventSystem.publish('path:updated', newPath);
+                // Tell the game to update the board display to show the new path
+                if (window.Game && typeof Game.updateBoard === 'function') {
+                    Game.updateBoard();
+                }
+                
+                // Make sure the Enemies module is aware of the new path
+                if (typeof SudokuModule.getPathArray === 'function') {
+                    const newPath = SudokuModule.getPathArray();
+                    EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
+                        pathCells: newPath
+                    });
+                    
+                    // Also publish a specific event for path updates
+                    EventSystem.publish('path:updated', newPath);
+                }
             }
         }
-    }
-    
-    // Start the wave in the enemies module
-    EnemiesModule.startWave();
-}
         
+        // Start the wave in the enemies module
+        EnemiesModule.startWave();
+    }
     
     /**
      * Get the current settings based on level and difficulty
@@ -152,6 +151,11 @@ const LevelsModule = (function() {
         currentLevel++;
         currentWave = 1;
         
+        // Sync wave number with EnemiesModule
+        if (window.EnemiesModule && typeof EnemiesModule.setWaveNumber === 'function') {
+            EnemiesModule.setWaveNumber(currentWave);
+        }
+        
         // Generate a new Sudoku puzzle
         SudokuModule.generatePuzzle();
         
@@ -174,12 +178,19 @@ const LevelsModule = (function() {
         
         // Listen for wave completion
         EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
+            // Increment the wave number
             currentWave++;
+            
+            // Sync wave number with EnemiesModule
+            if (window.EnemiesModule && typeof EnemiesModule.setWaveNumber === 'function') {
+                EnemiesModule.setWaveNumber(currentWave);
+            }
             
             // Check if level is complete (every 5 waves)
             if (currentWave > 5) {
                 nextLevel();
             } else {
+                // Update UI
                 EventSystem.publish(GameEvents.UI_UPDATE, {
                     wave: currentWave
                 });
