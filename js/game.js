@@ -237,79 +237,124 @@ const Game = (function() {
     /**
      * Render enemies on the board
      */
-    function renderEnemies() {
-        // Get all enemies
-        const enemies = EnemiesModule.getEnemies();
+    /**
+ * Update the renderEnemies function in game.js to ensure the enemy container is properly positioned
+ */
+function renderEnemies() {
+    // Get all enemies
+    const enemies = EnemiesModule.getEnemies();
+    
+    // Get or create enemy container
+    let enemyContainer = document.getElementById('enemy-container');
+    
+    if (!enemyContainer) {
+        enemyContainer = document.createElement('div');
+        enemyContainer.id = 'enemy-container';
+        enemyContainer.style.position = 'absolute';
+        enemyContainer.style.top = '0';
+        enemyContainer.style.left = '0';
+        enemyContainer.style.width = '100%';
+        enemyContainer.style.height = '100%';
+        enemyContainer.style.pointerEvents = 'none';
+        enemyContainer.style.zIndex = '50'; // Ensure it's above the board but below UI
         
-        // Get or create enemy container
-        let enemyContainer = document.getElementById('enemy-container');
+        // Debug outline - uncomment to see container bounds during testing
+        // enemyContainer.style.outline = '1px solid red';
         
-        if (!enemyContainer) {
-            enemyContainer = document.createElement('div');
-            enemyContainer.id = 'enemy-container';
-            enemyContainer.style.position = 'absolute';
-            enemyContainer.style.top = '0';
-            enemyContainer.style.left = '0';
-            enemyContainer.style.width = '100%';
-            enemyContainer.style.height = '100%';
-            enemyContainer.style.pointerEvents = 'none';
-            boardElement.appendChild(enemyContainer);
-        }
+        boardElement.appendChild(enemyContainer);
         
-        // Update existing enemy elements and create new ones as needed
-        enemies.forEach(enemy => {
-            let enemyElement = document.getElementById(enemy.id);
-            
-            if (!enemyElement) {
-                // Create new enemy element
-                enemyElement = document.createElement('div');
-                enemyElement.id = enemy.id;
-                enemyElement.className = 'enemy';
-                enemyElement.textContent = enemy.emoji;
-                enemyContainer.appendChild(enemyElement);
-                
-                // Create health bar
-                const healthBar = document.createElement('div');
-                healthBar.className = 'enemy-health-bar';
-                healthBar.style.position = 'absolute';
-                healthBar.style.bottom = '-8px';
-                healthBar.style.left = '0';
-                healthBar.style.width = '100%';
-                healthBar.style.height = '4px';
-                healthBar.style.backgroundColor = '#333';
-                
-                const healthFill = document.createElement('div');
-                healthFill.className = 'enemy-health-fill';
-                healthFill.style.width = '100%';
-                healthFill.style.height = '100%';
-                healthFill.style.backgroundColor = '#ff0000';
-                
-                healthBar.appendChild(healthFill);
-                enemyElement.appendChild(healthBar);
-            }
-            
-            // Update enemy position - use translate3d for hardware acceleration
-            enemyElement.style.transform = `translate3d(${enemy.x}px, ${enemy.y}px, 0)`;
-            
-            // Update health bar
-            const healthFill = enemyElement.querySelector('.enemy-health-fill');
-            const healthPercent = (enemy.health / enemy.maxHealth) * 100;
-            healthFill.style.width = `${healthPercent}%`;
-        });
-        
-        // Remove enemy elements for defeated enemies
-        const enemyElements = enemyContainer.getElementsByClassName('enemy');
-        
-        for (let i = enemyElements.length - 1; i >= 0; i--) {
-            const element = enemyElements[i];
-            const enemyId = element.id;
-            
-            if (!enemies.find(e => e.id === enemyId)) {
-                element.remove();
-            }
-        }
+        console.log("Enemy container created and appended to board element");
     }
     
+    // Verify the container is properly positioned inside the board
+    const boardRect = boardElement.getBoundingClientRect();
+    const containerRect = enemyContainer.getBoundingClientRect();
+    
+    console.log("Board dimensions:", boardRect.width, "x", boardRect.height);
+    console.log("Container dimensions:", containerRect.width, "x", containerRect.height);
+    
+    if (Math.abs(boardRect.width - containerRect.width) > 5 || 
+        Math.abs(boardRect.height - containerRect.height) > 5) {
+        console.warn("Enemy container size mismatch, fixing...");
+        
+        // Force container to exactly match board size
+        enemyContainer.style.width = boardRect.width + 'px';
+        enemyContainer.style.height = boardRect.height + 'px';
+    }
+    
+    // Make sure cell size is correctly passed to EnemiesModule
+    const currentCellSize = Math.floor(boardRect.width / 9);
+    if (EnemiesModule.getCellSize() !== currentCellSize) {
+        console.log("Updating EnemiesModule cell size to", currentCellSize);
+        EnemiesModule.setCellSize(currentCellSize);
+        EventSystem.publish('cellSize:updated', currentCellSize);
+    }
+    
+    // Update existing enemy elements and create new ones as needed
+    enemies.forEach(enemy => {
+        let enemyElement = document.getElementById(enemy.id);
+        
+        if (!enemyElement) {
+            // Create new enemy element
+            enemyElement = document.createElement('div');
+            enemyElement.id = enemy.id;
+            enemyElement.className = 'enemy';
+            enemyElement.textContent = enemy.emoji;
+            
+            // Log enemy creation for debugging
+            console.log("Creating enemy element at position:", enemy.x, enemy.y);
+            
+            enemyContainer.appendChild(enemyElement);
+            
+            // Create health bar
+            const healthBar = document.createElement('div');
+            healthBar.className = 'enemy-health-bar';
+            healthBar.style.position = 'absolute';
+            healthBar.style.bottom = '-8px';
+            healthBar.style.left = '-10px';
+            healthBar.style.width = '20px';
+            healthBar.style.height = '4px';
+            healthBar.style.backgroundColor = 'rgba(51, 51, 51, 0.8)';
+            healthBar.style.borderRadius = '2px';
+            
+            const healthFill = document.createElement('div');
+            healthFill.className = 'enemy-health-fill';
+            healthFill.style.width = '100%';
+            healthFill.style.height = '100%';
+            healthFill.style.backgroundColor = '#ff0000';
+            
+            healthBar.appendChild(healthFill);
+            enemyElement.appendChild(healthBar);
+        }
+        
+        // Debug enemy position
+        // console.log(`Enemy ${enemy.id} at x: ${enemy.x}, y: ${enemy.y}`);
+        
+        // Update enemy position - use translate3d for hardware acceleration
+        enemyElement.style.transform = `translate3d(${enemy.x}px, ${enemy.y}px, 0)`;
+        
+        // Update health bar
+        const healthFill = enemyElement.querySelector('.enemy-health-fill');
+        if (healthFill) {
+            const healthPercent = (enemy.health / enemy.maxHealth) * 100;
+            healthFill.style.width = `${healthPercent}%`;
+        }
+    });
+    
+    // Remove enemy elements for defeated enemies
+    const enemyElements = enemyContainer.getElementsByClassName('enemy');
+    
+    for (let i = enemyElements.length - 1; i >= 0; i--) {
+        const element = enemyElements[i];
+        const enemyId = element.id;
+        
+        if (!enemies.find(e => e.id === enemyId)) {
+            element.remove();
+        }
+    }
+}
+
+
     /**
      * Set up the Sudoku board
      */
