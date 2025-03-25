@@ -1,4 +1,3 @@
-
 /**
  * towers.js - Handles tower placement, upgrades, and attacks
  * This module creates and manages tower entities for the tower defense game
@@ -10,21 +9,21 @@ const TowersModule = (function() {
     let towerId = 0;
     let cellSize = 0;
     
-    // Tower types with their properties
+    // Tower types with their properties - ENHANCED DAMAGE VERSION
     const towerTypes = {
-    // Number towers (1-9) with BOOSTED damage values
-    1: { emoji: '1️⃣', damage: 40, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 20 damage, 1.0 speed
-    2: { emoji: '2️⃣', damage: 50, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 25 damage, 1.0 speed
-    3: { emoji: '3️⃣', damage: 60, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 30 damage, 1.0 speed
-    4: { emoji: '4️⃣', damage: 70, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 35 damage, 1.0 speed
-    5: { emoji: '5️⃣', damage: 80, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 40 damage, 1.0 speed
-    6: { emoji: '6️⃣', damage: 90, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 45 damage, 1.0 speed
-    7: { emoji: '7️⃣', damage: 100, range: 2, attackSpeed: 0.8, cost: 50 }, // Was 50 damage, 1.0 speed
-    8: { emoji: '8️⃣', damage: 110, range: 2, attackSpeed: 0.8, cost: 50 }, // Was 55 damage, 1.0 speed
-    9: { emoji: '9️⃣', damage: 120, range: 2.5, attackSpeed: 0.8, cost: 50 }, // Was 60 damage, 1.0 speed
-    // Special tower with BOOSTED stats
-    'special': { emoji: '🔮', damage: 60, range: 3.5, attackSpeed: 0.4, cost: 150 } // Was 30 damage, 0.5 speed
-};
+        // Number towers (1-9) with BOOSTED damage values
+        1: { emoji: '1️⃣', damage: 40, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 20 damage, 1.0 speed
+        2: { emoji: '2️⃣', damage: 50, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 25 damage, 1.0 speed
+        3: { emoji: '3️⃣', damage: 60, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 30 damage, 1.0 speed
+        4: { emoji: '4️⃣', damage: 70, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 35 damage, 1.0 speed
+        5: { emoji: '5️⃣', damage: 80, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 40 damage, 1.0 speed
+        6: { emoji: '6️⃣', damage: 90, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 45 damage, 1.0 speed
+        7: { emoji: '7️⃣', damage: 100, range: 2, attackSpeed: 0.8, cost: 50 }, // Was 50 damage, 1.0 speed
+        8: { emoji: '8️⃣', damage: 110, range: 2, attackSpeed: 0.8, cost: 50 }, // Was 55 damage, 1.0 speed
+        9: { emoji: '9️⃣', damage: 120, range: 2.5, attackSpeed: 0.8, cost: 50 }, // Was 60 damage, 1.0 speed
+        // Special tower with BOOSTED stats
+        'special': { emoji: '🔮', damage: 60, range: 3.5, attackSpeed: 0.4, cost: 150 } // Was 30 damage, 0.5 speed
+    };
     
     /**
      * Initialize the towers module
@@ -128,32 +127,32 @@ const TowersModule = (function() {
      * @returns {boolean} Whether the tower was upgraded
      */
     function upgradeTower(towerId) {
-    const tower = towers.find(t => t.id === towerId);
-    
-    if (!tower) {
-        return false;
+        const tower = towers.find(t => t.id === towerId);
+        
+        if (!tower) {
+            return false;
+        }
+        
+        // Calculate upgrade cost based on tower level
+        const upgradeCost = Math.floor(towerTypes[tower.type].cost * 0.75 * tower.level);
+        
+        // Check if player has enough currency
+        if (!PlayerModule.spendCurrency(upgradeCost)) {
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, `Not enough currency to upgrade this tower! Need ${upgradeCost}`);
+            return false;
+        }
+        
+        // Apply upgrade effects - ENHANCED
+        tower.level++;
+        tower.damage = Math.floor(tower.damage * 1.8);    // Was 1.5 (50% increase)
+        tower.range = Math.floor(tower.range * 1.3);      // Was 1.2 (20% increase)
+        tower.attackSpeed *= 0.7;                         // Was 0.8 (Lower is faster)
+        
+        // Publish tower upgrade event
+        EventSystem.publish(GameEvents.TOWER_UPGRADE, tower);
+        
+        return true;
     }
-    
-    // Calculate upgrade cost based on tower level
-    const upgradeCost = Math.floor(towerTypes[tower.type].cost * 0.75 * tower.level);
-    
-    // Check if player has enough currency
-    if (!PlayerModule.spendCurrency(upgradeCost)) {
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, `Not enough currency to upgrade this tower! Need ${upgradeCost}`);
-        return false;
-    }
-    
-    // Apply upgrade effects - ENHANCED
-    tower.level++;
-    tower.damage = Math.floor(tower.damage * 1.8);    // Was 1.5 (50% increase)
-    tower.range = Math.floor(tower.range * 1.3);      // Was 1.2 (20% increase)
-    tower.attackSpeed *= 0.7;                         // Was 0.8 (Lower is faster)
-    
-    // Publish tower upgrade event
-    EventSystem.publish(GameEvents.TOWER_UPGRADE, tower);
-    
-    return true;
-}
     
     /**
      * Update all towers
@@ -181,59 +180,17 @@ const TowersModule = (function() {
             }
             
             // Find a target for the tower
-            const target = function findTarget(tower, enemies) {
-    // Special tower attacks any enemy in range
-    if (tower.type === 'special') {
-        return findClosestEnemy(tower, enemies);
-    }
-    
-    // Parse tower number
-    const towerNumber = parseInt(tower.type);
-    if (isNaN(towerNumber)) {
-        return null;
-    }
-    
-    // Calculate the range of enemy numbers this tower can attack
-    // A tower can attack its own number and up to 2 higher numbers
-    const minTargetNumber = towerNumber;
-    const maxTargetNumber = towerNumber + 2;
-    
-    console.log(`Tower ${towerNumber} targeting enemies ${minTargetNumber}-${maxTargetNumber}`);
-    
-    // Filter enemies by eligible type numbers
-    const matchingEnemies = enemies.filter(enemy => {
-        // Convert enemy type to a number
-        let enemyType = enemy.type;
-        
-        // If it's a string (like emoji "1️⃣"), convert to number
-        if (typeof enemyType === 'string') {
-            // Try to extract the first digit
-            const match = enemyType.match(/\d+/);
-            if (match) {
-                enemyType = parseInt(match[0]);
-            } else if (enemyType === 'boss') {
-                // Special case for boss - all towers can attack the boss
-                return true;
-            } else {
-                // If we can't parse a number, try direct parseInt
-                enemyType = parseInt(enemyType);
+            const target = findTarget(tower, enemies);
+            
+            if (target) {
+                // Attack the target
+                attackEnemy(tower, target);
+                
+                // Set attack cooldown
+                tower.attackCooldown = tower.attackSpeed;
             }
         }
-        
-        // Check if the enemy number is within the tower's target range
-        return !isNaN(enemyType) && 
-               enemyType >= minTargetNumber && 
-               enemyType <= maxTargetNumber;
-    });
-    
-    // If debugging, log how many eligible targets we found
-    if (matchingEnemies.length > 0) {
-        console.log(`Tower ${towerNumber} found ${matchingEnemies.length} eligible targets`);
     }
-    
-    // Find the closest eligible enemy
-    return findClosestEnemy(tower, matchingEnemies);
-}
     
     /**
      * Find a target for a tower
@@ -247,18 +204,44 @@ const TowersModule = (function() {
             return findClosestEnemy(tower, enemies);
         }
         
-        // Number towers attack enemies with matching numbers
+        // Parse tower number
         const towerNumber = parseInt(tower.type);
         if (isNaN(towerNumber)) {
             return null;
         }
         
-        // Filter enemies by type
+        // Calculate the range of enemy numbers this tower can attack
+        // A tower can attack its own number and up to 2 higher numbers
+        const minTargetNumber = towerNumber;
+        const maxTargetNumber = towerNumber + 2;
+        
+        // Filter enemies by eligible type numbers
         const matchingEnemies = enemies.filter(enemy => {
-            const enemyNumber = parseInt(enemy.type);
-            return !isNaN(enemyNumber) && enemyNumber === towerNumber;
+            // Convert enemy type to a number
+            let enemyType = enemy.type;
+            
+            // If it's a string (like emoji "1️⃣"), convert to number
+            if (typeof enemyType === 'string') {
+                // Try to extract the first digit
+                const match = enemyType.match(/\d+/);
+                if (match) {
+                    enemyType = parseInt(match[0]);
+                } else if (enemyType === 'boss') {
+                    // Special case for boss - all towers can attack the boss
+                    return true;
+                } else {
+                    // If we can't parse a number, try direct parseInt
+                    enemyType = parseInt(enemyType);
+                }
+            }
+            
+            // Check if the enemy number is within the tower's target range
+            return !isNaN(enemyType) && 
+                   enemyType >= minTargetNumber && 
+                   enemyType <= maxTargetNumber;
         });
         
+        // Find the closest eligible enemy
         return findClosestEnemy(tower, matchingEnemies);
     }
     
