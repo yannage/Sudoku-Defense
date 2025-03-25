@@ -47,6 +47,20 @@ const Game = (function() {
         start();
         
         console.log("Game initialization completed");
+        
+        // Check for saved high score and display it
+        if (window.SaveSystem && typeof SaveSystem.getHighScore === 'function') {
+            const highScore = SaveSystem.getHighScore();
+            
+            // Add high score to the game header
+            const gameHeader = document.getElementById('game-header');
+            if (gameHeader && !document.getElementById('high-score')) {
+                const highScoreDiv = document.createElement('div');
+                highScoreDiv.id = 'high-score';
+                highScoreDiv.innerHTML = 'High Score: <span id="high-score-value">' + highScore + '</span>';
+                gameHeader.appendChild(highScoreDiv);
+            }
+        }
     }
     
     /**
@@ -63,6 +77,27 @@ const Game = (function() {
         
         // Update wave number
         document.getElementById('wave-value').textContent = EnemiesModule.getWaveNumber();
+        
+        // Update high score if available
+        if (window.SaveSystem && typeof SaveSystem.getHighScore === 'function') {
+            const highScore = SaveSystem.getHighScore();
+            
+            // Create or update high score element
+            let highScoreElement = document.getElementById('high-score-value');
+            if (!highScoreElement) {
+                // If high score element doesn't exist, create it
+                const gameHeader = document.getElementById('game-header');
+                if (gameHeader) {
+                    const highScoreDiv = document.createElement('div');
+                    highScoreDiv.id = 'high-score';
+                    highScoreDiv.innerHTML = 'High Score: <span id="high-score-value">' + highScore + '</span>';
+                    gameHeader.appendChild(highScoreDiv);
+                }
+            } else {
+                // Update existing high score element
+                highScoreElement.textContent = highScore;
+            }
+        }
         
         console.log("UI updated with: Lives=" + playerState.lives + ", Currency=" + playerState.currency);
     }
@@ -253,8 +288,8 @@ const Game = (function() {
                 enemyElement.appendChild(healthBar);
             }
             
-            // Update enemy position
-            enemyElement.style.transform = `translate(${enemy.x}px, ${enemy.y}px)`;
+            // Update enemy position - use translate3d for hardware acceleration
+            enemyElement.style.transform = `translate3d(${enemy.x}px, ${enemy.y}px, 0)`;
             
             // Update health bar
             const healthFill = enemyElement.querySelector('.enemy-health-fill');
@@ -585,20 +620,209 @@ const Game = (function() {
             updateBoard();
         });
         
-        // Listen for window resize to adjust cell size
-        window.addEventListener('resize', function() {
+        // Add level completion modal function to window
+        window.showLevelComplete = function(level, score) {
+            // Create or get the modal
+            let modal = document.getElementById('level-complete-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'level-complete-modal';
+                modal.className = 'modal';
+                
+                const modalContent = document.createElement('div');
+                modalContent.className = 'modal-content';
+                
+                const modalTitle = document.createElement('h2');
+                modalTitle.id = 'level-complete-title';
+                modalContent.appendChild(modalTitle);
+                
+                const modalScore = document.createElement('p');
+                modalScore.id = 'level-complete-score';
+                modalContent.appendChild(modalScore);
+                
+                const continueButton = document.createElement('button');
+                continueButton.textContent = 'Continue';
+                continueButton.onclick = function() {
+                    modal.classList.remove('active');
+                };
+                modalContent.appendChild(continueButton);
+                
+                modal.appendChild(modalContent);
+                document.body.appendChild(modal);
+            }
+            
+            // Update modal content
+            document.getElementById('level-complete-title').textContent = `Level ${level} Complete!`;
+            document.getElementById('level-complete-score').textContent = `Current Score: ${score}`;
+            
+            // Show the modal
+            modal.classList.add('active');
+        };
+        
+        // Enhanced resize handler with throttling
+        setupResizeHandling();
+        
+        // Add styles for high score and level complete modal
+        addStyles();
+        
+        // Listen for Sudoku completion to show level complete modal
+        EventSystem.subscribe(GameEvents.SUDOKU_COMPLETE, function() {
+            const currentLevel = LevelsModule.getCurrentLevel();
+            const currentScore = PlayerModule.getState().score;
+            
+            // Show level complete notification after the score is updated
+            setTimeout(() => {
+                if (window.showLevelComplete) {
+                    window.showLevelComplete(currentLevel, currentScore);
+                }
+            }, 500);
+        });
+    }
+    
+    /**
+     * Enhanced resize handler with throttling
+     */
+    function setupResizeHandling() {
+        // Throttle function to limit resize event frequency
+        function throttle(func, limit) {
+            let inThrottle;
+            return function() {
+                const args = arguments;
+                const context = this;
+                if (!inThrottle) {
+                    func.apply(context, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            };
+        }
+        
+        // Resize event handler with throttling
+        const handleResize = throttle(function() {
             if (!boardElement) return;
             
+            // Calculate new cell size
             const boardWidth = boardElement.clientWidth;
-            cellSize = Math.floor(boardWidth / 9);
+            const newCellSize = Math.floor(boardWidth / 9);
             
-            // Update cell size in other modules
-            EnemiesModule.setCellSize(cellSize);
-            TowersModule.setCellSize(cellSize);
-            
-            // Update board display
-            updateBoard();
+            // Only update if cell size has actually changed
+            if (newCellSize !== cellSize) {
+                console.log(`Cell size changed from ${cellSize} to ${newCellSize}`);
+                cellSize = newCellSize;
+                
+                // Update cell size in other modules
+                EnemiesModule.setCellSize(cellSize);
+                TowersModule.setCellSize(cellSize);
+                
+                // Publish an event for other modules to respond to
+                EventSystem.publish('cellSize:updated', cellSize);
+                
+                // Update board display
+                updateBoard();
+                
+                // Force reposition of all enemies
+                renderEnemies();
+            }
+        }, 100); // Throttle to 100ms
+        
+        // Listen for resize events
+        window.addEventListener('resize', handleResize);
+        
+        // Also listen for orientation changes on mobile
+        window.addEventListener('orientationchange', function() {
+            // Delay handling orientation change to ensure new dimensions are available
+            setTimeout(handleResize, 200);
         });
+        
+        // Listen for fullscreen changes
+        document.addEventListener('fullscreenchange', handleResize);
+        document.addEventListener('webkitfullscreenchange', handleResize);
+        document.addEventListener('mozfullscreenchange', handleResize);
+        document.addEventListener('MSFullscreenChange', handleResize);
+    }
+    
+    /**
+     * Add CSS styles for high score and level complete
+     */
+    function addStyles() {
+        const style = document.createElement('style');
+        style.textContent = `
+            #high-score {
+                color: white;
+                font-weight: bold;
+            }
+            
+            #high-score-value {
+                color: gold;
+            }
+            
+            /* Level complete modal styles */
+            #level-complete-modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 100;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s;
+            }
+            
+            #level-complete-modal.active {
+                opacity: 1;
+                pointer-events: all;
+            }
+            
+            #level-complete-modal .modal-content {
+                background-color: white;
+                padding: 30px;
+                border-radius: 8px;
+                text-align: center;
+                max-width: 80%;
+                transform: translateY(-20px);
+                transition: transform 0.3s;
+            }
+            
+            #level-complete-modal.active .modal-content {
+                transform: translateY(0);
+            }
+            
+            #level-complete-title {
+                color: #4CAF50;
+                margin-bottom: 15px;
+            }
+            
+            #level-complete-score {
+                font-size: 1.2rem;
+                margin-bottom: 20px;
+            }
+            
+            /* Enhanced enemy styling for better positioning */
+            .enemy {
+                font-size: 1.5rem;
+                position: absolute;
+                transform: translate3d(-50%, -50%, 0); /* Use translate3d for hardware acceleration */
+                z-index: 10;
+                transition: transform 0.15s ease-out; /* Faster, smoother transitions */
+                will-change: transform; /* Hint for browser optimization */
+                /* Prevent text selection to avoid UI issues on mobile */
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+                /* Fix for iOS Safari rendering */
+                -webkit-transform-style: preserve-3d;
+                transform-style: preserve-3d;
+                /* Add a subtle text shadow to make the emoji more visible */
+                text-shadow: 0 0 1px rgba(0,0,0,0.5);
+            }
+        `;
+        document.head.appendChild(style);
     }
     
     /**
@@ -727,7 +951,7 @@ window.Game = Game;
             
             // Show status message
             EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-                `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
+               `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
             
             // Highlight matching numbers
             if (towerType !== 'special') {
