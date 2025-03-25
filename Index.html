@@ -54,3 +54,160 @@
 <script src="js/game.js"></script>
 </body>
 </html>
+
+/**
+ * This is a simple patch script to fix enemies stuck in the top-left corner.
+ * Add this script at the end of your index.html, after all other scripts.
+ */
+<script>
+// Enemy position fix patch
+(function() {
+    console.log("Applying enemy position fix patch");
+    
+    // Function to verify and fix path issues
+    function fixPathIssues() {
+        // Check if modules are loaded
+        if (!window.EnemiesModule || !window.SudokuModule || !window.Game) {
+            console.log("Waiting for modules to load...");
+            setTimeout(fixPathIssues, 100);
+            return;
+        }
+        
+        // Get current path
+        const path = SudokuModule.getPathArray();
+        console.log("Current path:", path);
+        
+        // Check if path is valid
+        if (!path || path.length < 2) {
+            console.warn("Invalid path detected, regenerating...");
+            SudokuModule.generateEnemyPath();
+            
+            // Update modules with new path
+            const newPath = SudokuModule.getPathArray();
+            console.log("New path generated:", newPath);
+            
+            // Publish path update events
+            EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
+                pathCells: newPath
+            });
+            EventSystem.publish('path:updated', newPath);
+            
+            // Update the board
+            if (typeof Game.updateBoard === 'function') {
+                Game.updateBoard();
+            }
+        }
+        
+        // Make sure the cell size is consistent across modules
+        const boardElement = document.getElementById('sudoku-board');
+        if (boardElement) {
+            const boardWidth = boardElement.clientWidth;
+            const cellSize = Math.floor(boardWidth / 9);
+            console.log("Board dimensions:", boardWidth, "Cell size:", cellSize);
+            
+            // Update cell size in modules
+            if (typeof EnemiesModule.setCellSize === 'function') {
+                EnemiesModule.setCellSize(cellSize);
+            }
+            if (typeof TowersModule.setCellSize === 'function') {
+                TowersModule.setCellSize(cellSize);
+            }
+            
+            // Publish cell size update event
+            EventSystem.publish('cellSize:updated', cellSize);
+        }
+        
+        // Override createEnemy function to fix positioning issues
+        if (EnemiesModule.createEnemy) {
+            const originalCreateEnemy = EnemiesModule.createEnemy;
+            
+            EnemiesModule.createEnemy = function(type) {
+                // Get path directly before creating enemy
+                const path = SudokuModule.getPathArray();
+                
+                // Make sure we have a valid path
+                if (!path || path.length === 0) {
+                    console.error("Path is empty when creating enemy");
+                    // Try to regenerate the path
+                    SudokuModule.generateEnemyPath();
+                    return null;
+                }
+                
+                // Get current cell size
+                const boardElement = document.getElementById('sudoku-board');
+                const cellSize = boardElement ? Math.floor(boardElement.clientWidth / 9) : EnemiesModule.getCellSize();
+                
+                // Create the enemy using the original function
+                const enemy = originalCreateEnemy.call(this, type);
+                
+                // Extra check to make sure position is correct
+                if (enemy && path && path.length > 0) {
+                    const startCell = path[0];
+                    enemy.x = startCell[1] * cellSize + cellSize / 2;
+                    enemy.y = startCell[0] * cellSize + cellSize / 2;
+                    console.log("Fixed enemy starting position:", enemy.x, enemy.y);
+                }
+                
+                return enemy;
+            };
+            
+            console.log("Enemy creation function patched");
+        }
+        
+        // Override moveEnemy function to ensure correct positioning
+        const enemiesModuleObj = EnemiesModule;
+        const originalMoveEnemy = enemiesModuleObj.update;
+        
+        if (originalMoveEnemy) {
+            enemiesModuleObj.update = function(deltaTime) {
+                // Call original update function
+                originalMoveEnemy.call(this, deltaTime);
+                
+                // Get all enemies
+                const enemies = this.getEnemies();
+                
+                // Check if any enemies are at position 0,0 which would indicate a problem
+                enemies.forEach(enemy => {
+                    if (enemy.x === 0 && enemy.y === 0) {
+                        console.warn("Found enemy at 0,0, fixing position...");
+                        
+                        // Get path and cell size
+                        const path = SudokuModule.getPathArray();
+                        const cellSize = this.getCellSize();
+                        
+                        // Reset enemy to start of path
+                        if (path && path.length > 0) {
+                            const startCell = path[0];
+                            enemy.x = startCell[1] * cellSize + cellSize / 2;
+                            enemy.y = startCell[0] * cellSize + cellSize / 2;
+                            enemy.pathIndex = 0;
+                            enemy.progress = 0;
+                            console.log("Fixed enemy position to:", enemy.x, enemy.y);
+                        }
+                    }
+                });
+            };
+            
+            console.log("Enemy update function patched");
+        }
+    }
+    
+    // Apply fixes after a short delay to ensure all modules are loaded
+    setTimeout(fixPathIssues, 500);
+    
+    // Also add a manual fix button for testing
+    document.addEventListener('DOMContentLoaded', function() {
+        const gameControls = document.getElementById('game-controls');
+        if (gameControls) {
+            const fixButton = document.createElement('button');
+            fixButton.textContent = 'Fix Path';
+            fixButton.style.backgroundColor = '#ff9800';
+            fixButton.onclick = function() {
+                fixPathIssues();
+                alert('Path fix applied!');
+            };
+            gameControls.appendChild(fixButton);
+        }
+    });
+})();
+</script>
