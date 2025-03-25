@@ -52,162 +52,174 @@
 <script src="js/save-system.js"></script>
 <script src="js/levels.js"></script>
 <script src="js/game.js"></script>
-</body>
-</html>
-
 /**
- * This is a simple patch script to fix enemies stuck in the top-left corner.
- * Add this script at the end of your index.html, after all other scripts.
+ * Add this script directly to your index.html just before the closing </body> tag.
+ * This fixes enemy rendering by completely replacing the enemy rendering logic.
  */
+
 <script>
-// Enemy position fix patch
+// Enemy rendering fix
 (function() {
-    console.log("Applying enemy position fix patch");
+    console.log("Applying enemy rendering fix");
     
-    // Function to verify and fix path issues
-    function fixPathIssues() {
-        // Check if modules are loaded
-        if (!window.EnemiesModule || !window.SudokuModule || !window.Game) {
-            console.log("Waiting for modules to load...");
-            setTimeout(fixPathIssues, 100);
+    // Wait for DOM content loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(fixEnemyRendering, 500);
+    });
+    
+    function fixEnemyRendering() {
+        // Make sure Game object is available
+        if (!window.Game) {
+            console.log("Game not available yet, retrying in 500ms");
+            setTimeout(fixEnemyRendering, 500);
             return;
         }
         
-        // Get current path
-        const path = SudokuModule.getPathArray();
-        console.log("Current path:", path);
+        console.log("Fixing enemy rendering");
         
-        // Check if path is valid
-        if (!path || path.length < 2) {
-            console.warn("Invalid path detected, regenerating...");
-            SudokuModule.generateEnemyPath();
-            
-            // Update modules with new path
-            const newPath = SudokuModule.getPathArray();
-            console.log("New path generated:", newPath);
-            
-            // Publish path update events
-            EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
-                pathCells: newPath
-            });
-            EventSystem.publish('path:updated', newPath);
-            
-            // Update the board
-            if (typeof Game.updateBoard === 'function') {
-                Game.updateBoard();
-            }
-        }
-        
-        // Make sure the cell size is consistent across modules
+        // Get the board element
         const boardElement = document.getElementById('sudoku-board');
-        if (boardElement) {
-            const boardWidth = boardElement.clientWidth;
-            const cellSize = Math.floor(boardWidth / 9);
-            console.log("Board dimensions:", boardWidth, "Cell size:", cellSize);
-            
-            // Update cell size in modules
-            if (typeof EnemiesModule.setCellSize === 'function') {
-                EnemiesModule.setCellSize(cellSize);
-            }
-            if (typeof TowersModule.setCellSize === 'function') {
-                TowersModule.setCellSize(cellSize);
-            }
-            
-            // Publish cell size update event
-            EventSystem.publish('cellSize:updated', cellSize);
+        if (!boardElement) {
+            console.error("Board element not found");
+            return;
         }
         
-        // Override createEnemy function to fix positioning issues
-        if (EnemiesModule.createEnemy) {
-            const originalCreateEnemy = EnemiesModule.createEnemy;
-            
-            EnemiesModule.createEnemy = function(type) {
-                // Get path directly before creating enemy
-                const path = SudokuModule.getPathArray();
-                
-                // Make sure we have a valid path
-                if (!path || path.length === 0) {
-                    console.error("Path is empty when creating enemy");
-                    // Try to regenerate the path
-                    SudokuModule.generateEnemyPath();
-                    return null;
-                }
-                
-                // Get current cell size
-                const boardElement = document.getElementById('sudoku-board');
-                const cellSize = boardElement ? Math.floor(boardElement.clientWidth / 9) : EnemiesModule.getCellSize();
-                
-                // Create the enemy using the original function
-                const enemy = originalCreateEnemy.call(this, type);
-                
-                // Extra check to make sure position is correct
-                if (enemy && path && path.length > 0) {
-                    const startCell = path[0];
-                    enemy.x = startCell[1] * cellSize + cellSize / 2;
-                    enemy.y = startCell[0] * cellSize + cellSize / 2;
-                    console.log("Fixed enemy starting position:", enemy.x, enemy.y);
-                }
-                
-                return enemy;
-            };
-            
-            console.log("Enemy creation function patched");
+        // Create a completely new enemy container
+        let enemyContainer = document.getElementById('enemy-container');
+        if (enemyContainer) {
+            // Remove existing container
+            enemyContainer.remove();
         }
         
-        // Override moveEnemy function to ensure correct positioning
-        const enemiesModuleObj = EnemiesModule;
-        const originalMoveEnemy = enemiesModuleObj.update;
+        // Create a new container
+        enemyContainer = document.createElement('div');
+        enemyContainer.id = 'enemy-container';
+        enemyContainer.style.position = 'absolute';
+        enemyContainer.style.top = '0';
+        enemyContainer.style.left = '0';
+        enemyContainer.style.width = '100%';
+        enemyContainer.style.height = '100%';
+        enemyContainer.style.pointerEvents = 'none';
+        enemyContainer.style.zIndex = '50';
         
-        if (originalMoveEnemy) {
-            enemiesModuleObj.update = function(deltaTime) {
-                // Call original update function
-                originalMoveEnemy.call(this, deltaTime);
+        // Add a border for debugging (uncomment if needed)
+        // enemyContainer.style.border = '1px dashed red';
+        
+        // Append to board
+        boardElement.appendChild(enemyContainer);
+        
+        console.log("Created new enemy container");
+        
+        // Replace the Game.renderEnemies function
+        if (typeof Game.renderEnemies === 'function') {
+            const originalRenderEnemies = Game.renderEnemies;
+            
+            Game.renderEnemies = function() {
+                // Only replace if not already replaced
+                if (this._fixedRenderEnemies) {
+                    return originalRenderEnemies.call(this);
+                }
                 
                 // Get all enemies
-                const enemies = this.getEnemies();
+                const enemies = EnemiesModule.getEnemies();
+                if (!enemies || !enemies.length) {
+                    return; // No enemies to render
+                }
                 
-                // Check if any enemies are at position 0,0 which would indicate a problem
+                // Make sure enemy container exists
+                let container = document.getElementById('enemy-container');
+                if (!container) {
+                    // Create container if it doesn't exist
+                    container = document.createElement('div');
+                    container.id = 'enemy-container';
+                    container.style.position = 'absolute';
+                    container.style.top = '0';
+                    container.style.left = '0';
+                    container.style.width = '100%';
+                    container.style.height = '100%';
+                    container.style.pointerEvents = 'none';
+                    container.style.zIndex = '50';
+                    boardElement.appendChild(container);
+                    console.log("Created enemy container during render");
+                }
+                
+                // Render each enemy
                 enemies.forEach(enemy => {
+                    // Skip if position is 0,0 (indicates a problem)
                     if (enemy.x === 0 && enemy.y === 0) {
-                        console.warn("Found enemy at 0,0, fixing position...");
+                        console.warn("Enemy at 0,0 position, skipping render");
+                        return;
+                    }
+                    
+                    let enemyElement = document.getElementById(enemy.id);
+                    
+                    if (!enemyElement) {
+                        // Create new enemy element
+                        enemyElement = document.createElement('div');
+                        enemyElement.id = enemy.id;
+                        enemyElement.className = 'enemy';
+                        enemyElement.textContent = enemy.emoji;
+                        container.appendChild(enemyElement);
                         
-                        // Get path and cell size
-                        const path = SudokuModule.getPathArray();
-                        const cellSize = this.getCellSize();
+                        // Create health bar
+                        const healthBar = document.createElement('div');
+                        healthBar.className = 'enemy-health-bar';
+                        healthBar.style.position = 'absolute';
+                        healthBar.style.bottom = '-8px';
+                        healthBar.style.left = '-10px';
+                        healthBar.style.width = '20px';
+                        healthBar.style.height = '4px';
+                        healthBar.style.backgroundColor = 'rgba(51, 51, 51, 0.8)';
+                        healthBar.style.borderRadius = '2px';
                         
-                        // Reset enemy to start of path
-                        if (path && path.length > 0) {
-                            const startCell = path[0];
-                            enemy.x = startCell[1] * cellSize + cellSize / 2;
-                            enemy.y = startCell[0] * cellSize + cellSize / 2;
-                            enemy.pathIndex = 0;
-                            enemy.progress = 0;
-                            console.log("Fixed enemy position to:", enemy.x, enemy.y);
-                        }
+                        const healthFill = document.createElement('div');
+                        healthFill.className = 'enemy-health-fill';
+                        healthFill.style.width = '100%';
+                        healthFill.style.height = '100%';
+                        healthFill.style.backgroundColor = '#ff0000';
+                        
+                        healthBar.appendChild(healthFill);
+                        enemyElement.appendChild(healthBar);
+                        
+                        console.log(`Created enemy ${enemy.id} at (${enemy.x}, ${enemy.y})`);
+                    }
+                    
+                    // Position the enemy
+                    enemyElement.style.transform = `translate3d(${enemy.x}px, ${enemy.y}px, 0)`;
+                    
+                    // Update health bar
+                    const healthFill = enemyElement.querySelector('.enemy-health-fill');
+                    if (healthFill) {
+                        const healthPercent = (enemy.health / enemy.maxHealth) * 100;
+                        healthFill.style.width = `${healthPercent}%`;
+                    }
+                });
+                
+                // Remove any enemies that no longer exist
+                const enemyElements = container.querySelectorAll('.enemy');
+                enemyElements.forEach(element => {
+                    const id = element.id;
+                    if (!enemies.find(e => e.id === id)) {
+                        element.remove();
                     }
                 });
             };
             
-            console.log("Enemy update function patched");
+            // Mark as fixed
+            Game.renderEnemies._fixedRenderEnemies = true;
+            
+            console.log("Replaced renderEnemies function");
+        } else {
+            console.error("Game.renderEnemies function not found");
+        }
+        
+        // Force a render
+        if (Game.renderEnemies) {
+            Game.renderEnemies();
         }
     }
-    
-    // Apply fixes after a short delay to ensure all modules are loaded
-    setTimeout(fixPathIssues, 500);
-    
-    // Also add a manual fix button for testing
-    document.addEventListener('DOMContentLoaded', function() {
-        const gameControls = document.getElementById('game-controls');
-        if (gameControls) {
-            const fixButton = document.createElement('button');
-            fixButton.textContent = 'Fix Path';
-            fixButton.style.backgroundColor = '#ff9800';
-            fixButton.onclick = function() {
-                fixPathIssues();
-                alert('Path fix applied!');
-            };
-            gameControls.appendChild(fixButton);
-        }
-    });
 })();
 </script>
+</body>
+</html>
+
