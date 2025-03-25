@@ -1,4 +1,3 @@
-
 /**
  * player.js - Handles player state and actions
  * This module manages player resources, score, and lives
@@ -25,6 +24,8 @@ const PlayerModule = (function() {
             selectedTower: null
         };
         
+        console.log("PlayerModule initialized with currency: " + state.currency);
+        
         // Publish initial state
         publishState();
     }
@@ -33,7 +34,12 @@ const PlayerModule = (function() {
      * Publish the current player state
      */
     function publishState() {
+        console.log("Publishing player state: Lives=" + state.lives + ", Currency=" + state.currency);
+        
+        // Publish complete state
         EventSystem.publish(GameEvents.PLAYER_UPDATE, { ...state });
+        
+        // Also publish individual state components for direct updates
         EventSystem.publish(GameEvents.LIVES_CHANGE, state.lives);
         EventSystem.publish(GameEvents.SCORE_CHANGE, state.score);
         EventSystem.publish(GameEvents.CURRENCY_CHANGE, state.currency);
@@ -45,7 +51,11 @@ const PlayerModule = (function() {
      */
     function addCurrency(amount) {
         state.currency += amount;
+        console.log("Currency added: " + amount + ", New balance: " + state.currency);
+        
+        // Publish both events for redundancy
         EventSystem.publish(GameEvents.CURRENCY_CHANGE, state.currency);
+        EventSystem.publish(GameEvents.PLAYER_UPDATE, { ...state });
     }
     
     /**
@@ -56,9 +66,15 @@ const PlayerModule = (function() {
     function spendCurrency(amount) {
         if (state.currency >= amount) {
             state.currency -= amount;
+            console.log("Currency spent: " + amount + ", New balance: " + state.currency);
+            
+            // Publish both events for redundancy
             EventSystem.publish(GameEvents.CURRENCY_CHANGE, state.currency);
+            EventSystem.publish(GameEvents.PLAYER_UPDATE, { ...state });
             return true;
         }
+        
+        console.log("Not enough currency to spend: " + amount + ", Current balance: " + state.currency);
         return false;
     }
     
@@ -68,7 +84,11 @@ const PlayerModule = (function() {
      */
     function addScore(points) {
         state.score += points;
+        console.log("Score added: " + points + ", New score: " + state.score);
+        
+        // Publish both events for redundancy
         EventSystem.publish(GameEvents.SCORE_CHANGE, state.score);
+        EventSystem.publish(GameEvents.PLAYER_UPDATE, { ...state });
     }
     
     /**
@@ -77,10 +97,15 @@ const PlayerModule = (function() {
      */
     function loseLife() {
         state.lives--;
+        console.log("Life lost, Remaining lives: " + state.lives);
+        
+        // Publish both events for redundancy
         EventSystem.publish(GameEvents.LIVES_CHANGE, state.lives);
+        EventSystem.publish(GameEvents.PLAYER_UPDATE, { ...state });
         
         // Check for game over
         if (state.lives <= 0) {
+            console.log("Game over triggered");
             EventSystem.publish(GameEvents.GAME_OVER, {
                 score: state.score
             });
@@ -95,7 +120,11 @@ const PlayerModule = (function() {
      */
     function addLife(count = 1) {
         state.lives += count;
+        console.log("Lives added: " + count + ", New lives: " + state.lives);
+        
+        // Publish both events for redundancy
         EventSystem.publish(GameEvents.LIVES_CHANGE, state.lives);
+        EventSystem.publish(GameEvents.PLAYER_UPDATE, { ...state });
     }
     
     /**
@@ -127,6 +156,7 @@ const PlayerModule = (function() {
      * Reset the player state
      */
     function reset() {
+        console.log("PlayerModule reset");
         init();
     }
     
