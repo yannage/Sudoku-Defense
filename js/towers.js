@@ -742,3 +742,136 @@ window.TowersModule = TowersModule;
     
     console.log("Immediate incorrect tower highlighting fix applied!");
 })();
+
+/**
+ * Add this to the end of your towers.js file to implement an X mark overlay
+ */
+
+// X mark overlay for incorrect towers
+(function() {
+    // Add CSS for the X mark overlay
+    const style = document.createElement('style');
+    style.textContent = `
+        .sudoku-cell {
+            position: relative;
+        }
+        
+        .incorrect-marker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            color: #ff3333;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 0 0 2px white, 0 0 2px white, 0 0 2px white;
+            animation: pulse-scale 2s infinite;
+        }
+        
+        @keyframes pulse-scale {
+            0% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.7; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Store original createTower function
+    const originalCreateTower = TowersModule.createTower;
+    
+    // Override createTower to add X mark immediately
+    TowersModule.createTower = function(type, row, col) {
+        // Call the original function
+        const tower = originalCreateTower.call(this, type, row, col);
+        
+        // If tower was created successfully and it's incorrect, add X mark immediately
+        if (tower && tower.isCorrect === false) {
+            // Get the board element
+            const boardElement = document.getElementById('sudoku-board');
+            if (boardElement) {
+                // Find the cell and add X mark
+                const cell = boardElement.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+                if (cell) {
+                    addXMark(cell);
+                }
+            }
+        }
+        
+        return tower;
+    };
+    
+    // Function to add X mark to a cell
+    function addXMark(cell) {
+        // Check if X mark already exists
+        if (cell.querySelector('.incorrect-marker')) return;
+        
+        // Create and add X mark
+        const xMark = document.createElement('div');
+        xMark.className = 'incorrect-marker';
+        xMark.textContent = '❌';
+        cell.appendChild(xMark);
+    }
+    
+    // Function to remove X mark from a cell
+    function removeXMark(cell) {
+        const xMark = cell.querySelector('.incorrect-marker');
+        if (xMark) {
+            xMark.remove();
+        }
+    }
+    
+    // Update the board display to show X marks for incorrect towers
+    const originalUpdateBoard = Game.updateBoard;
+    if (originalUpdateBoard) {
+        Game.updateBoard = function() {
+            // Call original function first
+            originalUpdateBoard.apply(this, arguments);
+            
+            // Update X marks for incorrect towers
+            const boardElement = document.getElementById('sudoku-board');
+            if (!boardElement) return;
+            
+            // Get all towers
+            const towers = TowersModule.getTowers();
+            
+            // First, remove all X marks
+            const allCells = boardElement.querySelectorAll('.sudoku-cell');
+            allCells.forEach(cell => {
+                removeXMark(cell);
+            });
+            
+            // Then add X marks to incorrect towers
+            towers.forEach(tower => {
+                if (tower.isCorrect === false) {
+                    // Find cell and add X mark
+                    const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+                    if (cell) {
+                        addXMark(cell);
+                    }
+                }
+            });
+        };
+    }
+    
+    // Make sure the X marks are correctly cleared after a wave
+    EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
+        // Wait a bit to make sure towers are removed first
+        setTimeout(() => {
+            // Clear X marks
+            const boardElement = document.getElementById('sudoku-board');
+            if (boardElement) {
+                const allCells = boardElement.querySelectorAll('.sudoku-cell');
+                allCells.forEach(cell => {
+                    removeXMark(cell);
+                });
+            }
+        }, 100);
+    });
+    
+    console.log("X mark overlay for incorrect towers applied!");
+})();
