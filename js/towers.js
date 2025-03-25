@@ -25,6 +25,9 @@ const TowersModule = (function() {
         'special': { emoji: '🔮', damage: 80, range: 4.0, attackSpeed: 0.3, cost: 100 }
     };
     
+    // Track which towers are incorrect
+    const incorrectTowers = new Set();
+    
     /**
      * Initialize the towers module
      * @param {Object} options - Initialization options
@@ -33,6 +36,7 @@ const TowersModule = (function() {
         towers = [];
         towerId = 0;
         cellSize = options.cellSize || 55; // Default cell size
+        incorrectTowers.clear();
         console.log("TowersModule initialized with cellSize:", cellSize);
     }
     
@@ -56,51 +60,45 @@ const TowersModule = (function() {
         
         // Check if player has enough currency
         const playerState = PlayerModule.getState();
-        console.log("Player currency:", playerState.currency, "Tower cost:", typeData.cost);
-        
         if (playerState.currency < typeData.cost) {
             console.log("Not enough currency to build tower");
             EventSystem.publish(GameEvents.STATUS_MESSAGE, `Not enough currency to build this tower! Need ${typeData.cost}`);
             return null;
         }
         
-        // Check if the cell is on a fixed cell or path
+        // Check if the cell is fixed or on a path
         const fixedCells = SudokuModule.getFixedCells();
         const pathCells = SudokuModule.getPathCells();
         
-        if (fixedCells[row][col]) {
+        if (fixedCells && fixedCells[row] && fixedCells[row][col]) {
             EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on a fixed Sudoku cell!");
             return null;
         }
         
-        if (pathCells.has(`${row},${col}`)) {
+        if (pathCells && pathCells.has && pathCells.has(`${row},${col}`)) {
             EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on the enemy path!");
             return null;
         }
         
-        // For number towers, validate according to Sudoku rules
+        // Check if there's already a tower at this position
+        if (getTowerAt(row, col)) {
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, "There's already a tower in this cell!");
+            return null;
+        }
+        
+        // For number towers, check if the placement is correct according to the solution
+        let isCorrect = true;
         const numberValue = parseInt(type);
-        if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9) {
-            console.log("Setting cell value in Sudoku:", numberValue);
+        
+        if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9 && type !== 'special') {
+            // Get the solution
+            const solution = SudokuModule.getSolution();
             
-            // Check if this number is valid for this cell
-            if (!SudokuModule.isValidMove(row, col, numberValue)) {
-                // Get possible values for this cell
-                const validNumbers = SudokuModule.getPossibleValues(row, col);
-                if (validNumbers.length > 0) {
-                    EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-                        `Cannot place ${numberValue} here. Valid options: ${validNumbers.join(', ')}`);
-                } else {
-                    EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-                        `No valid numbers can be placed in this cell.`);
-                }
-                return null;
-            }
-            
-            // Try to set the cell value
-            if (!SudokuModule.setCellValue(row, col, numberValue)) {
-                console.log("SudokuModule.setCellValue returned false");
-                return null;
+            // Check if the placement matches the solution
+            if (solution && solution[row] && solution[row][col] !== numberValue) {
+                isCorrect = false;
+                EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                    `Warning: This tower doesn't match the solution. It will be removed after the wave with 50% refund.`);
             }
         }
         
@@ -121,7 +119,8 @@ const TowersModule = (function() {
             col: col,
             x: x,
             y: y,
-            target: null
+            target: null,
+            isCorrect: isCorrect  // Add isCorrect property to tower
         };
         
         // Spend currency
@@ -129,6 +128,17 @@ const TowersModule = (function() {
         
         // Add to towers array
         towers.push(tower);
+        
+        // For number towers, set the board value
+        if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9) {
+            // Set the cell value in the Sudoku board
+            SudokuModule.getBoard()[row][col] = numberValue;
+            
+            // If incorrect, track it
+            if (!isCorrect) {
+                incorrectTowers.add(tower.id);
+            }
+        }
         
         // Publish tower placed event
         EventSystem.publish(GameEvents.TOWER_PLACED, tower);
@@ -152,7 +162,12 @@ const TowersModule = (function() {
         towers = towers.filter(t => t.id !== towerId);
         
         // Remove number from Sudoku grid
-        SudokuModule.setCellValue(tower.row, tower.col, 0);
+        SudokuModule.getBoard()[tower.row][tower.col] = 0;
+        
+        // Remove from incorrect towers set if it's there
+        if (incorrectTowers.has(tower.id)) {
+            incorrectTowers.delete(tower.id);
+        }
         
         // Publish tower removed event
         EventSystem.publish(GameEvents.TOWER_REMOVED, tower);
@@ -334,6 +349,56 @@ const TowersModule = (function() {
     }
     
     /**
+     * Remove incorrect towers after a wave
+     */
+    function removeIncorrectTowers() {
+        if (incorrectTowers.size === 0) return;
+        
+        let refundAmount = 0;
+        const towersToRemove = [];
+        
+        // Identify towers to remove and calculate refund
+        towers.forEach(tower => {
+            if (incorrectTowers.has(tower.id)) {
+                towersToRemove.push(tower);
+                
+                // Calculate 50% refund
+                const towerData = towerTypes[tower.type];
+                if (towerData) {
+                    const baseRefund = Math.floor(towerData.cost * 0.5);
+                    const upgradeRefund = Math.floor(baseRefund * (tower.level - 1) * 0.75);
+                    refundAmount += baseRefund + upgradeRefund;
+                }
+            }
+        });
+        
+        // Process refund
+        if (refundAmount > 0) {
+            PlayerModule.addCurrency(refundAmount);
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                `${towersToRemove.length} incorrect towers removed. Refunded ${refundAmount} currency.`);
+        }
+        
+        // Remove towers
+        towersToRemove.forEach(tower => {
+            // Clear cell value
+            const board = SudokuModule.getBoard();
+            if (board && board[tower.row] && board[tower.row][tower.col]) {
+                board[tower.row][tower.col] = 0;
+            }
+            
+            // Remove tower from array
+            towers = towers.filter(t => t.id !== tower.id);
+            
+            // Publish tower removed event
+            EventSystem.publish(GameEvents.TOWER_REMOVED, tower);
+        });
+        
+        // Clear tracking set
+        incorrectTowers.clear();
+    }
+    
+    /**
      * Get all towers
      * @returns {Object[]} Array of towers
      */
@@ -398,6 +463,11 @@ const TowersModule = (function() {
         EventSystem.subscribe(GameEvents.GAME_START, function() {
             init();
         });
+        
+        // Listen for wave completion to remove incorrect towers
+        EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
+            removeIncorrectTowers();
+        });
     }
     
     // Initialize event listeners
@@ -421,3 +491,179 @@ const TowersModule = (function() {
 
 // Make module available globally
 window.TowersModule = TowersModule;
+
+// Add CSS for incorrect tower highlighting
+(function() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .sudoku-cell.incorrect-tower {
+            color: #ff3333 !important; /* Red text for incorrect towers */
+            text-shadow: 0 0 2px rgba(255, 0, 0, 0.3);
+            animation: pulse-red 2s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Update the board display to show incorrect towers
+    const originalUpdateBoard = Game.updateBoard;
+    if (originalUpdateBoard) {
+        Game.updateBoard = function() {
+            // Call original function first
+            originalUpdateBoard.apply(this, arguments);
+            
+            // Add incorrect tower class to cells with incorrect towers
+            const boardElement = document.getElementById('sudoku-board');
+            if (!boardElement) return;
+            
+            // Get all towers
+            const towers = TowersModule.getTowers();
+            
+            // Mark incorrect towers
+            towers.forEach(tower => {
+                if (tower.isCorrect === false) {
+                    // Find cell and add class
+                    const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+                    if (cell) {
+                        cell.classList.add('incorrect-tower');
+                    }
+                }
+            });
+        };
+    }
+})();
+
+// Add number highlighting feature
+(function() {
+    // Add CSS for highlighting
+    const style = document.createElement('style');
+    style.textContent = `
+        .sudoku-cell.number-highlighted {
+            background-color: rgba(135, 206, 250, 0.4) !important; /* Light blue highlight */
+            box-shadow: inset 0 0 0 2px #2196F3; /* Blue border */
+            transition: all 0.2s ease;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Track the currently highlighted number
+    let highlightedNumber = null;
+    
+    // Function to highlight all cells with a specific number
+    function highlightNumberCells(number) {
+        // Clear any existing highlights
+        clearHighlights();
+        
+        if (!number || number === highlightedNumber) {
+            highlightedNumber = null;
+            return;
+        }
+        
+        highlightedNumber = number;
+        
+        // Get the board element
+        const boardElement = document.getElementById('sudoku-board');
+        if (!boardElement) return;
+        
+        // Get all cells
+        const cells = boardElement.querySelectorAll('.sudoku-cell');
+        
+        // Highlight cells with the matching number
+        cells.forEach(cell => {
+            // Check if the cell contains the number
+            const cellText = cell.textContent.trim();
+            
+            if (cellText === number.toString() || cellText === `${number}️⃣`) {
+                cell.classList.add('number-highlighted');
+            } else {
+                // Check for towers (might have additional elements inside)
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                
+                // If we have access to the tower data directly
+                if (window.TowersModule && typeof TowersModule.getTowerAt === 'function') {
+                    const tower = TowersModule.getTowerAt(row, col);
+                    if (tower && tower.type == number) {
+                        cell.classList.add('number-highlighted');
+                    }
+                }
+            }
+        });
+    }
+    
+    // Function to clear all highlights
+    function clearHighlights() {
+        const highlightedCells = document.querySelectorAll('.sudoku-cell.number-highlighted');
+        highlightedCells.forEach(cell => {
+            cell.classList.remove('number-highlighted');
+        });
+    }
+    
+    // Override the tower selection event
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all tower options
+        const towerOptions = document.querySelectorAll('.tower-option');
+        
+        // Remove existing event listeners and add new ones
+        towerOptions.forEach(option => {
+            // Clone the element to remove all event listeners
+            const newOption = option.cloneNode(true);
+            option.parentNode.replaceChild(newOption, option);
+            
+            // Add our new event listener
+            newOption.addEventListener('click', function() {
+                const towerType = this.dataset.towerType;
+                const cost = TowersModule.getTowerCost(towerType);
+                
+                // Remove selected class from all options
+                document.querySelectorAll('.tower-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                // Add selected class to clicked option
+                this.classList.add('selected');
+                
+                // Select the tower in the game logic
+                PlayerModule.selectTower(towerType);
+                
+                // Show status message
+                EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                    `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
+                
+                // Highlight matching numbers
+                if (towerType !== 'special' && !isNaN(parseInt(towerType))) {
+                    highlightNumberCells(parseInt(towerType));
+                } else {
+                    clearHighlights();
+                }
+            });
+        });
+    });
+    
+    // Also update the board when new towers are placed
+    EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
+        if (highlightedNumber && tower.type == highlightedNumber) {
+            // Update highlights after a brief delay to ensure the DOM is updated
+            setTimeout(() => highlightNumberCells(highlightedNumber), 50);
+        }
+    });
+    
+    // Force a refresh on first load
+    EventSystem.subscribe(GameEvents.GAME_INIT, function() {
+        // Wait for the DOM to be ready
+        setTimeout(() => {
+            const selectedTower = document.querySelector('.tower-option.selected');
+            if (selectedTower) {
+                const towerType = selectedTower.dataset.towerType;
+                if (towerType !== 'special' && !isNaN(parseInt(towerType))) {
+                    highlightNumberCells(parseInt(towerType));
+                }
+            }
+        }, 500);
+    });
+})();
