@@ -47,35 +47,6 @@ const Game = (function() {
         start();
         
         console.log("Game initialization completed");
-        
-        // Check for saved high score and display it
-        if (window.SaveSystem && typeof SaveSystem.getHighScore === 'function') {
-            const highScore = SaveSystem.getHighScore();
-            
-            // Add high score to the game header
-            const gameHeader = document.getElementById('game-header');
-            if (gameHeader && !document.getElementById('high-score')) {
-                const highScoreDiv = document.createElement('div');
-                highScoreDiv.id = 'high-score';
-                highScoreDiv.innerHTML = 'High Score: <span id="high-score-value">' + highScore + '</span>';
-                gameHeader.appendChild(highScoreDiv);
-            }
-        }
-        
-        // Make sure cell size is properly communicated to all modules
-        console.log("Game init - cell size:", cellSize);
-        EventSystem.publish('cellSize:updated', cellSize);
-        
-        // Check if enemy module already exists
-        if (window.EnemiesModule && typeof EnemiesModule.setCellSize === 'function') {
-            console.log("Setting initial cell size in EnemiesModule:", cellSize);
-            EnemiesModule.setCellSize(cellSize);
-        }
-        
-        // Force a render of enemies immediately to ensure container is created
-        setTimeout(() => {
-            renderEnemies();
-        }, 100);
     }
     
     /**
@@ -92,27 +63,6 @@ const Game = (function() {
         
         // Update wave number
         document.getElementById('wave-value').textContent = EnemiesModule.getWaveNumber();
-        
-        // Update high score if available
-        if (window.SaveSystem && typeof SaveSystem.getHighScore === 'function') {
-            const highScore = SaveSystem.getHighScore();
-            
-            // Create or update high score element
-            let highScoreElement = document.getElementById('high-score-value');
-            if (!highScoreElement) {
-                // If high score element doesn't exist, create it
-                const gameHeader = document.getElementById('game-header');
-                if (gameHeader) {
-                    const highScoreDiv = document.createElement('div');
-                    highScoreDiv.id = 'high-score';
-                    highScoreDiv.innerHTML = 'High Score: <span id="high-score-value">' + highScore + '</span>';
-                    gameHeader.appendChild(highScoreDiv);
-                }
-            } else {
-                // Update existing high score element
-                highScoreElement.textContent = highScore;
-            }
-        }
         
         console.log("UI updated with: Lives=" + playerState.lives + ", Currency=" + playerState.currency);
     }
@@ -250,7 +200,7 @@ const Game = (function() {
     }
     
     /**
-     * Render enemies on the board - FIXED VERSION
+     * Render enemies on the board
      */
     function renderEnemies() {
         // Get all enemies
@@ -268,38 +218,7 @@ const Game = (function() {
             enemyContainer.style.width = '100%';
             enemyContainer.style.height = '100%';
             enemyContainer.style.pointerEvents = 'none';
-            enemyContainer.style.zIndex = '50'; // Ensure it's above the board but below UI
-            
-            // Debug outline - uncomment to see container bounds during testing
-            // enemyContainer.style.outline = '1px solid red';
-            
             boardElement.appendChild(enemyContainer);
-            
-            console.log("Enemy container created and appended to board element");
-        }
-        
-        // Verify the container is properly positioned inside the board
-        const boardRect = boardElement.getBoundingClientRect();
-        const containerRect = enemyContainer.getBoundingClientRect();
-        
-        console.log("Board dimensions:", boardRect.width, "x", boardRect.height);
-        console.log("Container dimensions:", containerRect.width, "x", containerRect.height);
-        
-        if (Math.abs(boardRect.width - containerRect.width) > 5 || 
-            Math.abs(boardRect.height - containerRect.height) > 5) {
-            console.warn("Enemy container size mismatch, fixing...");
-            
-            // Force container to exactly match board size
-            enemyContainer.style.width = boardRect.width + 'px';
-            enemyContainer.style.height = boardRect.height + 'px';
-        }
-        
-        // Make sure cell size is correctly passed to EnemiesModule
-        const currentCellSize = Math.floor(boardRect.width / 9);
-        if (EnemiesModule.getCellSize() !== currentCellSize) {
-            console.log("Updating EnemiesModule cell size to", currentCellSize);
-            EnemiesModule.setCellSize(currentCellSize);
-            EventSystem.publish('cellSize:updated', currentCellSize);
         }
         
         // Update existing enemy elements and create new ones as needed
@@ -312,10 +231,6 @@ const Game = (function() {
                 enemyElement.id = enemy.id;
                 enemyElement.className = 'enemy';
                 enemyElement.textContent = enemy.emoji;
-                
-                // Log enemy creation for debugging
-                console.log("Creating enemy element at position:", enemy.x, enemy.y);
-                
                 enemyContainer.appendChild(enemyElement);
                 
                 // Create health bar
@@ -323,11 +238,10 @@ const Game = (function() {
                 healthBar.className = 'enemy-health-bar';
                 healthBar.style.position = 'absolute';
                 healthBar.style.bottom = '-8px';
-                healthBar.style.left = '-10px';
-                healthBar.style.width = '20px';
+                healthBar.style.left = '0';
+                healthBar.style.width = '100%';
                 healthBar.style.height = '4px';
-                healthBar.style.backgroundColor = 'rgba(51, 51, 51, 0.8)';
-                healthBar.style.borderRadius = '2px';
+                healthBar.style.backgroundColor = '#333';
                 
                 const healthFill = document.createElement('div');
                 healthFill.className = 'enemy-health-fill';
@@ -339,18 +253,13 @@ const Game = (function() {
                 enemyElement.appendChild(healthBar);
             }
             
-            // Debug enemy position
-            // console.log(`Enemy ${enemy.id} at x: ${enemy.x}, y: ${enemy.y}`);
-            
-            // Update enemy position - use translate3d for hardware acceleration
-            enemyElement.style.transform = `translate3d(${enemy.x}px, ${enemy.y}px, 0)`;
+            // Update enemy position
+            enemyElement.style.transform = `translate(${enemy.x}px, ${enemy.y}px)`;
             
             // Update health bar
             const healthFill = enemyElement.querySelector('.enemy-health-fill');
-            if (healthFill) {
-                const healthPercent = (enemy.health / enemy.maxHealth) * 100;
-                healthFill.style.width = `${healthPercent}%`;
-            }
+            const healthPercent = (enemy.health / enemy.maxHealth) * 100;
+            healthFill.style.width = `${healthPercent}%`;
         });
         
         // Remove enemy elements for defeated enemies
@@ -676,209 +585,20 @@ const Game = (function() {
             updateBoard();
         });
         
-        // Add level completion modal function to window
-        window.showLevelComplete = function(level, score) {
-            // Create or get the modal
-            let modal = document.getElementById('level-complete-modal');
-            if (!modal) {
-                modal = document.createElement('div');
-                modal.id = 'level-complete-modal';
-                modal.className = 'modal';
-                
-                const modalContent = document.createElement('div');
-                modalContent.className = 'modal-content';
-                
-                const modalTitle = document.createElement('h2');
-                modalTitle.id = 'level-complete-title';
-                modalContent.appendChild(modalTitle);
-                
-                const modalScore = document.createElement('p');
-                modalScore.id = 'level-complete-score';
-                modalContent.appendChild(modalScore);
-                
-                const continueButton = document.createElement('button');
-                continueButton.textContent = 'Continue';
-                continueButton.onclick = function() {
-                    modal.classList.remove('active');
-                };
-                modalContent.appendChild(continueButton);
-                
-                modal.appendChild(modalContent);
-                document.body.appendChild(modal);
-            }
-            
-            // Update modal content
-            document.getElementById('level-complete-title').textContent = `Level ${level} Complete!`;
-            document.getElementById('level-complete-score').textContent = `Current Score: ${score}`;
-            
-            // Show the modal
-            modal.classList.add('active');
-        };
-        
-        // Enhanced resize handler with throttling
-        setupResizeHandling();
-        
-        // Add styles for high score and level complete modal
-        addStyles();
-        
-        // Listen for Sudoku completion to show level complete modal
-        EventSystem.subscribe(GameEvents.SUDOKU_COMPLETE, function() {
-            const currentLevel = LevelsModule.getCurrentLevel();
-            const currentScore = PlayerModule.getState().score;
-            
-            // Show level complete notification after the score is updated
-            setTimeout(() => {
-                if (window.showLevelComplete) {
-                    window.showLevelComplete(currentLevel, currentScore);
-                }
-            }, 500);
-        });
-    }
-    
-    /**
-     * Enhanced resize handler with throttling
-     */
-    function setupResizeHandling() {
-        // Throttle function to limit resize event frequency
-        function throttle(func, limit) {
-            let inThrottle;
-            return function() {
-                const args = arguments;
-                const context = this;
-                if (!inThrottle) {
-                    func.apply(context, args);
-                    inThrottle = true;
-                    setTimeout(() => inThrottle = false, limit);
-                }
-            };
-        }
-        
-        // Resize event handler with throttling
-        const handleResize = throttle(function() {
+        // Listen for window resize to adjust cell size
+        window.addEventListener('resize', function() {
             if (!boardElement) return;
             
-            // Calculate new cell size
             const boardWidth = boardElement.clientWidth;
-            const newCellSize = Math.floor(boardWidth / 9);
+            cellSize = Math.floor(boardWidth / 9);
             
-            // Only update if cell size has actually changed
-            if (newCellSize !== cellSize) {
-                console.log(`Cell size changed from ${cellSize} to ${newCellSize}`);
-                cellSize = newCellSize;
-                
-                // Update cell size in other modules
-                EnemiesModule.setCellSize(cellSize);
-                TowersModule.setCellSize(cellSize);
-                
-                // Publish an event for other modules to respond to
-                EventSystem.publish('cellSize:updated', cellSize);
-                
-                // Update board display
-                updateBoard();
-                
-                // Force reposition of all enemies
-                renderEnemies();
-            }
-        }, 100); // Throttle to 100ms
-        
-        // Listen for resize events
-        window.addEventListener('resize', handleResize);
-        
-        // Also listen for orientation changes on mobile
-        window.addEventListener('orientationchange', function() {
-            // Delay handling orientation change to ensure new dimensions are available
-            setTimeout(handleResize, 200);
+            // Update cell size in other modules
+            EnemiesModule.setCellSize(cellSize);
+            TowersModule.setCellSize(cellSize);
+            
+            // Update board display
+            updateBoard();
         });
-        
-        // Listen for fullscreen changes
-        document.addEventListener('fullscreenchange', handleResize);
-        document.addEventListener('webkitfullscreenchange', handleResize);
-        document.addEventListener('mozfullscreenchange', handleResize);
-        document.addEventListener('MSFullscreenChange', handleResize);
-    }
-    
-    /**
-     * Add CSS styles for high score and level complete
-     */
-    function addStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
-            #high-score {
-                color: white;
-                font-weight: bold;
-            }
-            
-            #high-score-value {
-                color: gold;
-            }
-            
-            /* Level complete modal styles */
-            #level-complete-modal {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.7);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 100;
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity 0.3s;
-            }
-            
-            #level-complete-modal.active {
-                opacity: 1;
-                pointer-events: all;
-            }
-            
-            #level-complete-modal .modal-content {
-                background-color: white;
-                padding: 30px;
-                border-radius: 8px;
-                text-align: center;
-                max-width: 80%;
-                transform: translateY(-20px);
-                transition: transform 0.3s;
-            }
-            
-            #level-complete-modal.active .modal-content {
-                transform: translateY(0);
-            }
-            
-            #level-complete-title {
-                color: #4CAF50;
-                margin-bottom: 15px;
-            }
-            
-            #level-complete-score {
-                font-size: 1.2rem;
-                margin-bottom: 20px;
-            }
-            
-            /* Enhanced enemy styling for better positioning */
-            .enemy {
-                font-size: 1.5rem;
-                position: absolute;
-                transform: translate3d(-50%, -50%, 0); /* Use translate3d for hardware acceleration */
-                z-index: 10;
-                transition: transform 0.15s ease-out; /* Faster, smoother transitions */
-                will-change: transform; /* Hint for browser optimization */
-                /* Prevent text selection to avoid UI issues on mobile */
-                -webkit-user-select: none;
-                -moz-user-select: none;
-                -ms-user-select: none;
-                user-select: none;
-                /* Fix for iOS Safari rendering */
-                -webkit-transform-style: preserve-3d;
-                transform-style: preserve-3d;
-                /* Add a subtle text shadow to make the emoji more visible */
-                text-shadow: 0 0 1px rgba(0,0,0,0.5);
-            }
-        `;
-        document.head.appendChild(style);
     }
     
     /**
@@ -953,7 +673,7 @@ window.Game = Game;
             // We need to check both text content and if it has a tower with that number
             const cellText = cell.textContent.trim();
             
-            if (cellText === number.toString() || cellText === `${number}️⃣`) {
+            if (cellText === number.toString() || cellText === `${number}ï¸âƒ£`) {
                 cell.classList.add('number-highlighted');
             } else {
                 // Check for towers (might have additional elements inside)
@@ -1125,7 +845,7 @@ window.Game = Game;
                     if (!cell.querySelector('.incorrect-marker')) {
                         const xMark = document.createElement('div');
                         xMark.className = 'incorrect-marker';
-                        xMark.textContent = '❌';
+                        xMark.textContent = 'âŒ';
                         cell.appendChild(xMark);
                     }
                 }
@@ -1178,75 +898,4 @@ window.Game = Game;
     }, 100);
     
     console.log("Comprehensive incorrect tower visual fix applied with semi-transparent X mark!");
-})();
-
-/**
- * Enemy positioning fix
- * This fixes the issue where enemies get stuck in the top-left corner
- */
-(function() {
-    console.log("Applying enemy position fix");
-    
-    // Check if EnemiesModule exists
-    if (!window.EnemiesModule) {
-        console.error("EnemiesModule not found, cannot apply enemy position fix");
-        return;
-    }
-    
-    // Function to verify path data
-    function verifyPathData() {
-        if (!window.SudokuModule || typeof SudokuModule.getPathArray !== 'function') {
-            console.error("SudokuModule or getPathArray not available");
-            return false;
-        }
-        
-        const path = SudokuModule.getPathArray();
-        console.log("Path data:", path);
-        
-        if (!path || path.length === 0) {
-            console.error("Path is empty or undefined");
-            return false;
-        }
-        
-        return true;
-    }
-    
-    // Verify path on wave start
-    EventSystem.subscribe(GameEvents.WAVE_START, function() {
-        // Verify the path data is valid
-        if (!verifyPathData()) {
-            console.warn("Invalid path detected on wave start, regenerating");
-            if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
-                SudokuModule.generateEnemyPath();
-            }
-        }
-    });
-    
-    // Make sure enemy container is properly positioned
-    EventSystem.subscribe(GameEvents.GAME_INIT, function() {
-        setTimeout(() => {
-            const boardElement = document.getElementById('sudoku-board');
-            const enemyContainer = document.getElementById('enemy-container');
-            
-            if (boardElement && !enemyContainer) {
-                const container = document.createElement('div');
-                container.id = 'enemy-container';
-                container.style.position = 'absolute';
-                container.style.top = '0';
-                container.style.left = '0';
-                container.style.width = '100%';
-                container.style.height = '100%';
-                container.style.pointerEvents = 'none';
-                boardElement.appendChild(container);
-                console.log("Enemy container created during enemy position fix");
-            }
-        }, 200);
-    });
-    
-    // Force path check before first wave
-    setTimeout(() => {
-        verifyPathData();
-    }, 1000);
-    
-    console.log("Enemy position fix applied");
 })();
