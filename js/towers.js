@@ -875,3 +875,161 @@ window.TowersModule = TowersModule;
     
     console.log("X mark overlay for incorrect towers applied!");
 })();
+
+// Enhanced visual indicators for incorrect towers - FIX
+(function() {
+    // Add stronger CSS for the incorrect tower indicators
+    const style = document.createElement('style');
+    style.textContent = `
+        .sudoku-cell.incorrect-tower {
+            background-color: rgba(255, 102, 102, 0.7) !important; /* Stronger red background */
+            animation: pulse-red 2s infinite;
+        }
+        
+        .incorrect-marker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8em;
+            color: #ff0000;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 20; /* Ensure it's above other elements */
+            text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+            animation: pulse-scale 2s infinite;
+        }
+        
+        @keyframes pulse-scale {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.9; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Function to add X mark to a cell
+    function addXMark(cell) {
+        // Remove any existing marker first
+        removeXMark(cell);
+        
+        // Create and add X mark
+        const xMark = document.createElement('div');
+        xMark.className = 'incorrect-marker';
+        xMark.textContent = '❌';
+        cell.appendChild(xMark);
+    }
+    
+    // Function to remove X mark from a cell
+    function removeXMark(cell) {
+        const xMark = cell.querySelector('.incorrect-marker');
+        if (xMark) {
+            xMark.remove();
+        }
+    }
+    
+    // Override the createTower function to properly mark incorrect towers
+    const originalCreateTower = TowersModule.createTower;
+    TowersModule.createTower = function(type, row, col) {
+        // Call the original function
+        const tower = originalCreateTower.call(this, type, row, col);
+        
+        // If tower was created successfully, check if it's correct
+        if (tower) {
+            setTimeout(() => {
+                // Get the cell element
+                const boardElement = document.getElementById('sudoku-board');
+                if (boardElement) {
+                    const cell = boardElement.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+                    if (cell) {
+                        // Clear existing indicators
+                        cell.classList.remove('incorrect-tower');
+                        removeXMark(cell);
+                        
+                        // Add indicators if incorrect
+                        if (tower.isCorrect === false) {
+                            cell.classList.add('incorrect-tower');
+                            addXMark(cell);
+                        }
+                    }
+                }
+            }, 50); // Short delay to ensure DOM is updated
+        }
+        
+        return tower;
+    };
+    
+    // Enhance the board update function to ensure visual indicators are properly applied
+    const originalUpdateUI = Game.updateUI;
+    Game.updateUI = function() {
+        // Call original function
+        if (typeof originalUpdateUI === 'function') {
+            originalUpdateUI.apply(this, arguments);
+        }
+        
+        // Update the visual indicators for all towers
+        setTimeout(() => {
+            const boardElement = document.getElementById('sudoku-board');
+            if (!boardElement) return;
+            
+            // Clear all indicators first
+            const allCells = boardElement.querySelectorAll('.sudoku-cell');
+            allCells.forEach(cell => {
+                cell.classList.remove('incorrect-tower');
+                removeXMark(cell);
+            });
+            
+            // Get all towers
+            const towers = TowersModule.getTowers();
+            
+            // Apply indicators to incorrect towers
+            towers.forEach(tower => {
+                if (tower.isCorrect === false) {
+                    const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+                    if (cell) {
+                        cell.classList.add('incorrect-tower');
+                        addXMark(cell);
+                    }
+                }
+            });
+        }, 50);
+    };
+    
+    // Also hook into the board update function
+    const originalUpdateBoard = Game.updateBoard;
+    if (typeof originalUpdateBoard === 'function') {
+        Game.updateBoard = function() {
+            // Call original function
+            originalUpdateBoard.apply(this, arguments);
+            
+            // Force UI update to refresh indicators
+            setTimeout(() => {
+                if (typeof Game.updateUI === 'function') {
+                    Game.updateUI();
+                }
+            }, 50);
+        };
+    }
+    
+    // When a wave is complete, make sure visual indicators are cleared for removed towers
+    EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
+        setTimeout(() => {
+            if (typeof Game.updateUI === 'function') {
+                Game.updateUI();
+            }
+        }, 200);
+    });
+    
+    // Immediately apply the changes
+    setTimeout(() => {
+        if (typeof Game.updateUI === 'function') {
+            Game.updateUI();
+        }
+    }, 500);
+    
+    console.log("Enhanced incorrect tower indicators applied!");
+})();
