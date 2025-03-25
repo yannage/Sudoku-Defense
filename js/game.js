@@ -898,4 +898,50 @@ window.Game = Game;
     }, 100);
     
     console.log("Comprehensive incorrect tower visual fix applied with semi-transparent X mark!");
+
+
+// Integrate Tower Animation Module with Game Module
+(function() {
+    // Ensure the TowerAnimationsModule is loaded after the game starts
+    const originalStart = Game.start;
+    
+    if (typeof originalStart === 'function') {
+        Game.start = function() {
+            // Call the original start method
+            originalStart.apply(this, arguments);
+            
+            // Initialize the tower animations module
+            if (window.TowerAnimationsModule && typeof TowerAnimationsModule.init === 'function') {
+                setTimeout(() => {
+                    TowerAnimationsModule.init();
+                }, 100);
+            }
+        };
+    }
+    
+    // Make sure projectile container is recreated when the board is cleared
+    const originalClearBoard = Game.clearBoard;
+    
+    if (typeof originalClearBoard === 'function') {
+        Game.clearBoard = function() {
+            // Call the original clearBoard method
+            originalClearBoard.apply(this, arguments);
+            
+            // Remove projectile container if it exists
+            const projectileContainer = document.getElementById('projectile-container');
+            if (projectileContainer) {
+                projectileContainer.remove();
+            }
+        };
+    }
+    
+    // Make sure projectile positions are updated when the board size changes
+    window.addEventListener('resize', function() {
+        if (window.TowerAnimationsModule && typeof TowerAnimationsModule.init === 'function') {
+            TowerAnimationsModule.init();
+        }
+    });
+    
+    console.log("Tower attack animations integration complete!");
+})();
 })();
