@@ -845,7 +845,7 @@ window.Game = Game;
                     if (!cell.querySelector('.incorrect-marker')) {
                         const xMark = document.createElement('div');
                         xMark.className = 'incorrect-marker';
-                        xMark.textContent = 'âŒ';
+                        xMark.textContent = '❌';
                         cell.appendChild(xMark);
                     }
                 }
