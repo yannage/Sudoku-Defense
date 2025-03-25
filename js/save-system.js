@@ -63,6 +63,12 @@ const SaveSystem = (function() {
         if (currentScore > highScore) {
             saveData(STORAGE_KEYS.HIGH_SCORE, currentScore);
             console.log(`New high score saved: ${currentScore}`);
+            
+            // Show notification for new high score
+            showSaveNotification(`New high score: ${currentScore}!`);
+        } else {
+            // Show regular save notification
+            showSaveNotification('Game progress saved');
         }
         
         // Save level and wave info
@@ -107,9 +113,69 @@ const SaveSystem = (function() {
             localStorage.removeItem(STORAGE_KEYS.LAST_WAVE);
             localStorage.removeItem(STORAGE_KEYS.DIFFICULTY);
             console.log("All saved game data cleared");
+            
+            // Show notification for data cleared
+            showSaveNotification('Game data reset');
         } catch (error) {
             console.error(`Error clearing data: ${error.message}`);
         }
+    }
+    
+    /**
+     * Create save notification element if it doesn't exist
+     * @returns {HTMLElement} The notification element
+     */
+    function createSaveNotification() {
+        let notification = document.getElementById('save-notification');
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.id = 'save-notification';
+            notification.className = 'save-notification';
+            document.body.appendChild(notification);
+            
+            // Add CSS if not already in stylesheet
+            if (!document.getElementById('save-notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'save-notification-styles';
+                style.textContent = `
+                    .save-notification {
+                        position: fixed;
+                        bottom: 20px;
+                        right: 20px;
+                        background-color: rgba(0, 0, 0, 0.7);
+                        color: white;
+                        padding: 10px 15px;
+                        border-radius: 5px;
+                        font-size: 0.9rem;
+                        opacity: 0;
+                        transform: translateY(20px);
+                        transition: opacity 0.3s, transform 0.3s;
+                        z-index: 1000;
+                    }
+                    .save-notification.visible {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+        return notification;
+    }
+    
+    /**
+     * Show a save notification
+     * @param {string} message - Message to show
+     */
+    function showSaveNotification(message = 'Game saved') {
+        const notification = createSaveNotification();
+        notification.textContent = message;
+        notification.classList.add('visible');
+        
+        // Hide notification after a delay
+        setTimeout(() => {
+            notification.classList.remove('visible');
+        }, 2000);
     }
     
     /**
@@ -124,6 +190,7 @@ const SaveSystem = (function() {
             const highScore = getHighScore();
             if (newScore > highScore) {
                 saveData(STORAGE_KEYS.HIGH_SCORE, newScore);
+                showSaveNotification(`New high score: ${newScore}!`);
             }
         });
         
@@ -137,13 +204,13 @@ const SaveSystem = (function() {
             saveScore();
         });
         
-        // Also save periodically (every 30 seconds)
-        setInterval(saveScore, 30000);
-        
         // Save when window is closed
         window.addEventListener('beforeunload', function() {
             saveScore();
         });
+        
+        // Also save periodically (every 30 seconds)
+        setInterval(saveScore, 30000);
     }
     
     /**
@@ -170,15 +237,70 @@ const SaveSystem = (function() {
         initEventListeners();
     }
     
+    // Add debug tools for saving system
+    const debugTools = {
+        // Display current save state in the console
+        showSavedData: function() {
+            if (!window.SaveSystem) {
+                console.error("SaveSystem not available");
+                return;
+            }
+            
+            const state = getLastSavedState();
+            console.log("%cCurrent Save State:", "color: blue; font-weight: bold;");
+            console.table(state);
+            return state;
+        },
+        
+        // Force saving the current score
+        forceSave: function() {
+            saveScore();
+            console.log("%cGame state saved!", "color: green; font-weight: bold;");
+            return this.showSavedData();
+        },
+        
+        // Set a specific high score (for testing)
+        setHighScore: function(score) {
+            // Direct access to localStorage
+            saveData(STORAGE_KEYS.HIGH_SCORE, score);
+            console.log(`%cHigh score set to ${score}`, "color: green; font-weight: bold;");
+            
+            // Update UI if possible
+            if (window.Game && typeof Game.updateUI === 'function') {
+                Game.updateUI();
+            }
+            
+            return this.showSavedData();
+        },
+        
+        // Reset all saved data
+        resetAll: function() {
+            clearSavedData();
+            console.log("%cAll saved data cleared", "color: orange; font-weight: bold;");
+            
+            // Update UI if possible
+            if (window.Game && typeof Game.updateUI === 'function') {
+                Game.updateUI();
+            }
+            
+            return this.showSavedData();
+        }
+    };
+    
     // Public API
     return {
         saveScore,
         getHighScore,
         getLastSavedState,
         clearSavedData,
-        isStorageAvailable: function() { return storageAvailable; }
+        isStorageAvailable: function() { return storageAvailable; },
+        showSaveNotification,
+        debug: debugTools
     };
 })();
 
 // Make the module globally available
 window.SaveSystem = SaveSystem;
+
+// Log availability status
+console.log(`Save System initialized. Storage available: ${SaveSystem.isStorageAvailable()}`);
