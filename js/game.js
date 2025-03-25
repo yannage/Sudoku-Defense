@@ -109,14 +109,27 @@ const Game = (function() {
      * Reset the game
      */
     function reset() {
-        stop();
-        
-        // Clear the board
-        clearBoard();
-        
-        // Re-initialize
-        init();
-    }
+    // First stop the game loop
+    stop();
+    
+    // Clear the board completely
+    clearBoard();
+    
+    // Reset all modules explicitly
+    PlayerModule.reset();
+    SudokuModule.generatePuzzle();
+    EnemiesModule.init();
+    TowersModule.init();
+    
+    // Force full re-initialization
+    isInitialized = false; 
+    init();
+    
+    // Make sure we update the UI
+    const playerState = PlayerModule.getState();
+    EventSystem.publish(GameEvents.PLAYER_UPDATE, playerState);
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, "New game started!");
+}
     
     /**
      * Main game loop
