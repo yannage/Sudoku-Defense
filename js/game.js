@@ -61,6 +61,21 @@ const Game = (function() {
                 gameHeader.appendChild(highScoreDiv);
             }
         }
+        
+        // Make sure cell size is properly communicated to all modules
+        console.log("Game init - cell size:", cellSize);
+        EventSystem.publish('cellSize:updated', cellSize);
+        
+        // Check if enemy module already exists
+        if (window.EnemiesModule && typeof EnemiesModule.setCellSize === 'function') {
+            console.log("Setting initial cell size in EnemiesModule:", cellSize);
+            EnemiesModule.setCellSize(cellSize);
+        }
+        
+        // Force a render of enemies immediately to ensure container is created
+        setTimeout(() => {
+            renderEnemies();
+        }, 100);
     }
     
     /**
@@ -235,126 +250,122 @@ const Game = (function() {
     }
     
     /**
-     * Render enemies on the board
+     * Render enemies on the board - FIXED VERSION
      */
-    /**
- * Update the renderEnemies function in game.js to ensure the enemy container is properly positioned
- */
-function renderEnemies() {
-    // Get all enemies
-    const enemies = EnemiesModule.getEnemies();
-    
-    // Get or create enemy container
-    let enemyContainer = document.getElementById('enemy-container');
-    
-    if (!enemyContainer) {
-        enemyContainer = document.createElement('div');
-        enemyContainer.id = 'enemy-container';
-        enemyContainer.style.position = 'absolute';
-        enemyContainer.style.top = '0';
-        enemyContainer.style.left = '0';
-        enemyContainer.style.width = '100%';
-        enemyContainer.style.height = '100%';
-        enemyContainer.style.pointerEvents = 'none';
-        enemyContainer.style.zIndex = '50'; // Ensure it's above the board but below UI
+    function renderEnemies() {
+        // Get all enemies
+        const enemies = EnemiesModule.getEnemies();
         
-        // Debug outline - uncomment to see container bounds during testing
-        // enemyContainer.style.outline = '1px solid red';
+        // Get or create enemy container
+        let enemyContainer = document.getElementById('enemy-container');
         
-        boardElement.appendChild(enemyContainer);
-        
-        console.log("Enemy container created and appended to board element");
-    }
-    
-    // Verify the container is properly positioned inside the board
-    const boardRect = boardElement.getBoundingClientRect();
-    const containerRect = enemyContainer.getBoundingClientRect();
-    
-    console.log("Board dimensions:", boardRect.width, "x", boardRect.height);
-    console.log("Container dimensions:", containerRect.width, "x", containerRect.height);
-    
-    if (Math.abs(boardRect.width - containerRect.width) > 5 || 
-        Math.abs(boardRect.height - containerRect.height) > 5) {
-        console.warn("Enemy container size mismatch, fixing...");
-        
-        // Force container to exactly match board size
-        enemyContainer.style.width = boardRect.width + 'px';
-        enemyContainer.style.height = boardRect.height + 'px';
-    }
-    
-    // Make sure cell size is correctly passed to EnemiesModule
-    const currentCellSize = Math.floor(boardRect.width / 9);
-    if (EnemiesModule.getCellSize() !== currentCellSize) {
-        console.log("Updating EnemiesModule cell size to", currentCellSize);
-        EnemiesModule.setCellSize(currentCellSize);
-        EventSystem.publish('cellSize:updated', currentCellSize);
-    }
-    
-    // Update existing enemy elements and create new ones as needed
-    enemies.forEach(enemy => {
-        let enemyElement = document.getElementById(enemy.id);
-        
-        if (!enemyElement) {
-            // Create new enemy element
-            enemyElement = document.createElement('div');
-            enemyElement.id = enemy.id;
-            enemyElement.className = 'enemy';
-            enemyElement.textContent = enemy.emoji;
+        if (!enemyContainer) {
+            enemyContainer = document.createElement('div');
+            enemyContainer.id = 'enemy-container';
+            enemyContainer.style.position = 'absolute';
+            enemyContainer.style.top = '0';
+            enemyContainer.style.left = '0';
+            enemyContainer.style.width = '100%';
+            enemyContainer.style.height = '100%';
+            enemyContainer.style.pointerEvents = 'none';
+            enemyContainer.style.zIndex = '50'; // Ensure it's above the board but below UI
             
-            // Log enemy creation for debugging
-            console.log("Creating enemy element at position:", enemy.x, enemy.y);
+            // Debug outline - uncomment to see container bounds during testing
+            // enemyContainer.style.outline = '1px solid red';
             
-            enemyContainer.appendChild(enemyElement);
+            boardElement.appendChild(enemyContainer);
             
-            // Create health bar
-            const healthBar = document.createElement('div');
-            healthBar.className = 'enemy-health-bar';
-            healthBar.style.position = 'absolute';
-            healthBar.style.bottom = '-8px';
-            healthBar.style.left = '-10px';
-            healthBar.style.width = '20px';
-            healthBar.style.height = '4px';
-            healthBar.style.backgroundColor = 'rgba(51, 51, 51, 0.8)';
-            healthBar.style.borderRadius = '2px';
-            
-            const healthFill = document.createElement('div');
-            healthFill.className = 'enemy-health-fill';
-            healthFill.style.width = '100%';
-            healthFill.style.height = '100%';
-            healthFill.style.backgroundColor = '#ff0000';
-            
-            healthBar.appendChild(healthFill);
-            enemyElement.appendChild(healthBar);
+            console.log("Enemy container created and appended to board element");
         }
         
-        // Debug enemy position
-        // console.log(`Enemy ${enemy.id} at x: ${enemy.x}, y: ${enemy.y}`);
+        // Verify the container is properly positioned inside the board
+        const boardRect = boardElement.getBoundingClientRect();
+        const containerRect = enemyContainer.getBoundingClientRect();
         
-        // Update enemy position - use translate3d for hardware acceleration
-        enemyElement.style.transform = `translate3d(${enemy.x}px, ${enemy.y}px, 0)`;
+        console.log("Board dimensions:", boardRect.width, "x", boardRect.height);
+        console.log("Container dimensions:", containerRect.width, "x", containerRect.height);
         
-        // Update health bar
-        const healthFill = enemyElement.querySelector('.enemy-health-fill');
-        if (healthFill) {
-            const healthPercent = (enemy.health / enemy.maxHealth) * 100;
-            healthFill.style.width = `${healthPercent}%`;
+        if (Math.abs(boardRect.width - containerRect.width) > 5 || 
+            Math.abs(boardRect.height - containerRect.height) > 5) {
+            console.warn("Enemy container size mismatch, fixing...");
+            
+            // Force container to exactly match board size
+            enemyContainer.style.width = boardRect.width + 'px';
+            enemyContainer.style.height = boardRect.height + 'px';
         }
-    });
-    
-    // Remove enemy elements for defeated enemies
-    const enemyElements = enemyContainer.getElementsByClassName('enemy');
-    
-    for (let i = enemyElements.length - 1; i >= 0; i--) {
-        const element = enemyElements[i];
-        const enemyId = element.id;
         
-        if (!enemies.find(e => e.id === enemyId)) {
-            element.remove();
+        // Make sure cell size is correctly passed to EnemiesModule
+        const currentCellSize = Math.floor(boardRect.width / 9);
+        if (EnemiesModule.getCellSize() !== currentCellSize) {
+            console.log("Updating EnemiesModule cell size to", currentCellSize);
+            EnemiesModule.setCellSize(currentCellSize);
+            EventSystem.publish('cellSize:updated', currentCellSize);
+        }
+        
+        // Update existing enemy elements and create new ones as needed
+        enemies.forEach(enemy => {
+            let enemyElement = document.getElementById(enemy.id);
+            
+            if (!enemyElement) {
+                // Create new enemy element
+                enemyElement = document.createElement('div');
+                enemyElement.id = enemy.id;
+                enemyElement.className = 'enemy';
+                enemyElement.textContent = enemy.emoji;
+                
+                // Log enemy creation for debugging
+                console.log("Creating enemy element at position:", enemy.x, enemy.y);
+                
+                enemyContainer.appendChild(enemyElement);
+                
+                // Create health bar
+                const healthBar = document.createElement('div');
+                healthBar.className = 'enemy-health-bar';
+                healthBar.style.position = 'absolute';
+                healthBar.style.bottom = '-8px';
+                healthBar.style.left = '-10px';
+                healthBar.style.width = '20px';
+                healthBar.style.height = '4px';
+                healthBar.style.backgroundColor = 'rgba(51, 51, 51, 0.8)';
+                healthBar.style.borderRadius = '2px';
+                
+                const healthFill = document.createElement('div');
+                healthFill.className = 'enemy-health-fill';
+                healthFill.style.width = '100%';
+                healthFill.style.height = '100%';
+                healthFill.style.backgroundColor = '#ff0000';
+                
+                healthBar.appendChild(healthFill);
+                enemyElement.appendChild(healthBar);
+            }
+            
+            // Debug enemy position
+            // console.log(`Enemy ${enemy.id} at x: ${enemy.x}, y: ${enemy.y}`);
+            
+            // Update enemy position - use translate3d for hardware acceleration
+            enemyElement.style.transform = `translate3d(${enemy.x}px, ${enemy.y}px, 0)`;
+            
+            // Update health bar
+            const healthFill = enemyElement.querySelector('.enemy-health-fill');
+            if (healthFill) {
+                const healthPercent = (enemy.health / enemy.maxHealth) * 100;
+                healthFill.style.width = `${healthPercent}%`;
+            }
+        });
+        
+        // Remove enemy elements for defeated enemies
+        const enemyElements = enemyContainer.getElementsByClassName('enemy');
+        
+        for (let i = enemyElements.length - 1; i >= 0; i--) {
+            const element = enemyElements[i];
+            const enemyId = element.id;
+            
+            if (!enemies.find(e => e.id === enemyId)) {
+                element.remove();
+            }
         }
     }
-}
-
-
+    
     /**
      * Set up the Sudoku board
      */
@@ -996,7 +1007,7 @@ window.Game = Game;
             
             // Show status message
             EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-               `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
+                `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
             
             // Highlight matching numbers
             if (towerType !== 'special') {
@@ -1167,4 +1178,75 @@ window.Game = Game;
     }, 100);
     
     console.log("Comprehensive incorrect tower visual fix applied with semi-transparent X mark!");
+})();
+
+/**
+ * Enemy positioning fix
+ * This fixes the issue where enemies get stuck in the top-left corner
+ */
+(function() {
+    console.log("Applying enemy position fix");
+    
+    // Check if EnemiesModule exists
+    if (!window.EnemiesModule) {
+        console.error("EnemiesModule not found, cannot apply enemy position fix");
+        return;
+    }
+    
+    // Function to verify path data
+    function verifyPathData() {
+        if (!window.SudokuModule || typeof SudokuModule.getPathArray !== 'function') {
+            console.error("SudokuModule or getPathArray not available");
+            return false;
+        }
+        
+        const path = SudokuModule.getPathArray();
+        console.log("Path data:", path);
+        
+        if (!path || path.length === 0) {
+            console.error("Path is empty or undefined");
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Verify path on wave start
+    EventSystem.subscribe(GameEvents.WAVE_START, function() {
+        // Verify the path data is valid
+        if (!verifyPathData()) {
+            console.warn("Invalid path detected on wave start, regenerating");
+            if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
+                SudokuModule.generateEnemyPath();
+            }
+        }
+    });
+    
+    // Make sure enemy container is properly positioned
+    EventSystem.subscribe(GameEvents.GAME_INIT, function() {
+        setTimeout(() => {
+            const boardElement = document.getElementById('sudoku-board');
+            const enemyContainer = document.getElementById('enemy-container');
+            
+            if (boardElement && !enemyContainer) {
+                const container = document.createElement('div');
+                container.id = 'enemy-container';
+                container.style.position = 'absolute';
+                container.style.top = '0';
+                container.style.left = '0';
+                container.style.width = '100%';
+                container.style.height = '100%';
+                container.style.pointerEvents = 'none';
+                boardElement.appendChild(container);
+                console.log("Enemy container created during enemy position fix");
+            }
+        }, 200);
+    });
+    
+    // Force path check before first wave
+    setTimeout(() => {
+        verifyPathData();
+    }, 1000);
+    
+    console.log("Enemy position fix applied");
 })();
