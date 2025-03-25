@@ -8,7 +8,7 @@ const PlayerModule = (function() {
     let state = {
         lives: 3,
         score: 0,
-        currency: 100,
+        currency: 150,
         selectedTower: null
     };
     
@@ -17,20 +17,18 @@ const PlayerModule = (function() {
      * @param {Object} options - Initialization options
      */
     function init(options = {}) {
-    state = {
-        lives: options.lives || 3,
-        score: options.score || 0,
-        currency: options.currency || 150, // Increased from 100
-        selectedTower: null // This line is critical - make sure it's here
-    };
-    
-    console.log("PlayerModule initialized with currency: " + state.currency);
-    
-    // Publish initial state
-    publishState();
-}
+        state = {
+            lives: options.lives || 3,
+            score: options.score || 0,
+            currency: options.currency || 150, // Increased from 100
+            selectedTower: null
+        };
         
-       
+        console.log("PlayerModule initialized with currency: " + state.currency);
+        
+        // Publish initial state
+        publishState();
+    }
     
     /**
      * Publish the current player state
@@ -134,6 +132,7 @@ const PlayerModule = (function() {
      * @param {string|number|null} towerType - Type of tower selected or null to deselect
      */
     function selectTower(towerType) {
+        console.log("Selecting tower type:", towerType);
         state.selectedTower = towerType;
         EventSystem.publish(GameEvents.TOWER_SELECTED, towerType);
     }
