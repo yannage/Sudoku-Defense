@@ -56,6 +56,24 @@ const LevelsModule = (function() {
             return;
         }
         
+        // Generate a new path for this wave
+        if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
+            SudokuModule.generateEnemyPath();
+            
+            // Tell the game to update the board display to show the new path
+            if (window.Game && typeof Game.updateBoard === 'function') {
+                Game.updateBoard();
+            }
+            
+            // Make sure the Enemies module is aware of the new path
+            if (typeof SudokuModule.getPathArray === 'function') {
+                const newPath = SudokuModule.getPathArray();
+                EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
+                    pathCells: newPath
+                });
+            }
+        }
+        
         // Start the wave in the enemies module
         EnemiesModule.startWave();
     }
@@ -148,6 +166,10 @@ const LevelsModule = (function() {
                 EventSystem.publish(GameEvents.UI_UPDATE, {
                     wave: currentWave
                 });
+                
+                // Show a message about the changing path
+                EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                    `Wave ${currentWave} approaching! The enemies will find a new path!`);
             }
         });
         
