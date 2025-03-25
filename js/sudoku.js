@@ -767,7 +767,8 @@ function getConnectingCells(row1, col1, row2, col2) {
     init();
     
     // Public API
-    return {
+    // Add generateEnemyPath to the public API of SudokuModule
+return {
     generatePuzzle,
     setCellValue,
     getBoard,
