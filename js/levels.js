@@ -1,6 +1,7 @@
 /**
  * levels.js - Handles level progression and difficulty scaling
  * This module manages game levels, difficulty, and wave progression
+ * MODIFIED: Removed level changes after 5 waves - only changes when Sudoku is complete
  */
 
 const LevelsModule = (function() {
@@ -164,7 +165,10 @@ const LevelsModule = (function() {
             wave: currentWave
         });
         
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, `Advanced to Level ${currentLevel}!`);
+        // Save the current score to make sure we have the most up-to-date value
+        SaveSystem.saveScore();
+        
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, `Advanced to Level ${currentLevel}! Sudoku puzzle complete!`);
     }
     
     /**
@@ -186,32 +190,30 @@ const LevelsModule = (function() {
                 EnemiesModule.setWaveNumber(currentWave);
             }
             
-            // Check if level is complete (every 5 waves)
-            if (currentWave > 5) {
-                nextLevel();
-            } else {
-                // Update UI
-                EventSystem.publish(GameEvents.UI_UPDATE, {
-                    wave: currentWave
-                });
-                
-                // Show a message about the changing path
-                EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-                    `Wave ${currentWave} approaching! The enemies will find a new path!`);
-            }
+            // Update UI
+            EventSystem.publish(GameEvents.UI_UPDATE, {
+                wave: currentWave
+            });
+            
+            // Show a message about the changing path
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                `Wave ${currentWave} approaching! The enemies will find a new path!`);
         });
         
         // Listen for Sudoku completion to advance to next level
         EventSystem.subscribe(GameEvents.SUDOKU_COMPLETE, function() {
             // Bonus for completing the Sudoku
-            const levelBonus = 100 * currentLevel;
+            const levelBonus = 150 * currentLevel;
             PlayerModule.addCurrency(levelBonus);
-            PlayerModule.addScore(levelBonus * 2);
+            PlayerModule.addScore(levelBonus * 3);
+            
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                `Sudoku puzzle complete! Level ${currentLevel} completed! Bonus: ${levelBonus} currency and ${levelBonus * 3} points!`);
             
             // Wait a bit before advancing to next level
             setTimeout(() => {
                 nextLevel();
-            }, 2000);
+            }, 3000);
         });
     }
     
