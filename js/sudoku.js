@@ -768,17 +768,18 @@ function getConnectingCells(row1, col1, row2, col2) {
     
     // Public API
     return {
-        generatePuzzle,
-        setCellValue,
-        getBoard,
-        getSolution,
-        getFixedCells,
-        getPathCells,
-        getPathArray,
-        setDifficulty,
-        isValidMove,
-        getPossibleValues // Explicitly expose this function
-    };
+    generatePuzzle,
+    setCellValue,
+    getBoard,
+    getSolution,
+    getFixedCells,
+    getPathCells,
+    getPathArray,
+    setDifficulty,
+    isValidMove,
+    getPossibleValues,
+    generateEnemyPath  // Add this line to expose the function
+};
 })();
 
 // Make module available globally
