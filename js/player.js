@@ -20,9 +20,11 @@ const PlayerModule = (function() {
     state = {
         lives: options.lives || 3,
         score: options.score || 0,
-        currency: options.currency || 150, // Was 100
-        selectedTower: null
+        currency: options.currency || 150, // Increased from 100
+        selectedTower: null // This line is critical - make sure it's here
     };
+    
+    console.log("PlayerModule initialized with currency: " + state.currency);
     
     // Publish initial state
     publishState();
