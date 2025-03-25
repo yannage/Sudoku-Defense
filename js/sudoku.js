@@ -215,70 +215,142 @@ const SudokuModule = (function() {
     }
     
     /**
-     * Generate a path for enemies to follow
-     * This creates a winding path from a starting point to an end point
-     */
-    function generateEnemyPath() {
-        pathCells.clear();
+ * Update for sudoku.js to add dynamic path generation
+ * 
+ * Replace the existing generateEnemyPath function in the SudokuModule with this version.
+ * The new function creates more varied paths that can start and end at different rows.
+ */
+
+/**
+ * Generate a path for enemies to follow
+ * Creates a varied path from a starting point to an end point
+ * Path can now start and end at different rows
+ */
+function generateEnemyPath() {
+    pathCells.clear();
+    
+    const directions = [
+        [-1, 0], // up
+        [1, 0],  // down
+        [0, -1], // left
+        [0, 1]   // right
+    ];
+    
+    // Start at a random position on the left edge
+    let startRow = Math.floor(Math.random() * 9);
+    let currentRow = startRow;
+    let currentCol = 0;
+    
+    // Choose a different end row for more varied paths
+    let endRow = Math.floor(Math.random() * 9);
+    // Ensure end row is different from start row at least half the time
+    if (Math.random() > 0.5) {
+        while (endRow === startRow) {
+            endRow = Math.floor(Math.random() * 9);
+        }
+    }
+    
+    // Mark the starting position
+    pathCells.add(`${currentRow},${currentCol}`);
+    
+    // Generate path to the right edge
+    while (currentCol < 8) {
+        let possibleDirs = [];
+        let priorityDirs = [];
         
-        const directions = [
-            [-1, 0], // up
-            [1, 0],  // down
-            [0, -1], // left
-            [0, 1]   // right
-        ];
-        
-        // Start at a random position on the left edge
-        let startRow = Math.floor(Math.random() * 9);
-        let currentRow = startRow;
-        let currentCol = 0;
-        
-        // Mark the starting position
-        pathCells.add(`${currentRow},${currentCol}`);
-        
-        // Generate path to the right edge
-        while (currentCol < 8) {
-            // Prioritize moving right, but allow some turns
-            let possibleDirs = [];
-            let bestDir = null;
+        // Check each direction
+        for (let [dr, dc] of directions) {
+            let newRow = currentRow + dr;
+            let newCol = currentCol + dc;
             
-            // Check each direction
-            for (let [dr, dc] of directions) {
-                let newRow = currentRow + dr;
-                let newCol = currentCol + dc;
+            // Check if the new position is valid
+            if (
+                newRow >= 0 && newRow < 9 && 
+                newCol >= 0 && newCol < 9 && 
+                !pathCells.has(`${newRow},${newCol}`)
+            ) {
+                possibleDirs.push([dr, dc]);
                 
-                // Check if the new position is valid
-                if (
-                    newRow >= 0 && newRow < 9 && 
-                    newCol >= 0 && newCol < 9 && 
-                    !pathCells.has(`${newRow},${newCol}`)
-                ) {
-                    possibleDirs.push([dr, dc]);
-                    
-                    // Prefer moving right
-                    if (dc > 0) {
-                        bestDir = [dr, dc];
+                // Prioritize moving toward the end row
+                if (dc > 0) {
+                    priorityDirs.push([dr, dc]); // Moving right is always a priority
+                }
+                
+                // Prioritize vertical movement that gets us closer to endRow
+                if (dc === 0) { // For vertical moves
+                    if ((newRow > currentRow && newRow <= endRow) || // Moving down toward endRow
+                        (newRow < currentRow && newRow >= endRow)) { // Moving up toward endRow
+                        priorityDirs.push([dr, dc]);
                     }
                 }
             }
-            
-            // If there's no valid direction, break
-            if (possibleDirs.length === 0) {
-                break;
-            }
-            
-            // Choose direction (prefer right if available)
-            let [dr, dc] = bestDir || possibleDirs[Math.floor(Math.random() * possibleDirs.length)];
-            
-            // Move to the new position
-            currentRow += dr;
-            currentCol += dc;
-            pathCells.add(`${currentRow},${currentCol}`);
         }
         
-        // Log path information for debugging
-        console.log(`Created path with ${pathCells.size} cells, from row ${startRow} to right edge`);
+        // If there's no valid direction, try to force move right
+        if (possibleDirs.length === 0) {
+            // Try forcing a move right even if we've been there
+            const forceRight = [0, 1];
+            const newRow = currentRow + forceRight[0];
+            const newCol = currentCol + forceRight[1];
+            
+            if (newRow >= 0 && newRow < 9 && newCol >= 0 && newCol < 9) {
+                currentRow = newRow;
+                currentCol = newCol;
+                pathCells.add(`${currentRow},${currentCol}`);
+                continue;
+            }
+            
+            // If we can't force right, we're stuck
+            break;
+        }
+        
+        // Choose direction with priority to moving right & toward end row
+        let chosenDir;
+        
+        // If we're far from the target row, focus on vertical movement
+        const verticalDistanceToEnd = Math.abs(currentRow - endRow);
+        
+        if (verticalDistanceToEnd > 0 && currentCol < 6 && Math.random() < 0.7) {
+            // Find vertical moves that get us closer to endRow
+            const verticalMoves = possibleDirs.filter(([dr, dc]) => {
+                return dc === 0 && ((dr > 0 && currentRow < endRow) || (dr < 0 && currentRow > endRow));
+            });
+            
+            if (verticalMoves.length > 0) {
+                chosenDir = verticalMoves[Math.floor(Math.random() * verticalMoves.length)];
+            }
+        }
+        
+        // If no vertical move was chosen or we're close to endRow, prefer moving right
+        if (!chosenDir) {
+            if (priorityDirs.length > 0 && Math.random() < 0.8) {
+                chosenDir = priorityDirs[Math.floor(Math.random() * priorityDirs.length)];
+            } else {
+                chosenDir = possibleDirs[Math.floor(Math.random() * possibleDirs.length)];
+            }
+        }
+        
+        // Move to the new position
+        currentRow += chosenDir[0];
+        currentCol += chosenDir[1];
+        pathCells.add(`${currentRow},${currentCol}`);
+        
+        // If we've reached the target column (8), ensure we're at or moving toward the end row
+        if (currentCol === 8 && currentRow !== endRow) {
+            // Add one final move to reach the end row if possible
+            if (endRow > currentRow && currentRow < 8) {
+                currentRow += 1;
+                pathCells.add(`${currentRow},${currentCol}`);
+            } else if (endRow < currentRow && currentRow > 0) {
+                currentRow -= 1;
+                pathCells.add(`${currentRow},${currentCol}`);
+            }
+        }
     }
+    
+    // Log path information for debugging
+    console.log(`Created path with ${pathCells.size} cells, from row ${startRow} to row ${currentRow} at right edge`);
+}
     
     /**
      * Generate a random valid Sudoku puzzle
