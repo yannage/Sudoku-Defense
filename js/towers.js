@@ -664,3 +664,81 @@ window.TowersModule = TowersModule;
         }, 500);
     });
 })();
+
+/**
+ * Add this to the end of your towers.js file to fix the immediate highlighting issue
+ */
+
+// Fix for immediate highlighting of incorrect towers
+(function() {
+    // Store original createTower function
+    const originalCreateTower = TowersModule.createTower;
+    
+    // Override createTower to update visuals immediately
+    TowersModule.createTower = function(type, row, col) {
+        // Call the original function
+        const tower = originalCreateTower.call(this, type, row, col);
+        
+        // If tower was created successfully and it's incorrect, update visuals immediately
+        if (tower && tower.isCorrect === false) {
+            // Get the board element
+            const boardElement = document.getElementById('sudoku-board');
+            if (boardElement) {
+                // Find the cell and add incorrect-tower class
+                const cell = boardElement.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+                if (cell) {
+                    cell.classList.add('incorrect-tower');
+                }
+            }
+        }
+        
+        return tower;
+    };
+
+    // Make sure the towers are correctly cleared after a wave
+    // Store the original removeIncorrectTowers function
+    const originalRemoveIncorrectTowers = TowersModule.removeIncorrectTowers;
+    
+    // If it exists, wrap it to ensure visual updates
+    if (typeof originalRemoveIncorrectTowers === 'function') {
+        TowersModule.removeIncorrectTowers = function() {
+            // First, get all incorrect towers before they're removed
+            const incorrectPositions = [];
+            
+            // Get all towers with isCorrect === false
+            TowersModule.getTowers().forEach(tower => {
+                if (tower.isCorrect === false) {
+                    incorrectPositions.push([tower.row, tower.col]);
+                }
+            });
+            
+            // Call the original function
+            const result = originalRemoveIncorrectTowers.call(this);
+            
+            // Remove the incorrect-tower class from all cells
+            const boardElement = document.getElementById('sudoku-board');
+            if (boardElement) {
+                incorrectPositions.forEach(([row, col]) => {
+                    const cell = boardElement.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+                    if (cell) {
+                        cell.classList.remove('incorrect-tower');
+                    }
+                });
+            }
+            
+            return result;
+        };
+    } else {
+        // If the function doesn't exist, make sure it's properly hooked to the wave complete event
+        EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
+            // Clear incorrect tower visual indicators
+            const boardElement = document.getElementById('sudoku-board');
+            if (boardElement) {
+                const incorrectCells = boardElement.querySelectorAll('.incorrect-tower');
+                incorrectCells.forEach(cell => cell.classList.remove('incorrect-tower'));
+            }
+        });
+    }
+    
+    console.log("Immediate incorrect tower highlighting fix applied!");
+})();
