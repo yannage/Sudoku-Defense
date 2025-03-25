@@ -1,6 +1,6 @@
 /**
- * Completely revised Sudoku Module for Tower Defense
- * This version separates the game board from Sudoku constraints
+ * sudoku.js - Handles Sudoku puzzle generation and validation
+ * This module generates Sudoku puzzles and provides validation functions
  */
 
 const SudokuModule = (function() {
@@ -13,58 +13,101 @@ const SudokuModule = (function() {
     
     // Difficulty settings (number of cells to reveal)
     const difficultySettings = {
-        easy: 35,
-        medium: 25,
-        hard: 20
+        easy: 40,
+        medium: 30,
+        hard: 25
     };
     
     /**
-     * Generate a random valid Sudoku puzzle
-     * This is the main function that creates the puzzle
+     * Check if a number can be placed in a specific position
+     * @param {number[][]} grid - The Sudoku grid
+     * @param {number} row - Row index
+     * @param {number} col - Column index
+     * @param {number} num - Number to check
+     * @returns {boolean} Whether the number can be placed
      */
-    function generatePuzzle() {
-        console.log("Generating new Sudoku puzzle");
+    function isValid(grid, row, col, num) {
+        // Check row
+        for (let x = 0; x < 9; x++) {
+            if (grid[row][x] === num) {
+                return false;
+            }
+        }
         
-        // First, generate the enemy path
-        generateEnemyPath();
-        console.log("Path generated with", pathCells.size, "cells");
+        // Check column
+        for (let x = 0; x < 9; x++) {
+            if (grid[x][col] === num) {
+                return false;
+            }
+        }
         
-        // Create a full Sudoku solution
-        solution = createFullSolution();
+        // Check 3x3 box
+        let boxRow = Math.floor(row / 3) * 3;
+        let boxCol = Math.floor(col / 3) * 3;
         
-        // Create the initial game board (empty)
-        board = Array(9).fill().map(() => Array(9).fill(0));
-        fixedCells = Array(9).fill().map(() => Array(9).fill(false));
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                if (grid[boxRow + i][boxCol + j] === num) {
+                    return false;
+                }
+            }
+        }
         
-        // Determine number of cells to reveal based on difficulty
-        const cellsToReveal = difficultySettings[difficulty];
-        
-        // Reveal cells (avoid path cells)
-        revealCells(cellsToReveal);
-        
-        // Make sure all non-path, non-revealed cells have at least one valid number
-        ensureAllCellsHaveValidOptions();
-        
-        // Notify that the Sudoku board has been generated
-        const pathArray = Array.from(pathCells).map(pos => pos.split(',').map(Number));
-        EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
-            board: board,
-            solution: solution,
-            fixedCells: fixedCells,
-            pathCells: pathArray
-        });
-        
-        console.log("Sudoku puzzle generation complete");
+        return true;
     }
     
     /**
-     * Create a full, valid Sudoku solution
-     * @returns {number[][]} A complete Sudoku solution
+     * Find an empty cell in the grid
+     * @param {number[][]} grid - The Sudoku grid
+     * @returns {[number, number]|null} Coordinates of empty cell or null if none found
      */
-    function createFullSolution() {
+    function findEmptyCell(grid) {
+        for (let row = 0; row < 9; row++) {
+            for (let col = 0; col < 9; col++) {
+                if (grid[row][col] === 0) {
+                    return [row, col];
+                }
+            }
+        }
+        return null; // No empty cells
+    }
+    
+    /**
+     * Solve the Sudoku grid using backtracking
+     * @param {number[][]} grid - The Sudoku grid to solve
+     * @returns {boolean} Whether the puzzle was solved
+     */
+    function solveSudoku(grid) {
+        let emptyCell = findEmptyCell(grid);
+        if (!emptyCell) return true; // No empty cells left - puzzle solved
+        
+        const [row, col] = emptyCell;
+        
+        // Try each number 1-9
+        for (let num = 1; num <= 9; num++) {
+            if (isValid(grid, row, col, num)) {
+                grid[row][col] = num;
+                
+                if (solveSudoku(grid)) {
+                    return true;
+                }
+                
+                grid[row][col] = 0; // Backtrack if the solution doesn't work
+            }
+        }
+        
+        return false; // Trigger backtracking
+    }
+    
+    /**
+     * Generate a complete, random Sudoku solution
+     * @returns {number[][]} Completed Sudoku grid
+     */
+    function generateCompleteSolution() {
+        // Start with an empty grid
         const grid = Array(9).fill().map(() => Array(9).fill(0));
         
-        // Fill diagonal 3x3 boxes first (these can be filled independently)
+        // Fill diagonal 3x3 boxes (these can be filled independently)
         for (let box = 0; box < 3; box++) {
             let nums = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             shuffle(nums);
@@ -76,212 +119,104 @@ const SudokuModule = (function() {
             }
         }
         
-        // Solve the rest of the grid using backtracking
-        if (!solveGrid(grid)) {
-            console.error("Failed to generate a valid Sudoku solution");
-            // Fallback to a simpler grid if solving fails
-            return createSimpleGrid();
-        }
+        // Solve the rest of the puzzle using backtracking
+        solveSudoku(grid);
         
         return grid;
     }
     
     /**
-     * Create a simple valid grid as a fallback
-     * @returns {number[][]} A complete Sudoku solution
+     * Create a puzzle from a complete solution by removing numbers
+     * @param {number[][]} solution - Complete Sudoku solution
+     * @param {Set<string>} pathCells - Set of cells reserved for the path
+     * @param {number} numToReveal - Number of cells to reveal
+     * @returns {Object} Board and fixed cells
      */
-    function createSimpleGrid() {
-        const grid = Array(9).fill().map(() => Array(9).fill(0));
+    function createPuzzleFromSolution(solution, pathCells, numToReveal) {
+        // Create copies to work with
+        const puzzle = JSON.parse(JSON.stringify(solution));
+        const fixed = Array(9).fill().map(() => Array(9).fill(false));
         
-        // Fill with a predetermined pattern that satisfies Sudoku rules
+        // Create a list of all positions
+        let positions = [];
         for (let i = 0; i < 9; i++) {
             for (let j = 0; j < 9; j++) {
-                const val = (i * 3 + Math.floor(i/3) + j) % 9 + 1;
-                grid[i][j] = val;
-            }
-        }
-        
-        return grid;
-    }
-    
-    /**
-     * Solve a Sudoku grid using backtracking
-     * @param {number[][]} grid - The grid to solve
-     * @returns {boolean} Whether the grid was solved
-     */
-    function solveGrid(grid) {
-        let emptyCell = findEmptyCell(grid);
-        if (!emptyCell) return true; // No empty cells - solution complete
-        
-        const [row, col] = emptyCell;
-        const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-        shuffle(numbers); // Randomize to generate different puzzles
-        
-        for (let num of numbers) {
-            if (isSafe(grid, row, col, num)) {
-                grid[row][col] = num;
-                
-                if (solveGrid(grid)) {
-                    return true;
-                }
-                
-                grid[row][col] = 0; // Backtrack
-            }
-        }
-        
-        return false; // Trigger backtracking
-    }
-    
-    /**
-     * Find an empty cell in the grid
-     * @param {number[][]} grid - The grid to search
-     * @returns {[number, number]|null} Cell coordinates or null if none found
-     */
-    function findEmptyCell(grid) {
-        for (let row = 0; row < 9; row++) {
-            for (let col = 0; col < 9; col++) {
-                if (grid[row][col] === 0) {
-                    return [row, col];
-                }
-            }
-        }
-        return null;
-    }
-    
-    /**
-     * Check if a number is safe to place at a position
-     * @param {number[][]} grid - The grid to check
-     * @param {number} row - Row index
-     * @param {number} col - Column index
-     * @param {number} num - Number to check
-     * @returns {boolean} Whether the placement is safe
-     */
-    function isSafe(grid, row, col, num) {
-        // Check row
-        for (let i = 0; i < 9; i++) {
-            if (grid[row][i] === num) return false;
-        }
-        
-        // Check column
-        for (let i = 0; i < 9; i++) {
-            if (grid[i][col] === num) return false;
-        }
-        
-        // Check 3x3 box
-        const boxRow = Math.floor(row / 3) * 3;
-        const boxCol = Math.floor(col / 3) * 3;
-        
-        for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 3; j++) {
-                if (grid[boxRow + i][boxCol + j] === num) return false;
-            }
-        }
-        
-        return true;
-    }
-    
-    /**
-     * Reveal a specified number of cells in the puzzle
-     * @param {number} count - Number of cells to reveal
-     */
-    function revealCells(count) {
-        let positions = [];
-        for (let row = 0; row < 9; row++) {
-            for (let col = 0; col < 9; col++) {
-                // Skip path cells
-                if (!pathCells.has(`${row},${col}`)) {
-                    positions.push([row, col]);
-                }
+                positions.push([i, j]);
             }
         }
         
         // Shuffle positions
         shuffle(positions);
         
-        // Reveal the specified number of cells
-        for (let i = 0; i < Math.min(count, positions.length); i++) {
-            const [row, col] = positions[i];
-            board[row][col] = solution[row][col];
-            fixedCells[row][col] = true;
+        // Keep track of cells to reveal
+        let revealed = 0;
+        
+        // First, clear all path cells
+        for (let pos of pathCells) {
+            const [row, col] = pos.split(',').map(Number);
+            puzzle[row][col] = 0;
+            fixed[row][col] = false;
         }
+        
+        // Mark cells for revealing
+        for (let [row, col] of positions) {
+            // Skip path cells
+            if (pathCells.has(`${row},${col}`)) {
+                continue;
+            }
+            
+            if (revealed < numToReveal) {
+                // Keep this cell visible
+                fixed[row][col] = true;
+                revealed++;
+            } else {
+                // Hide this cell
+                puzzle[row][col] = 0;
+                fixed[row][col] = false;
+            }
+        }
+        
+        return { puzzle, fixed };
     }
     
     /**
-     * Ensure all non-path, non-revealed cells have at least one valid number option
-     * This is critical for tower placement
+     * Count the number of solutions for a puzzle (up to a maximum)
+     * @param {number[][]} puzzle - The puzzle to check
+     * @param {number} max - Maximum number of solutions to count
+     * @returns {number} Number of solutions found (capped at max)
      */
-    function ensureAllCellsHaveValidOptions() {
-        // Find all cells that need checking
-        for (let row = 0; row < 9; row++) {
-            for (let col = 0; col < 9; col++) {
-                // Skip fixed cells and path cells
-                if (fixedCells[row][col] || pathCells.has(`${row},${col}`)) {
-                    continue;
+    function countSolutions(puzzle, max) {
+        let solutions = 0;
+        
+        function findSolutions(grid) {
+            if (solutions >= max) return;
+            
+            let emptyCell = findEmptyCell(grid);
+            if (!emptyCell) {
+                // No empty cells - found a solution
+                solutions++;
+                return;
+            }
+            
+            const [row, col] = emptyCell;
+            
+            for (let num = 1; num <= 9; num++) {
+                if (isValid(grid, row, col, num)) {
+                    grid[row][col] = num;
+                    findSolutions(grid);
+                    if (solutions >= max) return;
+                    grid[row][col] = 0; // Backtrack
                 }
-                
-                // Check if this cell has at least one valid option
-                const validOptions = getValidOptions(row, col);
-                
-                if (validOptions.length === 0) {
-                    // No valid options for this cell
-                    // Reveal the solution value for this cell to ensure the puzzle is still valid
-                    board[row][col] = solution[row][col];
-                    fixedCells[row][col] = true;
-                    console.log(`Fixed cell ${row},${col} with no valid options`);
-                }
-            }
-        }
-    }
-    
-    /**
-     * Get all valid number options for a cell
-     * @param {number} row - Row index
-     * @param {number} col - Column index
-     * @returns {number[]} Array of valid numbers
-     */
-    function getValidOptions(row, col) {
-        const options = [];
-        for (let num = 1; num <= 9; num++) {
-            if (isValidPlacement(row, col, num)) {
-                options.push(num);
-            }
-        }
-        return options;
-    }
-    
-    /**
-     * Check if a number can be placed at a position according to Sudoku rules
-     * @param {number} row - Row index
-     * @param {number} col - Column index
-     * @param {number} num - Number to check
-     * @returns {boolean} Whether the placement is valid
-     */
-    function isValidPlacement(row, col, num) {
-        // Check row
-        for (let i = 0; i < 9; i++) {
-            if (board[row][i] === num) return false;
-        }
-        
-        // Check column
-        for (let i = 0; i < 9; i++) {
-            if (board[i][col] === num) return false;
-        }
-        
-        // Check 3x3 box
-        const boxRow = Math.floor(row / 3) * 3;
-        const boxCol = Math.floor(col / 3) * 3;
-        
-        for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 3; j++) {
-                if (board[boxRow + i][boxCol + j] === num) return false;
             }
         }
         
-        return true;
+        findSolutions(JSON.parse(JSON.stringify(puzzle)));
+        return solutions;
     }
     
     /**
      * Generate a path for enemies to follow
+     * This creates a winding path from a starting point to an end point
      */
     function generateEnemyPath() {
         pathCells.clear();
@@ -293,62 +228,99 @@ const SudokuModule = (function() {
             [0, 1]   // right
         ];
         
-        // Start at a position on the left edge
+        // Start at a random position on the left edge
         let startRow = Math.floor(Math.random() * 9);
         let currentRow = startRow;
         let currentCol = 0;
         
-        // Add starting position to the path
+        // Mark the starting position
         pathCells.add(`${currentRow},${currentCol}`);
         
         // Generate path to the right edge
-        let attempts = 0;
-        const maxAttempts = 100; // Prevent infinite loops
-        
-        while (currentCol < 8 && attempts < maxAttempts) {
-            attempts++;
-            
-            // Prioritize moving right with some random turns
+        while (currentCol < 8) {
+            // Prioritize moving right, but allow some turns
             let possibleDirs = [];
-            let rightDir = null;
+            let bestDir = null;
             
             // Check each direction
             for (let [dr, dc] of directions) {
                 let newRow = currentRow + dr;
                 let newCol = currentCol + dc;
                 
-                // Check if valid position
+                // Check if the new position is valid
                 if (
                     newRow >= 0 && newRow < 9 && 
                     newCol >= 0 && newCol < 9 && 
                     !pathCells.has(`${newRow},${newCol}`)
                 ) {
                     possibleDirs.push([dr, dc]);
-                    if (dc > 0) rightDir = [dr, dc]; // Moving right
+                    
+                    // Prefer moving right
+                    if (dc > 0) {
+                        bestDir = [dr, dc];
+                    }
                 }
             }
             
-            // No valid moves, break
-            if (possibleDirs.length === 0) break;
+            // If there's no valid direction, break
+            if (possibleDirs.length === 0) {
+                break;
+            }
             
-            // Choose direction (prefer right but add randomness)
-            let [dr, dc] = rightDir && Math.random() < 0.7 ? 
-                rightDir : possibleDirs[Math.floor(Math.random() * possibleDirs.length)];
+            // Choose direction (prefer right if available)
+            let [dr, dc] = bestDir || possibleDirs[Math.floor(Math.random() * possibleDirs.length)];
             
-            // Move
+            // Move to the new position
             currentRow += dr;
             currentCol += dc;
             pathCells.add(`${currentRow},${currentCol}`);
         }
         
-        // Ensure path reaches the right edge
-        if (currentCol < 8) {
-            // Path didn't reach right edge, create a direct path
-            const finalRow = currentRow;
-            for (let col = currentCol + 1; col < 9; col++) {
-                pathCells.add(`${finalRow},${col}`);
+        // Log path information for debugging
+        console.log(`Created path with ${pathCells.size} cells, from row ${startRow} to right edge`);
+    }
+    
+    /**
+     * Generate a random valid Sudoku puzzle
+     */
+    function generatePuzzle() {
+        console.log("Generating new Sudoku puzzle...");
+        
+        // Generate the enemy path first
+        generateEnemyPath();
+        
+        // Generate a complete solution
+        solution = generateCompleteSolution();
+        
+        // Determine how many cells to reveal based on difficulty
+        let cellsToReveal = difficultySettings[difficulty];
+        
+        // Create a puzzle from the solution
+        const { puzzle, fixed } = createPuzzleFromSolution(solution, pathCells, cellsToReveal);
+        
+        // Set the board and fixed cells
+        board = puzzle;
+        fixedCells = fixed;
+        
+        // Count fixed cells for debugging
+        let fixedCount = 0;
+        for (let row = 0; row < 9; row++) {
+            for (let col = 0; col < 9; col++) {
+                if (fixedCells[row][col]) fixedCount++;
             }
         }
+        console.log(`Generated puzzle with ${fixedCount} fixed cells`);
+        
+        // Convert pathCells to array format for the event
+        const pathArray = Array.from(pathCells).map(pos => pos.split(',').map(Number));
+        
+        // Notify that the sudoku board has been generated
+        EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
+            board: board,
+            solution: solution,
+            fixedCells: fixedCells,
+            pathCells: pathArray
+        });
     }
     
     /**
@@ -363,40 +335,130 @@ const SudokuModule = (function() {
     }
     
     /**
-     * Set a cell value (used for tower placement)
+     * Check if a move is valid according to Sudoku rules
+     * @param {number} row - Row index
+     * @param {number} col - Column index
+     * @param {number} value - Value to check
+     * @returns {boolean} Whether the move is valid
+     */
+    function isValidMove(row, col, value) {
+        // Create a temporary board with the move
+        const tempBoard = JSON.parse(JSON.stringify(board));
+        tempBoard[row][col] = value;
+        
+        // Check row
+        for (let i = 0; i < 9; i++) {
+            if (i !== col && tempBoard[row][i] === value) {
+                return false;
+            }
+        }
+        
+        // Check column
+        for (let i = 0; i < 9; i++) {
+            if (i !== row && tempBoard[i][col] === value) {
+                return false;
+            }
+        }
+        
+        // Check 3x3 box
+        let boxRow = Math.floor(row / 3) * 3;
+        let boxCol = Math.floor(col / 3) * 3;
+        
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                if ((boxRow + i !== row || boxCol + j !== col) && 
+                    tempBoard[boxRow + i][boxCol + j] === value) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Get possible values for a cell
+     * @param {number} row - Row index
+     * @param {number} col - Column index
+     * @returns {number[]} Array of valid values
+     */
+    function getPossibleValues(row, col) {
+        const possibleValues = [];
+        
+        // Quick checks before trying numbers
+        if (fixedCells[row][col]) {
+            return []; // Fixed cells can't be changed
+        }
+        
+        if (pathCells.has(`${row},${col}`)) {
+            return []; // Path cells can't have towers
+        }
+        
+        for (let num = 1; num <= 9; num++) {
+            if (isValidMove(row, col, num)) {
+                possibleValues.push(num);
+            }
+        }
+        
+        return possibleValues;
+    }
+    
+    /**
+     * Set the value of a cell
      * @param {number} row - Row index
      * @param {number} col - Column index
      * @param {number} value - Value to set
-     * @returns {boolean} Whether the placement was successful
+     * @returns {boolean} Whether the move was valid
      */
     function setCellValue(row, col, value) {
-        // Check if cell is fixed
+        console.log(`Attempting to set cell (${row},${col}) to value ${value}`);
+        
+        // Check if the cell is fixed
         if (fixedCells[row][col]) {
+            console.log("Cell is fixed, cannot modify");
             EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on a fixed Sudoku cell!");
             return false;
         }
         
-        // Check if cell is on the path
+        // Check if the cell is on the enemy path
         if (pathCells.has(`${row},${col}`)) {
+            console.log("Cell is on path, cannot modify");
             EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on the enemy path!");
             return false;
         }
         
-        // Check if placement is valid
-        if (!isValidPlacement(row, col, value)) {
+        // If we're clearing a cell (value = 0), always allow it
+        if (value === 0) {
+            board[row][col] = 0;
+            return true;
+        }
+        
+        // Check if the move is valid
+        if (!isValidMove(row, col, value)) {
+            console.log("Move is invalid according to Sudoku rules");
             EventSystem.publish(GameEvents.SUDOKU_CELL_INVALID, { row, col, value });
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Invalid tower placement according to Sudoku rules!");
+            
+            // Get valid numbers for better user feedback
+            const validNumbers = getPossibleValues(row, col);
+            if (validNumbers.length > 0) {
+                EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                    `Invalid tower placement: Cannot place ${value} here. Valid options: ${validNumbers.join(', ')}`);
+            } else {
+                EventSystem.publish(GameEvents.STATUS_MESSAGE, "Invalid tower placement according to Sudoku rules!");
+            }
+            
             return false;
         }
         
-        // Set the value
+        // Set the cell value
         board[row][col] = value;
+        console.log(`Successfully set cell (${row},${col}) to ${value}`);
         
-        // Publish success event
+        // Publish event
         EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
         
-        // Check if Sudoku is complete
-        if (isSudokuComplete()) {
+        // Check if the Sudoku is complete
+        if (isComplete()) {
             EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
         }
         
@@ -404,11 +466,11 @@ const SudokuModule = (function() {
     }
     
     /**
-     * Check if the Sudoku is complete
+     * Check if the Sudoku is complete and correct
      * @returns {boolean} Whether the Sudoku is complete
      */
-    function isSudokuComplete() {
-        // Check all non-path cells are filled
+    function isComplete() {
+        // Check if all non-path cells are filled
         for (let row = 0; row < 9; row++) {
             for (let col = 0; col < 9; col++) {
                 if (board[row][col] === 0 && !pathCells.has(`${row},${col}`)) {
@@ -417,37 +479,94 @@ const SudokuModule = (function() {
             }
         }
         
-        // Check all rows, columns and boxes for validity
-        return true; // All checks passed
-    }
-    
-    /**
-     * Get valid numbers for a cell
-     * @param {number} row - Row index
-     * @param {number} col - Column index
-     * @returns {number[]} Array of valid numbers
-     */
-    function getValidNumbers(row, col) {
-        const validNumbers = [];
-        
-        // If cell is fixed or on path, return empty array
-        if (fixedCells[row][col] || pathCells.has(`${row},${col}`)) {
-            return validNumbers;
-        }
-        
-        // Check each number
-        for (let num = 1; num <= 9; num++) {
-            if (isValidPlacement(row, col, num)) {
-                validNumbers.push(num);
+        // Check if all rows, columns, and boxes are valid
+        for (let i = 0; i < 9; i++) {
+            // Create sets for validation
+            let rowSet = new Set();
+            let colSet = new Set();
+            let boxSet = new Set();
+            
+            // Get 3x3 box starting indices
+            let boxRow = Math.floor(i / 3) * 3;
+            let boxCol = (i % 3) * 3;
+            
+            for (let j = 0; j < 9; j++) {
+                // Skip path cells for row check
+                if (!pathCells.has(`${i},${j}`) && board[i][j] !== 0) {
+                    rowSet.add(board[i][j]);
+                }
+                
+                // Skip path cells for column check
+                if (!pathCells.has(`${j},${i}`) && board[j][i] !== 0) {
+                    colSet.add(board[j][i]);
+                }
+                
+                // Skip path cells for box check
+                let r = boxRow + Math.floor(j / 3);
+                let c = boxCol + (j % 3);
+                if (!pathCells.has(`${r},${c}`) && board[r][c] !== 0) {
+                    boxSet.add(board[r][c]);
+                }
             }
+            
+            // Calculate how many non-path cells are in each unit
+            let rowNonPathCount = 0;
+            let colNonPathCount = 0;
+            let boxNonPathCount = 0;
+            
+            for (let j = 0; j < 9; j++) {
+                if (!pathCells.has(`${i},${j}`)) rowNonPathCount++;
+                if (!pathCells.has(`${j},${i}`)) colNonPathCount++;
+                
+                let r = boxRow + Math.floor(j / 3);
+                let c = boxCol + (j % 3);
+                if (!pathCells.has(`${r},${c}`)) boxNonPathCount++;
+            }
+            
+            // Check if all non-path cells have unique values
+            if (rowSet.size !== rowNonPathCount) return false;
+            if (colSet.size !== colNonPathCount) return false;
+            if (boxSet.size !== boxNonPathCount) return false;
         }
         
-        return validNumbers;
+        return true;
     }
     
     /**
-     * Set the difficulty
-     * @param {string} newDifficulty - New difficulty setting
+     * Get the current board state
+     * @returns {number[][]} Current board state
+     */
+    function getBoard() {
+        return board;
+    }
+    
+    /**
+     * Get the solution
+     * @returns {number[][]} Solution board
+     */
+    function getSolution() {
+        return solution;
+    }
+    
+    /**
+     * Get the fixed cells
+     * @returns {boolean[][]} Fixed cells
+     */
+    function getFixedCells() {
+        return fixedCells;
+    }
+    
+    /**
+     * Get the path cells
+     * @returns {Set<string>} Path cells
+     */
+    function getPathCells() {
+        return pathCells;
+    }
+    
+    /**
+     * Set the game difficulty
+     * @param {string} newDifficulty - The new difficulty (easy, medium, hard)
      */
     function setDifficulty(newDifficulty) {
         if (difficultySettings[newDifficulty]) {
@@ -456,40 +575,8 @@ const SudokuModule = (function() {
     }
     
     /**
-     * Get the current board
-     * @returns {number[][]} Current board
-     */
-    function getBoard() {
-        return board;
-    }
-    
-    /**
-     * Get the solution
-     * @returns {number[][]} Solution
-     */
-    function getSolution() {
-        return solution;
-    }
-    
-    /**
-     * Get fixed cells
-     * @returns {boolean[][]} Fixed cells
-     */
-    function getFixedCells() {
-        return fixedCells;
-    }
-    
-    /**
-     * Get path cells
-     * @returns {Set<string>} Path cells
-     */
-    function getPathCells() {
-        return pathCells;
-    }
-    
-    /**
-     * Get path as array
-     * @returns {number[][]} Path array
+     * Convert path cells to an array of coordinates
+     * @returns {number[][]} Array of [row, col] coordinates
      */
     function getPathArray() {
         return Array.from(pathCells).map(pos => pos.split(',').map(Number));
@@ -498,7 +585,7 @@ const SudokuModule = (function() {
     /**
      * Initialize event listeners
      */
-    function initEventListeners() {
+    function init() {
         // Listen for game initialization
         EventSystem.subscribe(GameEvents.GAME_INIT, function() {
             generatePuzzle();
@@ -511,7 +598,7 @@ const SudokuModule = (function() {
     }
     
     // Initialize event listeners
-    initEventListeners();
+    init();
     
     // Public API
     return {
@@ -523,8 +610,8 @@ const SudokuModule = (function() {
         getPathCells,
         getPathArray,
         setDifficulty,
-        getValidNumbers,
-        isValidPlacement
+        isValidMove,
+        getPossibleValues // Explicitly expose this function
     };
 })();
 
