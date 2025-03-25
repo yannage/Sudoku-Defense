@@ -17,18 +17,18 @@ const PlayerModule = (function() {
      * @param {Object} options - Initialization options
      */
     function init(options = {}) {
-        state = {
-            lives: options.lives || 3,
-            score: options.score || 0,
-            currency: options.currency || 100,
-            selectedTower: null
-        };
+    state = {
+        lives: options.lives || 3,
+        score: options.score || 0,
+        currency: options.currency || 150, // Was 100
+        selectedTower: null
+    };
+    
+    // Publish initial state
+    publishState();
+}
         
-        console.log("PlayerModule initialized with currency: " + state.currency);
-        
-        // Publish initial state
-        publishState();
-    }
+       
     
     /**
      * Publish the current player state
