@@ -22,10 +22,10 @@ const EnemiesModule = (function() {
 
 // Enemy types with their properties - REDUCED HEALTH VERSION
 const enemyTypes = {
-    1: { emoji: '1️⃣', health: 80, speed: 1, reward: 10, points: 5 },      // Was 100 health
-    2: { emoji: '2️⃣', health: 95, speed: 1.1, reward: 12, points: 7 },    // Was 120 health
-    3: { emoji: '3️⃣', health: 110, speed: 1.2, reward: 14, points: 9 },   // Was 140 health
-    4: { emoji: '4️⃣', health: 125, speed: 1.3, reward: 16, points: 11 },  // Was 160 health
+    1: { emoji: '1️⃣', health: 60, speed: 1, reward: 10, points: 5 },      // Was 100 health
+    2: { emoji: '2️⃣', health: 75, speed: 1.1, reward: 12, points: 7 },    // Was 120 health
+    3: { emoji: '3️⃣', health: 100, speed: 1.2, reward: 14, points: 9 },   // Was 140 health
+    4: { emoji: '4️⃣', health: 120, speed: 1.3, reward: 16, points: 11 },  // Was 160 health
     5: { emoji: '5️⃣', health: 140, speed: 1.4, reward: 18, points: 13 },  // Was 180 health
     6: { emoji: '6️⃣', health: 160, speed: 1.5, reward: 20, points: 15 },  // Was 200 health
     7: { emoji: '7️⃣', health: 175, speed: 1.6, reward: 22, points: 17 },  // Was 220 health
