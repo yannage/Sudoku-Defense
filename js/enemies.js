@@ -14,25 +14,20 @@ const EnemiesModule = (function() {
     let path = [];
     let cellSize = 0;
     
-    /**
- * Optional modification to the enemies.js file to slightly reduce enemy health
- * This is an alternative or additional balance change if tower damage alone isn't enough
- * Replace the enemyTypes definition in your enemies.js file with this
- */
-
-// Enemy types with their properties - REDUCED HEALTH VERSION
-const enemyTypes = {
-    1: { emoji: '1️⃣', health: 60, speed: 0.9, reward: 15, points: 5 },      // Was 100 health
-    2: { emoji: '2️⃣', health: 70, speed: 1.0, reward: 18, points: 7 },      // Was 120 health
-    3: { emoji: '3️⃣', health: 80, speed: 1.1, reward: 21, points: 9 },      // Was 140 health
-    4: { emoji: '4️⃣', health: 90, speed: 1.2, reward: 24, points: 11 },     // Was 160 health
-    5: { emoji: '5️⃣', health: 100, speed: 1.3, reward: 27, points: 13 },    // Was 180 health
-    6: { emoji: '6️⃣', health: 120, speed: 1.4, reward: 30, points: 15 },    // Was 200 health
-    7: { emoji: '7️⃣', health: 140, speed: 1.5, reward: 33, points: 17 },    // Was 220 health
-    8: { emoji: '8️⃣', health: 160, speed: 1.6, reward: 36, points: 19 },    // Was 240 health
-    9: { emoji: '9️⃣', health: 180, speed: 1.7, reward: 39, points: 21 },    // Was 260 health
-    'boss': { emoji: '👹', health: 300, speed: 0.7, reward: 75, points: 50 } // Was 500 health
-};
+    // Enemy types with their properties - REDUCED HEALTH VERSION
+    const enemyTypes = {
+        1: { emoji: '1️⃣', health: 60, speed: 0.9, reward: 15, points: 5 },
+        2: { emoji: '2️⃣', health: 70, speed: 1.0, reward: 18, points: 7 },
+        3: { emoji: '3️⃣', health: 80, speed: 1.1, reward: 21, points: 9 },
+        4: { emoji: '4️⃣', health: 90, speed: 1.2, reward: 24, points: 11 },
+        5: { emoji: '5️⃣', health: 100, speed: 1.3, reward: 27, points: 13 },
+        6: { emoji: '6️⃣', health: 120, speed: 1.4, reward: 30, points: 15 },
+        7: { emoji: '7️⃣', health: 140, speed: 1.5, reward: 33, points: 17 },
+        8: { emoji: '8️⃣', health: 160, speed: 1.6, reward: 36, points: 19 },
+        9: { emoji: '9️⃣', health: 180, speed: 1.7, reward: 39, points: 21 },
+        'boss': { emoji: '👹', health: 300, speed: 0.7, reward: 75, points: 50 }
+    };
+    
     /**
      * Initialize the enemies module
      * @param {Object} options - Initialization options
@@ -111,13 +106,9 @@ const enemyTypes = {
         
         isWaveActive = true;
         
-        
         // Calculate number of enemies based on wave number - MODIFIED FOR EASIER PROGRESSION
-const baseEnemyCount = 6; 
-// Was 10
-const enemyCount = baseEnemyCount + Math.floor((waveNumber - 1) * 3); 
-// Was (waveNumber - 1) * 5
-
+        const baseEnemyCount = 6; // Was 10
+        const enemyCount = baseEnemyCount + Math.floor((waveNumber - 1) * 3); // Was (waveNumber - 1) * 5
         enemiesRemaining = enemyCount;
         
         // Determine which enemy types to use in this wave
