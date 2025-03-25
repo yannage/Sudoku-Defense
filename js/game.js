@@ -1,8 +1,4 @@
-/**
- * game.js - Main game module
- * This module coordinates all game components and handles the main game loop
- */
-
+// Add this at the beginning of the Game module to ensure events are properly initialized
 const Game = (function() {
     // Private variables
     let isInitialized = false;
@@ -19,6 +15,8 @@ const Game = (function() {
         if (isInitialized) {
             return;
         }
+        
+        console.log("Game initialization started");
         
         // Get the board element
         boardElement = document.getElementById('sudoku-board');
@@ -41,9 +39,32 @@ const Game = (function() {
         // Set up UI event listeners
         setupUIEventListeners();
         
+        // Make sure UI is updated with initial values
+        updateUI();
+        
         // Start the game loop
         isInitialized = true;
         start();
+        
+        console.log("Game initialization completed");
+    }
+    
+    /**
+     * Update UI elements with current game state
+     */
+    function updateUI() {
+        // Get current player state
+        const playerState = PlayerModule.getState();
+        
+        // Update UI elements directly
+        document.getElementById('score-value').textContent = playerState.score;
+        document.getElementById('lives-value').textContent = playerState.lives;
+        document.getElementById('currency-value').textContent = playerState.currency;
+        
+        // Update wave number
+        document.getElementById('wave-value').textContent = EnemiesModule.getWaveNumber();
+        
+        console.log("UI updated with: Lives=" + playerState.lives + ", Currency=" + playerState.currency);
     }
     
     /**
@@ -109,27 +130,31 @@ const Game = (function() {
      * Reset the game
      */
     function reset() {
-    // First stop the game loop
-    stop();
-    
-    // Clear the board completely
-    clearBoard();
-    
-    // Reset all modules explicitly
-    PlayerModule.reset();
-    SudokuModule.generatePuzzle();
-    EnemiesModule.init();
-    TowersModule.init();
-    
-    // Force full re-initialization
-    isInitialized = false; 
-    init();
-    
-    // Make sure we update the UI
-    const playerState = PlayerModule.getState();
-    EventSystem.publish(GameEvents.PLAYER_UPDATE, playerState);
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "New game started!");
-}
+        console.log("Game reset started");
+        
+        // Stop the game loop
+        stop();
+        
+        // Clear the board
+        clearBoard();
+        
+        // Reset all modules explicitly
+        PlayerModule.reset();
+        SudokuModule.generatePuzzle();
+        EnemiesModule.init();
+        TowersModule.init();
+        
+        // Force full re-initialization
+        isInitialized = false;
+        init();
+        
+        // Update UI with initial values
+        updateUI();
+        
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "New game started!");
+        
+        console.log("Game reset completed");
+    }
     
     /**
      * Main game loop
@@ -253,34 +278,41 @@ const Game = (function() {
     /**
      * Set up the Sudoku board
      */
-  function setupBoard() {
-    // Clear any existing board
-    clearBoard();
-    
-    // Create cells - make sure this loop runs for all 81 cells
-    for (let row = 0; row < 9; row++) {
-        for (let col = 0; col < 9; col++) {
-            const cell = document.createElement('div');
-            cell.className = 'sudoku-cell';
-            cell.dataset.row = row;
-            cell.dataset.col = col;
-            
-            cell.addEventListener('click', function() {
-                handleCellClick(row, col);
-            });
-            
-            boardElement.appendChild(cell);
+    function setupBoard() {
+        console.log("Setting up board");
+        
+        // Clear any existing board
+        clearBoard();
+        
+        // Create cells
+        for (let row = 0; row < 9; row++) {
+            for (let col = 0; col < 9; col++) {
+                const cell = document.createElement('div');
+                cell.className = 'sudoku-cell';
+                cell.dataset.row = row;
+                cell.dataset.col = col;
+                
+                // Add click event listener
+                cell.addEventListener('click', function() {
+                    handleCellClick(row, col);
+                });
+                
+                boardElement.appendChild(cell);
+            }
         }
+        
+        // Count cells to ensure all were created
+        console.log("Created " + boardElement.childElementCount + " cells");
+        
+        // Update board with initial values
+        updateBoard();
     }
-    
-    // This is critical - make sure to call updateBoard() here
-    updateBoard();
-}
     
     /**
      * Clear the Sudoku board
      */
     function clearBoard() {
+        console.log("Clearing board");
         while (boardElement.firstChild) {
             boardElement.removeChild(boardElement.firstChild);
         }
@@ -290,6 +322,7 @@ const Game = (function() {
      * Update the Sudoku board display
      */
     function updateBoard() {
+        console.log("Updating board display");
         const board = SudokuModule.getBoard();
         const fixedCells = SudokuModule.getFixedCells();
         const pathCells = SudokuModule.getPathCells();
@@ -299,7 +332,10 @@ const Game = (function() {
             for (let col = 0; col < 9; col++) {
                 const cellElement = boardElement.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
                 
-                if (!cellElement) continue;
+                if (!cellElement) {
+                    console.warn(`Cell element not found for row ${row}, col ${col}`);
+                    continue;
+                }
                 
                 // Clear previous classes
                 cellElement.classList.remove('fixed', 'path');
@@ -373,7 +409,12 @@ const Game = (function() {
         }
         
         // Attempt to place the selected tower
-        TowersModule.createTower(selectedTower, row, col);
+        const newTower = TowersModule.createTower(selectedTower, row, col);
+        
+        // If tower was successfully placed, update the UI immediately
+        if (newTower) {
+            updateUI();
+        }
         
         // Update the board
         updateBoard();
@@ -401,6 +442,8 @@ const Game = (function() {
      * Set up UI event listeners
      */
     function setupUIEventListeners() {
+        console.log("Setting up UI event listeners");
+        
         // Tower selection
         const towerOptions = document.querySelectorAll('.tower-option');
         
@@ -440,22 +483,52 @@ const Game = (function() {
         });
         
         document.getElementById('new-game').addEventListener('click', function() {
+            console.log("New Game button clicked");
             reset();
         });
         
-
-    // Subscribe to events for UI updates
-    EventSystem.subscribe(GameEvents.PLAYER_UPDATE, function(data) {
-        // Update UI with player data
-        document.getElementById('score-value').textContent = data.score;
-        document.getElementById('lives-value').textContent = data.lives;
-        document.getElementById('currency-value').textContent = data.currency;
-    });
+        // Subscribe to events for UI updates
+        EventSystem.subscribe(GameEvents.PLAYER_UPDATE, function(data) {
+            // Update UI with player data
+            document.getElementById('score-value').textContent = data.score;
+            document.getElementById('lives-value').textContent = data.lives;
+            document.getElementById('currency-value').textContent = data.currency;
+            console.log("Player update event received: Lives=" + data.lives + ", Currency=" + data.currency);
+        });
+        
+        // Add direct listeners for individual stat changes
+        EventSystem.subscribe(GameEvents.CURRENCY_CHANGE, function(newCurrency) {
+            document.getElementById('currency-value').textContent = newCurrency;
+            console.log("Currency change event received: " + newCurrency);
+        });
+        
+        EventSystem.subscribe(GameEvents.LIVES_CHANGE, function(newLives) {
+            document.getElementById('lives-value').textContent = newLives;
+            console.log("Lives change event received: " + newLives);
+        });
+        
+        EventSystem.subscribe(GameEvents.SCORE_CHANGE, function(newScore) {
+            document.getElementById('score-value').textContent = newScore;
+            console.log("Score change event received: " + newScore);
+        });
         
         EventSystem.subscribe(GameEvents.UI_UPDATE, function(data) {
             // Update wave display
             if (data.waveNumber !== undefined) {
                 document.getElementById('wave-value').textContent = data.waveNumber;
+            }
+            
+            // Update other UI elements if data is provided
+            if (data.currency !== undefined) {
+                document.getElementById('currency-value').textContent = data.currency;
+            }
+            
+            if (data.lives !== undefined) {
+                document.getElementById('lives-value').textContent = data.lives;
+            }
+            
+            if (data.score !== undefined) {
+                document.getElementById('score-value').textContent = data.score;
             }
         });
         
@@ -481,9 +554,11 @@ const Game = (function() {
             updateBoard();
         });
         
-        EventSystem.subscribe(GameEvents.TOWER_PLACED, function() {
+        EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
             // Update the board when a tower is placed
             updateBoard();
+            // Immediately update UI to reflect currency change
+            updateUI();
         });
         
         EventSystem.subscribe(GameEvents.TOWER_REMOVED, function() {
@@ -494,6 +569,13 @@ const Game = (function() {
         EventSystem.subscribe(GameEvents.TOWER_UPGRADE, function() {
             // Update the board when a tower is upgraded
             updateBoard();
+            // Immediately update UI to reflect currency change
+            updateUI();
+        });
+        
+        EventSystem.subscribe(GameEvents.ENEMY_REACHED_END, function() {
+            // Update UI to reflect lives change
+            updateUI();
         });
         
         // Listen for window resize to adjust cell size
@@ -518,6 +600,7 @@ const Game = (function() {
     function initEventListeners() {
         // Listen for DOM content loaded to initialize the game
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOMContentLoaded event received");
             init();
         });
     }
@@ -532,7 +615,8 @@ const Game = (function() {
         pause,
         resume,
         stop,
-        reset
+        reset,
+        updateUI // Export updateUI for manual refreshes if needed
     };
 })();
 
