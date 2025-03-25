@@ -1,11 +1,11 @@
 /**
- * SaveSystem Module - Handles saving and loading game data using cookies
+ * SaveSystem Module - Handles saving and loading game data using localStorage
  * This module provides functionality to store player scores and other game data persistently
  */
 
 const SaveSystem = (function() {
-    // Cookie names
-    const COOKIES = {
+    // Storage keys
+    const STORAGE_KEYS = {
         HIGH_SCORE: 'sudoku_td_high_score',
         CURRENT_SCORE: 'sudoku_td_current_score',
         LAST_LEVEL: 'sudoku_td_last_level',
@@ -13,43 +13,34 @@ const SaveSystem = (function() {
         DIFFICULTY: 'sudoku_td_difficulty'
     };
     
-    // Default cookie expiration in days
-    const COOKIE_EXPIRATION_DAYS = 3650;
-    
     /**
-     * Set a cookie
-     * @param {string} name - Cookie name
-     * @param {string} value - Cookie value
-     * @param {number} days - Expiration days
+     * Save data to localStorage
+     * @param {string} key - Storage key
+     * @param {string|number} value - Value to store
      */
-    function setCookie(name, value, days = COOKIE_EXPIRATION_DAYS) {
-        const date = new Date();
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        const expires = "expires=" + date.toUTCString();
-        document.cookie = name + "=" + value + ";" + expires + ";path=/";
-        console.log(`Cookie set: ${name}=${value}`);
+    function saveData(key, value) {
+        try {
+            localStorage.setItem(key, String(value));
+            console.log(`Data saved: ${key}=${value}`);
+        } catch (error) {
+            console.error(`Error saving data: ${error.message}`);
+        }
     }
     
     /**
-     * Get a cookie value
-     * @param {string} name - Cookie name
-     * @returns {string} Cookie value or empty string if not found
+     * Load data from localStorage
+     * @param {string} key - Storage key
+     * @param {string|number} defaultValue - Default value if key not found
+     * @returns {string} Stored value or default
      */
-    function getCookie(name) {
-        const cookieName = name + "=";
-        const decodedCookie = decodeURIComponent(document.cookie);
-        const cookieArray = decodedCookie.split(';');
-        
-        for (let i = 0; i < cookieArray.length; i++) {
-            let cookie = cookieArray[i];
-            while (cookie.charAt(0) === ' ') {
-                cookie = cookie.substring(1);
-            }
-            if (cookie.indexOf(cookieName) === 0) {
-                return cookie.substring(cookieName.length, cookie.length);
-            }
+    function loadData(key, defaultValue = '') {
+        try {
+            const value = localStorage.getItem(key);
+            return value !== null ? value : defaultValue;
+        } catch (error) {
+            console.error(`Error loading data: ${error.message}`);
+            return defaultValue;
         }
-        return "";
     }
     
     /**
@@ -57,7 +48,7 @@ const SaveSystem = (function() {
      * Updates both current score and high score if needed
      */
     function saveScore() {
-        if (!PlayerModule) {
+        if (!window.PlayerModule) {
             console.error("PlayerModule not available for saving score");
             return;
         }
@@ -66,19 +57,19 @@ const SaveSystem = (function() {
         const highScore = getHighScore();
         
         // Save current score
-        setCookie(COOKIES.CURRENT_SCORE, currentScore);
+        saveData(STORAGE_KEYS.CURRENT_SCORE, currentScore);
         
         // Update high score if current score is higher
         if (currentScore > highScore) {
-            setCookie(COOKIES.HIGH_SCORE, currentScore);
+            saveData(STORAGE_KEYS.HIGH_SCORE, currentScore);
             console.log(`New high score saved: ${currentScore}`);
         }
         
         // Save level and wave info
-        if (LevelsModule) {
-            setCookie(COOKIES.LAST_LEVEL, LevelsModule.getCurrentLevel());
-            setCookie(COOKIES.LAST_WAVE, LevelsModule.getCurrentWave());
-            setCookie(COOKIES.DIFFICULTY, LevelsModule.getDifficulty());
+        if (window.LevelsModule) {
+            saveData(STORAGE_KEYS.LAST_LEVEL, LevelsModule.getCurrentLevel());
+            saveData(STORAGE_KEYS.LAST_WAVE, LevelsModule.getCurrentWave());
+            saveData(STORAGE_KEYS.DIFFICULTY, LevelsModule.getDifficulty());
         }
     }
     
@@ -87,8 +78,8 @@ const SaveSystem = (function() {
      * @returns {number} High score
      */
     function getHighScore() {
-        const highScore = getCookie(COOKIES.HIGH_SCORE);
-        return highScore ? parseInt(highScore) : 0;
+        const highScore = loadData(STORAGE_KEYS.HIGH_SCORE, '0');
+        return parseInt(highScore) || 0;
     }
     
     /**
@@ -98,10 +89,10 @@ const SaveSystem = (function() {
     function getLastSavedState() {
         return {
             highScore: getHighScore(),
-            currentScore: parseInt(getCookie(COOKIES.CURRENT_SCORE)) || 0,
-            lastLevel: parseInt(getCookie(COOKIES.LAST_LEVEL)) || 1,
-            lastWave: parseInt(getCookie(COOKIES.LAST_WAVE)) || 1,
-            difficulty: getCookie(COOKIES.DIFFICULTY) || 'medium'
+            currentScore: parseInt(loadData(STORAGE_KEYS.CURRENT_SCORE, '0')) || 0,
+            lastLevel: parseInt(loadData(STORAGE_KEYS.LAST_LEVEL, '1')) || 1,
+            lastWave: parseInt(loadData(STORAGE_KEYS.LAST_WAVE, '1')) || 1,
+            difficulty: loadData(STORAGE_KEYS.DIFFICULTY, 'medium')
         };
     }
     
@@ -109,12 +100,16 @@ const SaveSystem = (function() {
      * Clear all saved data
      */
     function clearSavedData() {
-        setCookie(COOKIES.HIGH_SCORE, '', 0);
-        setCookie(COOKIES.CURRENT_SCORE, '', 0);
-        setCookie(COOKIES.LAST_LEVEL, '', 0);
-        setCookie(COOKIES.LAST_WAVE, '', 0);
-        setCookie(COOKIES.DIFFICULTY, '', 0);
-        console.log("All saved game data cleared");
+        try {
+            localStorage.removeItem(STORAGE_KEYS.HIGH_SCORE);
+            localStorage.removeItem(STORAGE_KEYS.CURRENT_SCORE);
+            localStorage.removeItem(STORAGE_KEYS.LAST_LEVEL);
+            localStorage.removeItem(STORAGE_KEYS.LAST_WAVE);
+            localStorage.removeItem(STORAGE_KEYS.DIFFICULTY);
+            console.log("All saved game data cleared");
+        } catch (error) {
+            console.error(`Error clearing data: ${error.message}`);
+        }
     }
     
     /**
@@ -123,12 +118,12 @@ const SaveSystem = (function() {
     function initEventListeners() {
         // Save on score change
         EventSystem.subscribe(GameEvents.SCORE_CHANGE, function(newScore) {
-            setCookie(COOKIES.CURRENT_SCORE, newScore);
+            saveData(STORAGE_KEYS.CURRENT_SCORE, newScore);
             
             // Update high score if needed
             const highScore = getHighScore();
             if (newScore > highScore) {
-                setCookie(COOKIES.HIGH_SCORE, newScore);
+                saveData(STORAGE_KEYS.HIGH_SCORE, newScore);
             }
         });
         
@@ -146,15 +141,37 @@ const SaveSystem = (function() {
         setInterval(saveScore, 30000);
     }
     
-    // Initialize immediately
-    initEventListeners();
+    /**
+     * Check if local storage is available
+     * @returns {boolean} Whether localStorage is available
+     */
+    function isStorageAvailable() {
+        try {
+            const test = '__storage_test__';
+            localStorage.setItem(test, test);
+            localStorage.removeItem(test);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    
+    // Initialize with storage check
+    const storageAvailable = isStorageAvailable();
+    if (!storageAvailable) {
+        console.warn("localStorage is not available. Game progress will not be saved.");
+    } else {
+        // Initialize event listeners if storage is available
+        initEventListeners();
+    }
     
     // Public API
     return {
         saveScore,
         getHighScore,
         getLastSavedState,
-        clearSavedData
+        clearSavedData,
+        isStorageAvailable: function() { return storageAvailable; }
     };
 })();
 
