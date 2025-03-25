@@ -14,18 +14,18 @@ const EnemiesModule = (function() {
     let path = [];
     let cellSize = 0;
     
-    // Enemy types with their properties - REDUCED HEALTH VERSION
+    // Enemy types with their properties - FIXED EMOJIS
     const enemyTypes = {
-        1: { emoji: '1ï¸âƒ£', health: 60, speed: 0.9, reward: 15, points: 5 },
-        2: { emoji: '2ï¸âƒ£', health: 70, speed: 1.0, reward: 18, points: 7 },
-        3: { emoji: '3ï¸âƒ£', health: 80, speed: 1.1, reward: 21, points: 9 },
-        4: { emoji: '4ï¸âƒ£', health: 90, speed: 1.2, reward: 24, points: 11 },
-        5: { emoji: '5ï¸âƒ£', health: 100, speed: 1.3, reward: 27, points: 13 },
-        6: { emoji: '6ï¸âƒ£', health: 120, speed: 1.4, reward: 30, points: 15 },
-        7: { emoji: '7ï¸âƒ£', health: 140, speed: 1.5, reward: 33, points: 17 },
-        8: { emoji: '8ï¸âƒ£', health: 160, speed: 1.6, reward: 36, points: 19 },
-        9: { emoji: '9ï¸âƒ£', health: 180, speed: 1.7, reward: 39, points: 21 },
-        'boss': { emoji: 'ðŸ‘¹', health: 300, speed: 0.7, reward: 75, points: 50 }
+        1: { emoji: '1️⃣', health: 60, speed: 0.9, reward: 15, points: 5 },
+        2: { emoji: '2️⃣', health: 70, speed: 1.0, reward: 18, points: 7 },
+        3: { emoji: '3️⃣', health: 80, speed: 1.1, reward: 21, points: 9 },
+        4: { emoji: '4️⃣', health: 90, speed: 1.2, reward: 24, points: 11 },
+        5: { emoji: '5️⃣', health: 100, speed: 1.3, reward: 27, points: 13 },
+        6: { emoji: '6️⃣', health: 120, speed: 1.4, reward: 30, points: 15 },
+        7: { emoji: '7️⃣', health: 140, speed: 1.5, reward: 33, points: 17 },
+        8: { emoji: '8️⃣', health: 160, speed: 1.6, reward: 36, points: 19 },
+        9: { emoji: '9️⃣', health: 180, speed: 1.7, reward: 39, points: 21 },
+        'boss': { emoji: '👹', health: 300, speed: 0.7, reward: 75, points: 50 }
     };
     
     /**
