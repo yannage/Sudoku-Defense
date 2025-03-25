@@ -16,16 +16,16 @@ const EnemiesModule = (function() {
     
     // Enemy types with their properties - REDUCED HEALTH VERSION
     const enemyTypes = {
-        1: { emoji: '1️⃣', health: 60, speed: 0.9, reward: 15, points: 5 },
-        2: { emoji: '2️⃣', health: 70, speed: 1.0, reward: 18, points: 7 },
-        3: { emoji: '3️⃣', health: 80, speed: 1.1, reward: 21, points: 9 },
-        4: { emoji: '4️⃣', health: 90, speed: 1.2, reward: 24, points: 11 },
-        5: { emoji: '5️⃣', health: 100, speed: 1.3, reward: 27, points: 13 },
-        6: { emoji: '6️⃣', health: 120, speed: 1.4, reward: 30, points: 15 },
-        7: { emoji: '7️⃣', health: 140, speed: 1.5, reward: 33, points: 17 },
-        8: { emoji: '8️⃣', health: 160, speed: 1.6, reward: 36, points: 19 },
-        9: { emoji: '9️⃣', health: 180, speed: 1.7, reward: 39, points: 21 },
-        'boss': { emoji: '👹', health: 300, speed: 0.7, reward: 75, points: 50 }
+        1: { emoji: '1ï¸âƒ£', health: 60, speed: 0.9, reward: 15, points: 5 },
+        2: { emoji: '2ï¸âƒ£', health: 70, speed: 1.0, reward: 18, points: 7 },
+        3: { emoji: '3ï¸âƒ£', health: 80, speed: 1.1, reward: 21, points: 9 },
+        4: { emoji: '4ï¸âƒ£', health: 90, speed: 1.2, reward: 24, points: 11 },
+        5: { emoji: '5ï¸âƒ£', health: 100, speed: 1.3, reward: 27, points: 13 },
+        6: { emoji: '6ï¸âƒ£', health: 120, speed: 1.4, reward: 30, points: 15 },
+        7: { emoji: '7ï¸âƒ£', health: 140, speed: 1.5, reward: 33, points: 17 },
+        8: { emoji: '8ï¸âƒ£', health: 160, speed: 1.6, reward: 36, points: 19 },
+        9: { emoji: '9ï¸âƒ£', health: 180, speed: 1.7, reward: 39, points: 21 },
+        'boss': { emoji: 'ðŸ‘¹', health: 300, speed: 0.7, reward: 75, points: 50 }
     };
     
     /**
@@ -38,16 +38,7 @@ const EnemiesModule = (function() {
         waveNumber = 1;
         isWaveActive = false;
         enemiesRemaining = 0;
-        
-        // Make sure we get a valid cell size
         cellSize = options.cellSize || 55; // Default cell size
-        console.log("EnemiesModule initialized with cellSize:", cellSize);
-        
-        // Get the path immediately
-        if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
-            path = SudokuModule.getPathArray();
-            console.log("Initial path set in enemies init:", path ? path.length : 0, "cells");
-        }
         
         // Stop any active spawn interval
         if (spawnInterval) {
@@ -64,33 +55,10 @@ const EnemiesModule = (function() {
     function createEnemy(type) {
         const typeData = enemyTypes[type] || enemyTypes[1];
         
-        // Make sure the path is properly initialized
-        if (!path || path.length === 0) {
-            console.error("Path is not defined or empty");
-            path = SudokuModule.getPathArray(); // Try to get the path again
-            if (!path || path.length === 0) {
-                console.error("Still cannot get a valid path");
-                return null;
-            }
-        }
-        
         // Calculate starting position (first cell in the path)
         const startCell = path[0];
-        
-        // Debug log the starting cell and cellSize
-        console.log("Creating enemy with starting cell:", startCell, "cellSize:", cellSize);
-        
-        // Make sure the starting cell is valid
-        if (!startCell || startCell.length < 2) {
-            console.error("Invalid starting cell:", startCell);
-            return null;
-        }
-        
-        // Calculate the position using cell coordinates properly
         const startX = startCell[1] * cellSize + cellSize / 2;
         const startY = startCell[0] * cellSize + cellSize / 2;
-        
-        console.log("Enemy starting position:", startX, startY);
         
         // Apply wave difficulty scaling
         const healthScale = 1 + (waveNumber - 1) * 0.2; // 20% more health per wave
@@ -130,19 +98,6 @@ const EnemiesModule = (function() {
         
         // Get the latest path from the Sudoku module
         path = SudokuModule.getPathArray();
-        
-        // Verify the path is valid
-        verifyPath();
-        
-        // If the path is invalid or empty, try to regenerate it
-        if (!path || path.length === 0) {
-            console.log("Path is empty, trying to regenerate");
-            if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
-                SudokuModule.generateEnemyPath();
-                path = SudokuModule.getPathArray();
-                verifyPath();
-            }
-        }
         
         if (path.length === 0) {
             EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot start wave: No path defined!");
@@ -199,42 +154,6 @@ const EnemiesModule = (function() {
     }
     
     /**
-     * This is a diagnostic function to verify the path data.
-     */
-    function verifyPath() {
-        // Log the current path information
-        console.log("Current path:", path);
-        console.log("Path length:", path ? path.length : 0);
-        console.log("Cell size:", cellSize);
-        
-        // Check if the path is valid
-        if (!path || path.length < 2) {
-            console.error("Invalid path: Path is not defined or too short");
-            return false;
-        }
-        
-        // Check if there are any invalid entries in the path
-        for (let i = 0; i < path.length; i++) {
-            const cell = path[i];
-            if (!cell || cell.length < 2 || 
-                typeof cell[0] !== 'number' || 
-                typeof cell[1] !== 'number') {
-                console.error(`Invalid path entry at index ${i}:`, cell);
-                return false;
-            }
-        }
-        
-        // Path is valid
-        console.log("Path is valid with", path.length, "cells");
-        
-        // Log the first few and last few entries for debugging
-        console.log("Start of path:", path.slice(0, 3));
-        console.log("End of path:", path.slice(-3));
-        
-        return true;
-    }
-    
-    /**
      * Update all enemies
      * @param {number} deltaTime - Time elapsed since last update in seconds
      */
@@ -255,19 +174,6 @@ const EnemiesModule = (function() {
             
             activeEnemies++;
             
-            // Check for invalid position (0,0) which might indicate a problem
-            if (enemy.x === 0 && enemy.y === 0) {
-                console.warn("Enemy at invalid position (0,0), fixing position...");
-                // Reset to start of path
-                if (path && path.length > 0) {
-                    const startCell = path[0];
-                    enemy.x = startCell[1] * cellSize + cellSize / 2;
-                    enemy.y = startCell[0] * cellSize + cellSize / 2;
-                    enemy.pathIndex = 0;
-                    enemy.progress = 0;
-                }
-            }
-            
             // Move enemy along the path
             moveEnemy(enemy, deltaTime);
             
@@ -282,7 +188,7 @@ const EnemiesModule = (function() {
     }
     
     /**
-     * Move an enemy along the path with improved grid alignment
+     * Move an enemy along the path
      * @param {Object} enemy - The enemy to move
      * @param {number} deltaTime - Time elapsed since last update
      */
@@ -300,23 +206,16 @@ const EnemiesModule = (function() {
         const currentCell = path[enemy.pathIndex];
         const nextCell = path[enemy.pathIndex + 1];
         
-        // Calculate cell centers - ensure these match the grid precisely
+        // Calculate cell centers
         const currentX = currentCell[1] * cellSize + cellSize / 2;
         const currentY = currentCell[0] * cellSize + cellSize / 2;
         const nextX = nextCell[1] * cellSize + cellSize / 2;
         const nextY = nextCell[0] * cellSize + cellSize / 2;
         
         // Update progress along current path segment
-        const distance = Math.sqrt(
+        enemy.progress += moveSpeed / Math.sqrt(
             Math.pow(nextX - currentX, 2) + Math.pow(nextY - currentY, 2)
         );
-        
-        // Update progress - ensure we don't divide by zero
-        if (distance > 0) {
-            enemy.progress += moveSpeed / distance;
-        } else {
-            enemy.progress = 1; // Skip to next segment if current and next are the same
-        }
         
         // Move to next path segment if progress is complete
         if (enemy.progress >= 1) {
@@ -334,13 +233,11 @@ const EnemiesModule = (function() {
         const currentSegment = path[enemy.pathIndex];
         const nextSegment = path[enemy.pathIndex + 1];
         
-        // Get precise grid positions
         const startX = currentSegment[1] * cellSize + cellSize / 2;
         const startY = currentSegment[0] * cellSize + cellSize / 2;
         const endX = nextSegment[1] * cellSize + cellSize / 2;
         const endY = nextSegment[0] * cellSize + cellSize / 2;
         
-        // Use precise linear interpolation with no rounding
         enemy.x = startX + (endX - startX) * enemy.progress;
         enemy.y = startY + (endY - startY) * enemy.progress;
     }
@@ -511,45 +408,7 @@ const EnemiesModule = (function() {
      * @param {number} size - Cell size in pixels
      */
     function setCellSize(size) {
-        // Only update if the size is valid and different
-        if (size > 0 && size !== cellSize) {
-            console.log(`Updating cell size from ${cellSize} to ${size}`);
-            cellSize = size;
-            
-            // Update positions of existing enemies
-            updateEnemyPositions();
-        }
-    }
-    
-    /**
-     * Update all enemy positions when cell size changes
-     */
-    function updateEnemyPositions() {
-        enemies.forEach(enemy => {
-            if (!enemy.active) return;
-            
-            // Get the path cells for this enemy's current position
-            const currentSegment = path[enemy.pathIndex] || path[0];
-            const nextSegmentIndex = Math.min(enemy.pathIndex + 1, path.length - 1);
-            const nextSegment = path[nextSegmentIndex];
-            
-            // Calculate the precise positions based on current cell size
-            const startX = currentSegment[1] * cellSize + cellSize / 2;
-            const startY = currentSegment[0] * cellSize + cellSize / 2;
-            
-            if (nextSegment) {
-                const endX = nextSegment[1] * cellSize + cellSize / 2;
-                const endY = nextSegment[0] * cellSize + cellSize / 2;
-                
-                // Update position using the same progress value
-                enemy.x = startX + (endX - startX) * enemy.progress;
-                enemy.y = startY + (endY - startY) * enemy.progress;
-            } else {
-                // If there's no next segment, just position at the current cell
-                enemy.x = startX;
-                enemy.y = startY;
-            }
-        });
+        cellSize = size;
     }
     
     /**
@@ -570,8 +429,6 @@ const EnemiesModule = (function() {
         EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function(data) {
             if (data.pathCells) {
                 path = data.pathCells;
-                // Verify the new path
-                verifyPath();
             }
         });
         
@@ -579,72 +436,12 @@ const EnemiesModule = (function() {
         EventSystem.subscribe('path:updated', function(newPath) {
             if (newPath && Array.isArray(newPath)) {
                 path = newPath;
-                // Verify the updated path
-                verifyPath();
-            }
-        });
-        
-        // Listen for cell size updates
-        EventSystem.subscribe('cellSize:updated', function(newCellSize) {
-            if (newCellSize && newCellSize > 0) {
-                setCellSize(newCellSize);
             }
         });
     }
     
     // Initialize event listeners
     initEventListeners();
-    
-    /**
-     * Add responsive handling for window resizing and ensuring enemies stay on path
-     */
-    function initResponsiveHandling() {
-        // Update all enemy positions when the cell size changes
-        function updateEnemyPositions() {
-            enemies.forEach(enemy => {
-                if (!enemy.active) return;
-                
-                // Get the path cells for this enemy's current position
-                const currentSegment = path[enemy.pathIndex] || path[0];
-                const nextSegmentIndex = Math.min(enemy.pathIndex + 1, path.length - 1);
-                const nextSegment = path[nextSegmentIndex];
-                
-                // Calculate the precise positions based on current cell size
-                const startX = currentSegment[1] * cellSize + cellSize / 2;
-                const startY = currentSegment[0] * cellSize + cellSize / 2;
-                
-                if (nextSegment) {
-                    const endX = nextSegment[1] * cellSize + cellSize / 2;
-                    const endY = nextSegment[0] * cellSize + cellSize / 2;
-                    
-                    // Update position using the same progress value
-                    enemy.x = startX + (endX - startX) * enemy.progress;
-                    enemy.y = startY + (endY - startY) * enemy.progress;
-                } else {
-                    // If there's no next segment, just position at the current cell
-                    enemy.x = startX;
-                    enemy.y = startY;
-                }
-            });
-        }
-        
-        // Add resize listener
-        window.addEventListener('resize', updateEnemyPositions);
-        
-        // Also listen for orientation changes on mobile
-        window.addEventListener('orientationchange', updateEnemyPositions);
-        
-        // Listen for cell size changes from the game
-        EventSystem.subscribe('cellSize:updated', function(newCellSize) {
-            if (newCellSize && newCellSize > 0) {
-                cellSize = newCellSize;
-                updateEnemyPositions();
-            }
-        });
-    }
-    
-    // Initialize responsive handling
-    initResponsiveHandling();
     
     // Public API
     return {
