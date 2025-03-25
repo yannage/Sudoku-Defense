@@ -14,20 +14,25 @@ const EnemiesModule = (function() {
     let path = [];
     let cellSize = 0;
     
-    // Enemy types with their properties
-    const enemyTypes = {
-        1: { emoji: '1️⃣', health: 100, speed: 1, reward: 10, points: 5 },
-        2: { emoji: '2️⃣', health: 120, speed: 1.1, reward: 12, points: 7 },
-        3: { emoji: '3️⃣', health: 140, speed: 1.2, reward: 14, points: 9 },
-        4: { emoji: '4️⃣', health: 160, speed: 1.3, reward: 16, points: 11 },
-        5: { emoji: '5️⃣', health: 180, speed: 1.4, reward: 18, points: 13 },
-        6: { emoji: '6️⃣', health: 200, speed: 1.5, reward: 20, points: 15 },
-        7: { emoji: '7️⃣', health: 220, speed: 1.6, reward: 22, points: 17 },
-        8: { emoji: '8️⃣', health: 240, speed: 1.7, reward: 24, points: 19 },
-        9: { emoji: '9️⃣', health: 260, speed: 1.8, reward: 26, points: 21 },
-        'boss': { emoji: '👹', health: 500, speed: 0.8, reward: 50, points: 50 }
-    };
-    
+    /**
+ * Optional modification to the enemies.js file to slightly reduce enemy health
+ * This is an alternative or additional balance change if tower damage alone isn't enough
+ * Replace the enemyTypes definition in your enemies.js file with this
+ */
+
+// Enemy types with their properties - REDUCED HEALTH VERSION
+const enemyTypes = {
+    1: { emoji: '1️⃣', health: 80, speed: 1, reward: 10, points: 5 },      // Was 100 health
+    2: { emoji: '2️⃣', health: 95, speed: 1.1, reward: 12, points: 7 },    // Was 120 health
+    3: { emoji: '3️⃣', health: 110, speed: 1.2, reward: 14, points: 9 },   // Was 140 health
+    4: { emoji: '4️⃣', health: 125, speed: 1.3, reward: 16, points: 11 },  // Was 160 health
+    5: { emoji: '5️⃣', health: 140, speed: 1.4, reward: 18, points: 13 },  // Was 180 health
+    6: { emoji: '6️⃣', health: 160, speed: 1.5, reward: 20, points: 15 },  // Was 200 health
+    7: { emoji: '7️⃣', health: 175, speed: 1.6, reward: 22, points: 17 },  // Was 220 health
+    8: { emoji: '8️⃣', health: 190, speed: 1.7, reward: 24, points: 19 },  // Was 240 health
+    9: { emoji: '9️⃣', health: 210, speed: 1.8, reward: 26, points: 21 },  // Was 260 health
+    'boss': { emoji: '👹', health: 400, speed: 0.8, reward: 50, points: 50 } // Was 500 health
+};
     /**
      * Initialize the enemies module
      * @param {Object} options - Initialization options
