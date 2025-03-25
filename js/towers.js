@@ -396,6 +396,11 @@ const TowersModule = (function() {
         
         // Clear tracking set
         incorrectTowers.clear();
+        
+        // Update board display
+        if (Game.updateBoard) {
+            Game.updateBoard();
+        }
     }
     
     /**
@@ -492,69 +497,12 @@ const TowersModule = (function() {
 // Make module available globally
 window.TowersModule = TowersModule;
 
-// Add CSS for incorrect tower highlighting
+// Add highlighting and incorrect tower visual updates
 (function() {
-    const style = document.createElement('style');
-    style.textContent = `
-        .sudoku-cell.incorrect-tower {
-            color: #ff3333 !important; /* Red text for incorrect towers */
-            text-shadow: 0 0 2px rgba(255, 0, 0, 0.3);
-            animation: pulse-red 2s infinite;
-        }
-        
-        @keyframes pulse-red {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // Update the board display to show incorrect towers
-    const originalUpdateBoard = Game.updateBoard;
-    if (originalUpdateBoard) {
-        Game.updateBoard = function() {
-            // Call original function first
-            originalUpdateBoard.apply(this, arguments);
-            
-            // Add incorrect tower class to cells with incorrect towers
-            const boardElement = document.getElementById('sudoku-board');
-            if (!boardElement) return;
-            
-            // Get all towers
-            const towers = TowersModule.getTowers();
-            
-            // Mark incorrect towers
-            towers.forEach(tower => {
-                if (tower.isCorrect === false) {
-                    // Find cell and add class
-                    const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
-                    if (cell) {
-                        cell.classList.add('incorrect-tower');
-                    }
-                }
-            });
-        };
-    }
-})();
-
-// Add number highlighting feature
-(function() {
-    // Add CSS for highlighting
-    const style = document.createElement('style');
-    style.textContent = `
-        .sudoku-cell.number-highlighted {
-            background-color: rgba(135, 206, 250, 0.4) !important; /* Light blue highlight */
-            box-shadow: inset 0 0 0 2px #2196F3; /* Blue border */
-            transition: all 0.2s ease;
-        }
-    `;
-    document.head.appendChild(style);
-    
     // Track the currently highlighted number
     let highlightedNumber = null;
     
-    // Function to highlight all cells with a specific number
+ // Function to highlight all cells with a specific number
     function highlightNumberCells(number) {
         // Clear any existing highlights
         clearHighlights();
@@ -604,45 +552,94 @@ window.TowersModule = TowersModule;
         });
     }
     
-    // Override the tower selection event
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get all tower options
-        const towerOptions = document.querySelectorAll('.tower-option');
-        
-        // Remove existing event listeners and add new ones
-        towerOptions.forEach(option => {
-            // Clone the element to remove all event listeners
-            const newOption = option.cloneNode(true);
-            option.parentNode.replaceChild(newOption, option);
+    // Update the board display to show incorrect towers
+    const originalUpdateBoard = Game.updateBoard;
+    if (originalUpdateBoard) {
+        Game.updateBoard = function() {
+            // Call original function first
+            originalUpdateBoard.apply(this, arguments);
             
-            // Add our new event listener
-            newOption.addEventListener('click', function() {
-                const towerType = this.dataset.towerType;
-                const cost = TowersModule.getTowerCost(towerType);
-                
-                // Remove selected class from all options
-                document.querySelectorAll('.tower-option').forEach(opt => {
-                    opt.classList.remove('selected');
-                });
-                
-                // Add selected class to clicked option
-                this.classList.add('selected');
-                
-                // Select the tower in the game logic
-                PlayerModule.selectTower(towerType);
-                
-                // Show status message
-                EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-                    `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
-                
-                // Highlight matching numbers
-                if (towerType !== 'special' && !isNaN(parseInt(towerType))) {
-                    highlightNumberCells(parseInt(towerType));
-                } else {
-                    clearHighlights();
+            // Add incorrect tower class to cells with incorrect towers
+            const boardElement = document.getElementById('sudoku-board');
+            if (!boardElement) return;
+            
+            // Get all towers
+            const towers = TowersModule.getTowers();
+            
+            // First, remove all incorrect-tower classes
+            const incorrectCells = boardElement.querySelectorAll('.sudoku-cell.incorrect-tower');
+            incorrectCells.forEach(cell => {
+                cell.classList.remove('incorrect-tower');
+            });
+            
+            // Then mark incorrect towers
+            towers.forEach(tower => {
+                if (tower.isCorrect === false) {
+                    // Find cell and add class
+                    const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+                    if (cell) {
+                        cell.classList.add('incorrect-tower');
+                    }
                 }
             });
-        });
+            
+            // Reapply number highlighting if active
+            if (highlightedNumber) {
+                highlightNumberCells(highlightedNumber);
+            }
+        };
+    }
+    
+    // Override the tower selection event
+    document.addEventListener('DOMContentLoaded', function() {
+        // Function to setup tower selection
+        function setupTowerSelection() {
+            // Get all tower options
+            const towerOptions = document.querySelectorAll('.tower-option');
+            if (!towerOptions.length) {
+                // If elements aren't ready yet, try again later
+                setTimeout(setupTowerSelection, 100);
+                return;
+            }
+            
+            // Remove existing event listeners and add new ones
+            towerOptions.forEach(option => {
+                // Clone the element to remove all event listeners
+                const newOption = option.cloneNode(true);
+                option.parentNode.replaceChild(newOption, option);
+                
+                // Add our new event listener
+                newOption.addEventListener('click', function() {
+                    const towerType = this.dataset.towerType;
+                    const cost = TowersModule.getTowerCost(towerType);
+                    
+                    // Remove selected class from all options
+                    document.querySelectorAll('.tower-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                    
+                    // Select the tower in the game logic
+                    PlayerModule.selectTower(towerType);
+                    
+                    // Show status message
+                    EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                        `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
+                    
+                    // Highlight matching numbers
+                    if (towerType !== 'special' && !isNaN(parseInt(towerType))) {
+                        highlightNumberCells(parseInt(towerType));
+                    } else {
+                        clearHighlights();
+                    }
+                });
+            });
+        }
+        
+        // Try to setup tower selection
+        setupTowerSelection();
     });
     
     // Also update the board when new towers are placed
