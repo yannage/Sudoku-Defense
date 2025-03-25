@@ -754,27 +754,29 @@ window.Game = Game;
 })();
 
 
+// Add this to the end of your game.js file
+
 /**
- * Comprehensive fix for incorrect tower visuals
- * This addresses issues with the cell background color and X marker
+ * Comprehensive fix for incorrect tower visuals with semi-transparent X mark
+ * This addresses issues with the cell background color and makes the X mark more subtle
  */
 (function() {
-    // Add stronger CSS for the incorrect tower indicators
+    // Add CSS for the incorrect tower indicators with a more subtle X mark
     const style = document.createElement('style');
     style.textContent = `
         /* Force all existing incorrect tower styles to be overridden */
         .sudoku-cell.incorrect-tower {
-            background-color: rgba(255, 0, 0, 0.6) !important;
+            background-color: rgba(255, 0, 0, 0.5) !important;
             box-shadow: inset 0 0 0 2px #ff0000 !important;
             z-index: 5 !important;
         }
         
         /* Reset any hover effects that might override our styling */
         .sudoku-cell.incorrect-tower:hover {
-            background-color: rgba(255, 0, 0, 0.7) !important;
+            background-color: rgba(255, 0, 0, 0.6) !important;
         }
         
-        /* Make X mark more visible */
+        /* Make X mark semi-transparent so the tower number is still visible */
         .incorrect-marker {
             position: absolute !important;
             top: 0 !important;
@@ -784,12 +786,11 @@ window.Game = Game;
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
-            font-size: 2em !important;
-            color: #ff0000 !important;
-            font-weight: bold !important;
+            font-size: 1.6em !important;
+            color: rgba(255, 0, 0, 0.25) !important; /* Semi-transparent red */
             pointer-events: none !important;
-            z-index: 100 !important;
-            text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
+            z-index: 10 !important;
+            text-shadow: none !important; /* Remove text shadow for subtlety */
         }
     `;
     document.head.appendChild(style);
@@ -835,7 +836,7 @@ window.Game = Game;
                     // Apply incorrect tower class
                     cell.classList.add('incorrect-tower');
                     
-                    // Add X mark
+                    // Add semi-transparent X mark
                     if (!cell.querySelector('.incorrect-marker')) {
                         const xMark = document.createElement('div');
                         xMark.className = 'incorrect-marker';
@@ -891,5 +892,5 @@ window.Game = Game;
         applyIncorrectTowerIndicators();
     }, 100);
     
-    console.log("Comprehensive incorrect tower visual fix applied!");
+    console.log("Comprehensive incorrect tower visual fix applied with semi-transparent X mark!");
 })();
