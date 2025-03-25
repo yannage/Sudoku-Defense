@@ -139,6 +139,11 @@ const SaveSystem = (function() {
         
         // Also save periodically (every 30 seconds)
         setInterval(saveScore, 30000);
+        
+        // Save when window is closed
+        window.addEventListener('beforeunload', function() {
+            saveScore();
+        });
     }
     
     /**
