@@ -96,7 +96,7 @@ const EnemiesModule = (function() {
             return;
         }
         
-        // Get the path from the Sudoku module
+        // Get the latest path from the Sudoku module
         path = SudokuModule.getPathArray();
         
         if (path.length === 0) {
@@ -385,7 +385,16 @@ const EnemiesModule = (function() {
         
         // Listen for Sudoku board generation to get the path
         EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function(data) {
-            path = data.pathCells;
+            if (data.pathCells) {
+                path = data.pathCells;
+            }
+        });
+        
+        // Listen for specific path updates
+        EventSystem.subscribe('path:updated', function(newPath) {
+            if (newPath && Array.isArray(newPath)) {
+                path = newPath;
+            }
         });
     }
     
