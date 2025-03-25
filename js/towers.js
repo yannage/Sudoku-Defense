@@ -181,17 +181,59 @@ const TowersModule = (function() {
             }
             
             // Find a target for the tower
-            const target = findTarget(tower, enemies);
-            
-            if (target) {
-                // Attack the target
-                attackEnemy(tower, target);
-                
-                // Set attack cooldown
-                tower.attackCooldown = tower.attackSpeed;
+            const target = function findTarget(tower, enemies) {
+    // Special tower attacks any enemy in range
+    if (tower.type === 'special') {
+        return findClosestEnemy(tower, enemies);
+    }
+    
+    // Parse tower number
+    const towerNumber = parseInt(tower.type);
+    if (isNaN(towerNumber)) {
+        return null;
+    }
+    
+    // Calculate the range of enemy numbers this tower can attack
+    // A tower can attack its own number and up to 2 higher numbers
+    const minTargetNumber = towerNumber;
+    const maxTargetNumber = towerNumber + 2;
+    
+    console.log(`Tower ${towerNumber} targeting enemies ${minTargetNumber}-${maxTargetNumber}`);
+    
+    // Filter enemies by eligible type numbers
+    const matchingEnemies = enemies.filter(enemy => {
+        // Convert enemy type to a number
+        let enemyType = enemy.type;
+        
+        // If it's a string (like emoji "1️⃣"), convert to number
+        if (typeof enemyType === 'string') {
+            // Try to extract the first digit
+            const match = enemyType.match(/\d+/);
+            if (match) {
+                enemyType = parseInt(match[0]);
+            } else if (enemyType === 'boss') {
+                // Special case for boss - all towers can attack the boss
+                return true;
+            } else {
+                // If we can't parse a number, try direct parseInt
+                enemyType = parseInt(enemyType);
             }
         }
+        
+        // Check if the enemy number is within the tower's target range
+        return !isNaN(enemyType) && 
+               enemyType >= minTargetNumber && 
+               enemyType <= maxTargetNumber;
+    });
+    
+    // If debugging, log how many eligible targets we found
+    if (matchingEnemies.length > 0) {
+        console.log(`Tower ${towerNumber} found ${matchingEnemies.length} eligible targets`);
     }
+    
+    // Find the closest eligible enemy
+    return findClosestEnemy(tower, matchingEnemies);
+}
     
     /**
      * Find a target for a tower
