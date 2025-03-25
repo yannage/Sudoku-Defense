@@ -21,21 +21,21 @@ const TowersModule = (function() {
     let towerId = 0;
     let cellSize = 0;
     
-    // Tower types with their properties - ENHANCED DAMAGE VERSION
+    //  towerTypes definition
     const towerTypes = {
-        // Number towers (1-9) with BOOSTED damage values
-        1: { emoji: '1️⃣', damage: 40, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 20 damage, 1.0 speed
-        2: { emoji: '2️⃣', damage: 50, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 25 damage, 1.0 speed
-        3: { emoji: '3️⃣', damage: 60, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 30 damage, 1.0 speed
-        4: { emoji: '4️⃣', damage: 70, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 35 damage, 1.0 speed
-        5: { emoji: '5️⃣', damage: 80, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 40 damage, 1.0 speed
-        6: { emoji: '6️⃣', damage: 90, range: 2, attackSpeed: 0.8, cost: 50 },  // Was 45 damage, 1.0 speed
-        7: { emoji: '7️⃣', damage: 100, range: 2, attackSpeed: 0.8, cost: 50 }, // Was 50 damage, 1.0 speed
-        8: { emoji: '8️⃣', damage: 110, range: 2, attackSpeed: 0.8, cost: 50 }, // Was 55 damage, 1.0 speed
-        9: { emoji: '9️⃣', damage: 120, range: 2.5, attackSpeed: 0.8, cost: 50 }, // Was 60 damage, 1.0 speed
-        // Special tower with BOOSTED stats
-        'special': { emoji: '🔮', damage: 60, range: 3.5, attackSpeed: 0.4, cost: 150 } // Was 30 damage, 0.5 speed
-    };
+    // Number towers with reduced costs and improved stats
+    1: { emoji: '1️⃣', damage: 60, range: 2.5, attackSpeed: 0.7, cost: 30 },
+    2: { emoji: '2️⃣', damage: 70, range: 2.5, attackSpeed: 0.7, cost: 30 },
+    3: { emoji: '3️⃣', damage: 80, range: 2.5, attackSpeed: 0.7, cost: 30 },
+    4: { emoji: '4️⃣', damage: 90, range: 2.5, attackSpeed: 0.7, cost: 35 },
+    5: { emoji: '5️⃣', damage: 100, range: 2.5, attackSpeed: 0.7, cost: 35 },
+    6: { emoji: '6️⃣', damage: 110, range: 2.5, attackSpeed: 0.7, cost: 35 },
+    7: { emoji: '7️⃣', damage: 120, range: 2.5, attackSpeed: 0.7, cost: 40 },
+    8: { emoji: '8️⃣', damage: 130, range: 2.5, attackSpeed: 0.7, cost: 40 },
+    9: { emoji: '9️⃣', damage: 140, range: 3.0, attackSpeed: 0.7, cost: 40 },
+    // Special tower
+    'special': { emoji: '🔮', damage: 80, range: 4.0, attackSpeed: 0.3, cost: 100 }
+};
     
     /**
      * Initialize the towers module
