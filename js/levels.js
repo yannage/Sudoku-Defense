@@ -56,9 +56,18 @@ const LevelsModule = (function() {
             return;
         }
         
+        // Clear existing path before generating a new one
+        if (window.SudokuModule && typeof SudokuModule.getPathCells === 'function') {
+            const pathCells = SudokuModule.getPathCells();
+            if (pathCells && typeof pathCells.clear === 'function') {
+                pathCells.clear();
+            }
+        }
+        
         // Generate a new path for this wave
         if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
             SudokuModule.generateEnemyPath();
+            console.log("New path generated for wave " + currentWave);
             
             // Tell the game to update the board display to show the new path
             if (window.Game && typeof Game.updateBoard === 'function') {
@@ -71,6 +80,9 @@ const LevelsModule = (function() {
                 EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
                     pathCells: newPath
                 });
+                
+                // Also publish a specific event for path updates
+                EventSystem.publish('path:updated', newPath);
             }
         }
         
