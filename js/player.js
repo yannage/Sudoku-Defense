@@ -177,8 +177,42 @@ const PlayerModule = (function() {
         
         // Listen for enemy defeated to add currency and score
         EventSystem.subscribe(GameEvents.ENEMY_DEFEATED, function(data) {
-            addCurrency(data.reward || 10);
-            addScore(data.points || 5);
+            // Use the points and currency from the event data if available
+            const pointsToAdd = data.points || data.enemy.points || 5;
+            const currencyToAdd = data.currency || data.enemy.reward || 10;
+            
+            addCurrency(currencyToAdd);
+            addScore(pointsToAdd);
+            
+            // Log the bonuses if they're different from the base values
+            if (data.enemy && 
+                (pointsToAdd > data.enemy.points || currencyToAdd > data.enemy.reward)) {
+                console.log(`Bonus applied! Points: ${pointsToAdd}, Currency: ${currencyToAdd}`);
+            }
+        });
+        
+        // Listen for tower attack event to handle bonus rewards
+        EventSystem.subscribe(GameEvents.TOWER_ATTACK, function(data) {
+            // If the enemy was killed and there are bonus rewards, add them
+            if (data.killed && (data.points || data.currency)) {
+                // The ENEMY_DEFEATED event will handle the actual reward addition
+                // We don't need to duplicate it here
+                
+                // We could add visual feedback for bonuses here if desired
+                if (data.tower && (data.points > 0 || data.currency > 0)) {
+                    // Find the tower element for visual feedback
+                    const towerElement = document.querySelector(
+                        `.sudoku-cell[data-row="${data.tower.row}"][data-col="${data.tower.col}"]`);
+                    
+                    if (towerElement) {
+                        // Add a brief animation or effect to show the bonus
+                        towerElement.classList.add('bonus-reward');
+                        setTimeout(() => {
+                            towerElement.classList.remove('bonus-reward');
+                        }, 300);
+                    }
+                }
+            }
         });
         
         // Listen for enemy reaching the end to lose a life
@@ -223,3 +257,25 @@ const PlayerModule = (function() {
 
 // Make module available globally
 window.PlayerModule = PlayerModule;
+
+// Add bonus reward animation styles
+(function() {
+    // Add CSS for bonus reward animations if not already present
+    if (!document.getElementById('bonus-reward-styles')) {
+        const style = document.createElement('style');
+        style.id = 'bonus-reward-styles';
+        style.textContent = `
+            @keyframes bonus-reward-pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.1); filter: brightness(1.5); }
+                100% { transform: scale(1); }
+            }
+            
+            .bonus-reward {
+                animation: bonus-reward-pulse 0.3s ease-in-out;
+                z-index: 25;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+})();
