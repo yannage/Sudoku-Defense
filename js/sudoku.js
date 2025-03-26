@@ -11,6 +11,11 @@ const SudokuModule = (function() {
     let difficulty = 'medium'; // easy, medium, hard
     let pathCells = new Set(); // Cells that form the enemy path
     
+    // Track completed units to avoid triggering events multiple times
+    let completedRows = new Set();
+    let completedColumns = new Set();
+    let completedGrids = new Set();
+    
     // Difficulty settings (number of cells to reveal)
     const difficultySettings = {
         easy: 40,
@@ -215,123 +220,129 @@ const SudokuModule = (function() {
     }
     
     /**
- * Update for sudoku.js to add dynamic path generation
- * 
- * Replace the existing generateEnemyPath function in the SudokuModule with this version.
- * The new function creates more varied paths that can start and end at different rows.
- */
-
-/**
- * Generate a path for enemies to follow
- * Creates a non-overlapping path from a starting point to an end point
- */
-function generateEnemyPath() {
-    pathCells.clear();
-    
-    // Only use horizontal and vertical movements to avoid diagonal overlaps
-    const directions = [
-        [-1, 0], // up
-        [1, 0],  // down
-        [0, 1]   // right - only move right, never left to prevent overlaps
-    ];
-    
-    // Start at a random position on the left edge
-    let startRow = Math.floor(Math.random() * 9);
-    let currentRow = startRow;
-    let currentCol = 0;
-    
-    // Choose an end row for the right edge
-    let endRow = Math.floor(Math.random() * 9);
-    
-    // Mark the starting position
-    pathCells.add(`${currentRow},${currentCol}`);
-    
-    // Keep track of visited columns to ensure we always make progress
-    const visitedColumns = new Set([0]);
-    
-    // Generate path until we reach the last column
-    while (currentCol < 8) {
-        let possibleMoves = [];
+     * Generate a path for enemies to follow
+     * Creates a non-overlapping path from a starting point to an end point
+     */
+    function generateEnemyPath() {
+        pathCells.clear();
         
-        // Check each direction
-        for (let [dr, dc] of directions) {
-            let newRow = currentRow + dr;
-            let newCol = currentCol + dc;
+        // Only use horizontal and vertical movements to avoid diagonal overlaps
+        const directions = [
+            [-1, 0], // up
+            [1, 0],  // down
+            [0, 1]   // right - only move right, never left to prevent overlaps
+        ];
+        
+        // Start at a random position on the left edge
+        let startRow = Math.floor(Math.random() * 9);
+        let currentRow = startRow;
+        let currentCol = 0;
+        
+        // Choose an end row for the right edge
+        let endRow = Math.floor(Math.random() * 9);
+        
+        // Mark the starting position
+        pathCells.add(`${currentRow},${currentCol}`);
+        
+        // Keep track of visited columns to ensure we always make progress
+        const visitedColumns = new Set([0]);
+        
+        // Generate path until we reach the last column
+        while (currentCol < 8) {
+            let possibleMoves = [];
             
-            // Check if the new position is valid
-            if (
-                newRow >= 0 && newRow < 9 && 
-                newCol >= 0 && newCol < 9 && 
-                !pathCells.has(`${newRow},${newCol}`)
-            ) {
-                // If we're already at the target column, only allow vertical moves
-                if (currentCol === 7 && newCol > currentCol) {
-                    // We've reached column 7, only allow moving to endRow
-                    if (newRow === endRow) {
-                        possibleMoves = [[dr, dc]];
-                        break;
+            // Check each direction
+            for (let [dr, dc] of directions) {
+                let newRow = currentRow + dr;
+                let newCol = currentCol + dc;
+                
+                // Check if the new position is valid
+                if (
+                    newRow >= 0 && newRow < 9 && 
+                    newCol >= 0 && newCol < 9 && 
+                    !pathCells.has(`${newRow},${newCol}`)
+                ) {
+                    // If we're already at the target column, only allow vertical moves
+                    if (currentCol === 7 && newCol > currentCol) {
+                        // We've reached column 7, only allow moving to endRow
+                        if (newRow === endRow) {
+                            possibleMoves = [[dr, dc]];
+                            break;
+                        }
+                    } else {
+                        // Otherwise, consider this move
+                        possibleMoves.push([dr, dc]);
                     }
-                } else {
-                    // Otherwise, consider this move
-                    possibleMoves.push([dr, dc]);
                 }
             }
-        }
-        
-        // If no valid moves, force a move right
-        if (possibleMoves.length === 0) {
-            // Try to move right
-            let newRow = currentRow;
-            let newCol = currentCol + 1;
             
-            if (newCol < 9 && !pathCells.has(`${newRow},${newCol}`)) {
-                currentRow = newRow;
-                currentCol = newCol;
-                pathCells.add(`${currentRow},${currentCol}`);
-                visitedColumns.add(currentCol);
-                continue;
-            } else {
-                // If we can't move right, try to find any non-visited cell
-                let found = false;
-                for (let r = 0; r < 9; r++) {
-                    for (let c = currentCol; c < 9; c++) {
-                        if (!pathCells.has(`${r},${c}`)) {
-                            // Check if we can connect to this cell without crossing the path
-                            if (canConnect(currentRow, currentCol, r, c, pathCells)) {
-                                // Add connecting cells
-                                const connectingCells = getConnectingCells(currentRow, currentCol, r, c);
-                                for (const cell of connectingCells) {
-                                    pathCells.add(cell);
+            // If no valid moves, force a move right
+            if (possibleMoves.length === 0) {
+                // Try to move right
+                let newRow = currentRow;
+                let newCol = currentCol + 1;
+                
+                if (newCol < 9 && !pathCells.has(`${newRow},${newCol}`)) {
+                    currentRow = newRow;
+                    currentCol = newCol;
+                    pathCells.add(`${currentRow},${currentCol}`);
+                    visitedColumns.add(currentCol);
+                    continue;
+                } else {
+                    // If we can't move right, try to find any non-visited cell
+                    let found = false;
+                    for (let r = 0; r < 9; r++) {
+                        for (let c = currentCol; c < 9; c++) {
+                            if (!pathCells.has(`${r},${c}`)) {
+                                // Check if we can connect to this cell without crossing the path
+                                if (canConnect(currentRow, currentCol, r, c, pathCells)) {
+                                    // Add connecting cells
+                                    const connectingCells = getConnectingCells(currentRow, currentCol, r, c);
+                                    for (const cell of connectingCells) {
+                                        pathCells.add(cell);
+                                    }
+                                    currentRow = r;
+                                    currentCol = c;
+                                    found = true;
+                                    break;
                                 }
-                                currentRow = r;
-                                currentCol = c;
-                                found = true;
-                                break;
                             }
                         }
+                        if (found) break;
                     }
-                    if (found) break;
+                    
+                    if (!found) {
+                        // If still no valid moves, break and use what we have
+                        break;
+                    }
+                    continue;
                 }
-                
-                if (!found) {
-                    // If still no valid moves, break and use what we have
-                    break;
-                }
-                continue;
             }
-        }
-        
-        // Prefer moving toward the end
-        let bestMoves = [];
-        
-        // If we're not in the last column, prioritize moving right
-        if (currentCol < 7) {
-            // Prefer moving right
-            const rightMoves = possibleMoves.filter(([dr, dc]) => dc > 0);
-            if (rightMoves.length > 0) {
-                bestMoves = rightMoves;
+            
+            // Prefer moving toward the end
+            let bestMoves = [];
+            
+            // If we're not in the last column, prioritize moving right
+            if (currentCol < 7) {
+                // Prefer moving right
+                const rightMoves = possibleMoves.filter(([dr, dc]) => dc > 0);
+                if (rightMoves.length > 0) {
+                    bestMoves = rightMoves;
+                } else {
+                    // If we can't move right, prefer moving vertically toward endRow
+                    const verticalMoves = possibleMoves.filter(([dr, dc]) => dc === 0);
+                    if (verticalMoves.length > 0) {
+                        const movesTowardEnd = verticalMoves.filter(([dr, dc]) => 
+                            (dr > 0 && currentRow < endRow) || (dr < 0 && currentRow > endRow)
+                        );
+                        
+                        bestMoves = movesTowardEnd.length > 0 ? movesTowardEnd : verticalMoves;
+                    } else {
+                        bestMoves = possibleMoves;
+                    }
+                }
             } else {
-                // If we can't move right, prefer moving vertically toward endRow
+                // In the last column, prioritize getting to endRow
                 const verticalMoves = possibleMoves.filter(([dr, dc]) => dc === 0);
                 if (verticalMoves.length > 0) {
                     const movesTowardEnd = verticalMoves.filter(([dr, dc]) => 
@@ -343,114 +354,111 @@ function generateEnemyPath() {
                     bestMoves = possibleMoves;
                 }
             }
+            
+            // Choose a move
+            const [dr, dc] = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+            
+            // Move to the new position
+            currentRow += dr;
+            currentCol += dc;
+            pathCells.add(`${currentRow},${currentCol}`);
+            
+            // Track visited columns
+            visitedColumns.add(currentCol);
+        }
+        
+        // If we haven't reached the end row in the last column, add a straight path to it
+        if (currentCol === 8 && currentRow !== endRow) {
+            // Add a path from current position to the end position
+            const step = currentRow < endRow ? 1 : -1;
+            for (let r = currentRow + step; step > 0 ? r <= endRow : r >= endRow; r += step) {
+                if (!pathCells.has(`${r},${currentCol}`)) {
+                    pathCells.add(`${r},${currentCol}`);
+                }
+            }
+        }
+        
+        // Log path information for debugging
+        console.log(`Created non-overlapping path with ${pathCells.size} cells, from (${startRow},0) to (${endRow},8)`);
+        
+        // Reset completion tracking when path changes
+        completedRows.clear();
+        completedColumns.clear();
+        completedGrids.clear();
+    }
+    
+    /**
+     * Check if we can connect two cells without crossing the existing path
+     */
+    function canConnect(row1, col1, row2, col2, existingPath) {
+        // For simplicity, only allow connecting in a straight line (horizontal or vertical)
+        if (row1 !== row2 && col1 !== col2) {
+            return false;
+        }
+        
+        // Check if there's a clear path
+        if (row1 === row2) {
+            // Horizontal path
+            const minCol = Math.min(col1, col2);
+            const maxCol = Math.max(col1, col2);
+            
+            for (let c = minCol + 1; c < maxCol; c++) {
+                if (existingPath.has(`${row1},${c}`)) {
+                    return false;
+                }
+            }
+            return true;
         } else {
-            // In the last column, prioritize getting to endRow
-            const verticalMoves = possibleMoves.filter(([dr, dc]) => dc === 0);
-            if (verticalMoves.length > 0) {
-                const movesTowardEnd = verticalMoves.filter(([dr, dc]) => 
-                    (dr > 0 && currentRow < endRow) || (dr < 0 && currentRow > endRow)
-                );
-                
-                bestMoves = movesTowardEnd.length > 0 ? movesTowardEnd : verticalMoves;
-            } else {
-                bestMoves = possibleMoves;
+            // Vertical path
+            const minRow = Math.min(row1, row2);
+            const maxRow = Math.max(row1, row2);
+            
+            for (let r = minRow + 1; r < maxRow; r++) {
+                if (existingPath.has(`${r},${col1}`)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+    
+    /**
+     * Get connecting cells between two points
+     */
+    function getConnectingCells(row1, col1, row2, col2) {
+        const cells = [];
+        
+        if (row1 === row2) {
+            // Horizontal path
+            const minCol = Math.min(col1, col2);
+            const maxCol = Math.max(col1, col2);
+            
+            for (let c = minCol + 1; c <= maxCol; c++) {
+                cells.push(`${row1},${c}`);
+            }
+        } else if (col1 === col2) {
+            // Vertical path
+            const minRow = Math.min(row1, row2);
+            const maxRow = Math.max(row1, row2);
+            
+            for (let r = minRow + 1; r <= maxRow; r++) {
+                cells.push(`${r},${col1}`);
             }
         }
         
-        // Choose a move
-        const [dr, dc] = bestMoves[Math.floor(Math.random() * bestMoves.length)];
-        
-        // Move to the new position
-        currentRow += dr;
-        currentCol += dc;
-        pathCells.add(`${currentRow},${currentCol}`);
-        
-        // Track visited columns
-        visitedColumns.add(currentCol);
+        return cells;
     }
-    
-    // If we haven't reached the end row in the last column, add a straight path to it
-    if (currentCol === 8 && currentRow !== endRow) {
-        // Add a path from current position to the end position
-        const step = currentRow < endRow ? 1 : -1;
-        for (let r = currentRow + step; step > 0 ? r <= endRow : r >= endRow; r += step) {
-            if (!pathCells.has(`${r},${currentCol}`)) {
-                pathCells.add(`${r},${currentCol}`);
-            }
-        }
-    }
-    
-    // Log path information for debugging
-    console.log(`Created non-overlapping path with ${pathCells.size} cells, from (${startRow},0) to (${endRow},8)`);
-}
-
-/**
- * Check if we can connect two cells without crossing the existing path
- */
-function canConnect(row1, col1, row2, col2, existingPath) {
-    // For simplicity, only allow connecting in a straight line (horizontal or vertical)
-    if (row1 !== row2 && col1 !== col2) {
-        return false;
-    }
-    
-    // Check if there's a clear path
-    if (row1 === row2) {
-        // Horizontal path
-        const minCol = Math.min(col1, col2);
-        const maxCol = Math.max(col1, col2);
-        
-        for (let c = minCol + 1; c < maxCol; c++) {
-            if (existingPath.has(`${row1},${c}`)) {
-                return false;
-            }
-        }
-        return true;
-    } else {
-        // Vertical path
-        const minRow = Math.min(row1, row2);
-        const maxRow = Math.max(row1, row2);
-        
-        for (let r = minRow + 1; r < maxRow; r++) {
-            if (existingPath.has(`${r},${col1}`)) {
-                return false;
-            }
-        }
-        return true;
-    }
-}
-
-/**
- * Get connecting cells between two points
- */
-function getConnectingCells(row1, col1, row2, col2) {
-    const cells = [];
-    
-    if (row1 === row2) {
-        // Horizontal path
-        const minCol = Math.min(col1, col2);
-        const maxCol = Math.max(col1, col2);
-        
-        for (let c = minCol + 1; c <= maxCol; c++) {
-            cells.push(`${row1},${c}`);
-        }
-    } else if (col1 === col2) {
-        // Vertical path
-        const minRow = Math.min(row1, row2);
-        const maxRow = Math.max(row1, row2);
-        
-        for (let r = minRow + 1; r <= maxRow; r++) {
-            cells.push(`${r},${col1}`);
-        }
-    }
-    
-    return cells;
-}
     
     /**
      * Generate a random valid Sudoku puzzle
      */
     function generatePuzzle() {
         console.log("Generating new Sudoku puzzle...");
+        
+        // Reset completion tracking
+        completedRows.clear();
+        completedColumns.clear();
+        completedGrids.clear();
         
         // Generate the enemy path first
         generateEnemyPath();
@@ -596,6 +604,10 @@ function getConnectingCells(row1, col1, row2, col2) {
         // If we're clearing a cell (value = 0), always allow it
         if (value === 0) {
             board[row][col] = 0;
+            
+            // Check for completions after clearing a cell
+            checkUnitCompletion();
+            
             return true;
         }
         
@@ -623,12 +635,155 @@ function getConnectingCells(row1, col1, row2, col2) {
         // Publish event
         EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
         
+        // Check for unit completions (rows, columns, grids)
+        checkUnitCompletion();
+        
         // Check if the Sudoku is complete
         if (isComplete()) {
             EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
         }
         
         return true;
+    }
+    
+    /**
+     * Check for completed units (rows, columns, 3x3 grids)
+     * Triggers completion bonus events for newly completed units
+     */
+    function checkUnitCompletion() {
+        // Check rows
+        for (let row = 0; row < 9; row++) {
+            let isRowComplete = true;
+            let nonPathCellCount = 0;
+            let filledCellCount = 0;
+            let numberSet = new Set();
+            
+            for (let col = 0; col < 9; col++) {
+                if (!pathCells.has(`${row},${col}`)) {
+                    nonPathCellCount++;
+                    
+                    if (board[row][col] > 0) {
+                        filledCellCount++;
+                        numberSet.add(board[row][col]);
+                    } else {
+                        isRowComplete = false;
+                    }
+                }
+            }
+            
+            // Row is complete if all non-path cells are filled with unique numbers
+            const isComplete = (isRowComplete && filledCellCount === nonPathCellCount && 
+                               numberSet.size === nonPathCellCount && nonPathCellCount > 0);
+            
+            // Check if this is a newly completed row
+            if (isComplete && !completedRows.has(row)) {
+                completedRows.add(row);
+                console.log(`Row ${row} completed!`);
+                
+                // Trigger the completion bonus system if it exists
+                if (window.CompletionBonusModule && 
+                    typeof CompletionBonusModule.onUnitCompleted === 'function') {
+                    CompletionBonusModule.onUnitCompleted('row', row);
+                }
+            } else if (!isComplete && completedRows.has(row)) {
+                // Row was previously complete but is no longer
+                completedRows.delete(row);
+                console.log(`Row ${row} is no longer complete.`);
+            }
+        }
+        
+        // Check columns
+        for (let col = 0; col < 9; col++) {
+            let isColComplete = true;
+            let nonPathCellCount = 0;
+            let filledCellCount = 0;
+            let numberSet = new Set();
+            
+            for (let row = 0; row < 9; row++) {
+                if (!pathCells.has(`${row},${col}`)) {
+                    nonPathCellCount++;
+                    
+                    if (board[row][col] > 0) {
+                        filledCellCount++;
+                        numberSet.add(board[row][col]);
+                    } else {
+                        isColComplete = false;
+                    }
+                }
+            }
+            
+            // Column is complete if all non-path cells are filled with unique numbers
+            const isComplete = (isColComplete && filledCellCount === nonPathCellCount && 
+                               numberSet.size === nonPathCellCount && nonPathCellCount > 0);
+            
+            // Check if this is a newly completed column
+            if (isComplete && !completedColumns.has(col)) {
+                completedColumns.add(col);
+                console.log(`Column ${col} completed!`);
+                
+                // Trigger the completion bonus system if it exists
+                if (window.CompletionBonusModule && 
+                    typeof CompletionBonusModule.onUnitCompleted === 'function') {
+                    CompletionBonusModule.onUnitCompleted('column', col);
+                }
+            } else if (!isComplete && completedColumns.has(col)) {
+                // Column was previously complete but is no longer
+                completedColumns.delete(col);
+                console.log(`Column ${col} is no longer complete.`);
+            }
+        }
+        
+        // Check 3x3 grids
+        for (let gridRow = 0; gridRow < 3; gridRow++) {
+            for (let gridCol = 0; gridCol < 3; gridCol++) {
+                let isGridComplete = true;
+                let nonPathCellCount = 0;
+                let filledCellCount = 0;
+                let numberSet = new Set();
+                
+                // Check each cell in this 3x3 grid
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        const row = gridRow * 3 + i;
+                        const col = gridCol * 3 + j;
+                        
+                        if (!pathCells.has(`${row},${col}`)) {
+                            nonPathCellCount++;
+                            
+                            if (board[row][col] > 0) {
+                                filledCellCount++;
+                                numberSet.add(board[row][col]);
+                            } else {
+                                isGridComplete = false;
+                            }
+                        }
+                    }
+                }
+                
+                // Grid is complete if all non-path cells are filled with unique numbers
+                const isComplete = (isGridComplete && filledCellCount === nonPathCellCount && 
+                                   numberSet.size === nonPathCellCount && nonPathCellCount > 0);
+                
+                // Create a key for this grid
+                const gridKey = `${gridRow}-${gridCol}`;
+                
+                // Check if this is a newly completed grid
+                if (isComplete && !completedGrids.has(gridKey)) {
+                    completedGrids.add(gridKey);
+                    console.log(`Grid ${gridKey} completed!`);
+                    
+                    // Trigger the completion bonus system if it exists
+                    if (window.CompletionBonusModule && 
+                        typeof CompletionBonusModule.onUnitCompleted === 'function') {
+                        CompletionBonusModule.onUnitCompleted('grid', gridKey);
+                    }
+                } else if (!isComplete && completedGrids.has(gridKey)) {
+                    // Grid was previously complete but is no longer
+                    completedGrids.delete(gridKey);
+                    console.log(`Grid ${gridKey} is no longer complete.`);
+                }
+            }
+        }
     }
     
     /**
@@ -749,6 +904,18 @@ function getConnectingCells(row1, col1, row2, col2) {
     }
     
     /**
+     * Get the completion status of rows, columns, and grids
+     * @returns {Object} Completion status
+     */
+    function getCompletionStatus() {
+        return {
+            rows: Array.from(completedRows),
+            columns: Array.from(completedColumns),
+            grids: Array.from(completedGrids)
+        };
+    }
+    
+    /**
      * Initialize event listeners
      */
     function init() {
@@ -767,20 +934,21 @@ function getConnectingCells(row1, col1, row2, col2) {
     init();
     
     // Public API
-    // Add generateEnemyPath to the public API of SudokuModule
-return {
-    generatePuzzle,
-    setCellValue,
-    getBoard,
-    getSolution,
-    getFixedCells,
-    getPathCells,
-    getPathArray,
-    setDifficulty,
-    isValidMove,
-    getPossibleValues,
-    generateEnemyPath  // Add this line to expose the function
-};
+    return {
+        generatePuzzle,
+        setCellValue,
+        getBoard,
+        getSolution,
+        getFixedCells,
+        getPathCells,
+        getPathArray,
+        setDifficulty,
+        isValidMove,
+        getPossibleValues,
+        generateEnemyPath,
+        checkUnitCompletion,
+        getCompletionStatus
+    };
 })();
 
 // Make module available globally
