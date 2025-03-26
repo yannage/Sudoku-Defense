@@ -650,175 +650,45 @@ const SudokuModule = (function() {
      * Check for completed units (rows, columns, 3x3 grids)
      * Triggers completion bonus events for newly completed units
      */
-    /**
- * Check for completed units (rows, columns, 3x3 grids)
- * Triggers completion bonus events for newly completed units
- */
-function checkUnitCompletion() {
+    function checkUnitCompletion() {
     // Check rows
     for (let row = 0; row < 9; row++) {
-        // Get all non-path cells in this row
-        const nonPathCells = [];
+        let nonPathCellCount = 0;
+        let correctCellCount = 0;
+        let numberSet = new Set();
+        
         for (let col = 0; col < 9; col++) {
             if (!pathCells.has(`${row},${col}`)) {
-                nonPathCells.push({row, col});
-            }
-        }
-        
-        // Skip if there are no non-path cells in this row
-        if (nonPathCells.length === 0) continue;
-        
-        // Check if all non-path cells have numbers and form a valid Sudoku row
-        let isComplete = true;
-        const usedNumbers = new Set();
-        
-        for (const cell of nonPathCells) {
-            const value = board[cell.row][cell.col];
-            if (value === 0) {
-                // Empty cell means row is not complete
-                isComplete = false;
-                break;
-            }
-            
-            // Check if this number is already used in the row
-            if (usedNumbers.has(value)) {
-                // Duplicate number means row is not valid
-                isComplete = false;
-                break;
-            }
-            
-            usedNumbers.add(value);
-        }
-        
-        // Row is complete if all cells are filled and numbers are unique
-        if (isComplete && usedNumbers.size === nonPathCells.length) {
-            if (!completedRows.has(row)) {
-                completedRows.add(row);
-                console.log(`Row ${row} completed!`);
+                nonPathCellCount++;
                 
-                // Trigger the completion bonus system
-                if (window.CompletionBonusModule && 
-                    typeof CompletionBonusModule.onUnitCompleted === 'function') {
-                    CompletionBonusModule.onUnitCompleted('row', row);
+                // Check if the value matches the solution
+                if (board[row][col] > 0 && board[row][col] === solution[row][col]) {
+                    correctCellCount++;
+                    numberSet.add(board[row][col]);
                 }
+            }
+        }
+        
+        // Row is complete if all non-path cells have correct values
+        const isComplete = (correctCellCount === nonPathCellCount) && 
+                           (numberSet.size === nonPathCellCount) && 
+                           (nonPathCellCount > 0);
+        
+        // Update completion status
+        if (isComplete && !completedRows.has(row)) {
+            completedRows.add(row);
+            console.log(`Row ${row} completed with correct values!`);
+            
+            // Trigger the completion bonus system
+            if (window.CompletionBonusModule && 
+                typeof CompletionBonusModule.onUnitCompleted === 'function') {
+                CompletionBonusModule.onUnitCompleted('row', row);
             }
         } else if (!isComplete && completedRows.has(row)) {
             completedRows.delete(row);
         }
     }
     
-    // Check columns
-    for (let col = 0; col < 9; col++) {
-        // Get all non-path cells in this column
-        const nonPathCells = [];
-        for (let row = 0; row < 9; row++) {
-            if (!pathCells.has(`${row},${col}`)) {
-                nonPathCells.push({row, col});
-            }
-        }
-        
-        // Skip if there are no non-path cells in this column
-        if (nonPathCells.length === 0) continue;
-        
-        // Check if all non-path cells have numbers and form a valid Sudoku column
-        let isComplete = true;
-        const usedNumbers = new Set();
-        
-        for (const cell of nonPathCells) {
-            const value = board[cell.row][cell.col];
-            if (value === 0) {
-                // Empty cell means column is not complete
-                isComplete = false;
-                break;
-            }
-            
-            // Check if this number is already used in the column
-            if (usedNumbers.has(value)) {
-                // Duplicate number means column is not valid
-                isComplete = false;
-                break;
-            }
-            
-            usedNumbers.add(value);
-        }
-        
-        // Column is complete if all cells are filled and numbers are unique
-        if (isComplete && usedNumbers.size === nonPathCells.length) {
-            if (!completedColumns.has(col)) {
-                completedColumns.add(col);
-                console.log(`Column ${col} completed!`);
-                
-                // Trigger the completion bonus system
-                if (window.CompletionBonusModule && 
-                    typeof CompletionBonusModule.onUnitCompleted === 'function') {
-                    CompletionBonusModule.onUnitCompleted('column', col);
-                }
-            }
-        } else if (!isComplete && completedColumns.has(col)) {
-            completedColumns.delete(col);
-        }
-    }
-    
-    // Check 3x3 grids
-    for (let gridRow = 0; gridRow < 3; gridRow++) {
-        for (let gridCol = 0; gridCol < 3; gridCol++) {
-            // Get all non-path cells in this grid
-            const nonPathCells = [];
-            for (let i = 0; i < 3; i++) {
-                for (let j = 0; j < 3; j++) {
-                    const row = gridRow * 3 + i;
-                    const col = gridCol * 3 + j;
-                    if (!pathCells.has(`${row},${col}`)) {
-                        nonPathCells.push({row, col});
-                    }
-                }
-            }
-            
-            // Skip if there are no non-path cells in this grid
-            if (nonPathCells.length === 0) continue;
-            
-            // Check if all non-path cells have numbers and form a valid Sudoku 3x3 grid
-            let isComplete = true;
-            const usedNumbers = new Set();
-            
-            for (const cell of nonPathCells) {
-                const value = board[cell.row][cell.col];
-                if (value === 0) {
-                    // Empty cell means grid is not complete
-                    isComplete = false;
-                    break;
-                }
-                
-                // Check if this number is already used in the grid
-                if (usedNumbers.has(value)) {
-                    // Duplicate number means grid is not valid
-                    isComplete = false;
-                    break;
-                }
-                
-                usedNumbers.add(value);
-            }
-            
-            // Grid is complete if all cells are filled and numbers are unique
-            const gridKey = `${gridRow}-${gridCol}`;
-            
-            if (isComplete && usedNumbers.size === nonPathCells.length) {
-                if (!completedGrids.has(gridKey)) {
-                    completedGrids.add(gridKey);
-                    console.log(`Grid ${gridKey} completed!`);
-                    
-                    // Trigger the completion bonus system
-                    if (window.CompletionBonusModule && 
-                        typeof CompletionBonusModule.onUnitCompleted === 'function') {
-                        CompletionBonusModule.onUnitCompleted('grid', gridKey);
-                    }
-                }
-            } else if (!isComplete && completedGrids.has(gridKey)) {
-                completedGrids.delete(gridKey);
-            }
-        }
-    }
-}
    
         
         // Check columns
