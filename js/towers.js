@@ -132,7 +132,14 @@ const TowersModule = (function() {
         // For number towers, set the board value
         if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9) {
             // Set the cell value in the Sudoku board
-            SudokuModule.getBoard()[row][col] = numberValue;
+            // Instead of directly setting: SudokuModule.getBoard()[row][col] = numberValue;
+            // Use the proper method that will trigger completion checks
+            if (SudokuModule && typeof SudokuModule.setCellValue === 'function') {
+                SudokuModule.setCellValue(row, col, numberValue);
+            } else {
+                // Fallback to direct setting if setCellValue is not available
+                SudokuModule.getBoard()[row][col] = numberValue;
+            }
             
             // If incorrect, track it
             if (!isCorrect) {
@@ -142,6 +149,13 @@ const TowersModule = (function() {
         
         // Publish tower placed event
         EventSystem.publish(GameEvents.TOWER_PLACED, tower);
+        
+        // Explicitly check unit completions even if setCellValue() wasn't called
+        // This ensures completion bonuses are triggered
+        if (window.SudokuModule && typeof SudokuModule.checkUnitCompletion === 'function') {
+            console.log("Explicitly checking unit completions after tower placement");
+            SudokuModule.checkUnitCompletion();
+        }
         
         return tower;
     }
@@ -162,7 +176,13 @@ const TowersModule = (function() {
         towers = towers.filter(t => t.id !== towerId);
         
         // Remove number from Sudoku grid
-        SudokuModule.getBoard()[tower.row][tower.col] = 0;
+        // Use setCellValue to clear the cell and trigger completion checks
+        if (SudokuModule && typeof SudokuModule.setCellValue === 'function') {
+            SudokuModule.setCellValue(tower.row, tower.col, 0);
+        } else {
+            // Fallback to direct setting
+            SudokuModule.getBoard()[tower.row][tower.col] = 0;
+        }
         
         // Remove from incorrect towers set if it's there
         if (incorrectTowers.has(tower.id)) {
@@ -171,6 +191,12 @@ const TowersModule = (function() {
         
         // Publish tower removed event
         EventSystem.publish(GameEvents.TOWER_REMOVED, tower);
+        
+        // Explicitly check unit completions
+        if (window.SudokuModule && typeof SudokuModule.checkUnitCompletion === 'function') {
+            console.log("Explicitly checking unit completions after tower removal");
+            SudokuModule.checkUnitCompletion();
+        }
         
         return true;
     }
@@ -401,9 +427,13 @@ const TowersModule = (function() {
         // Remove towers
         towersToRemove.forEach(tower => {
             // Clear cell value
-            const board = SudokuModule.getBoard();
-            if (board && board[tower.row] && board[tower.row][tower.col]) {
-                board[tower.row][tower.col] = 0;
+            if (SudokuModule && typeof SudokuModule.setCellValue === 'function') {
+                SudokuModule.setCellValue(tower.row, tower.col, 0);
+            } else {
+                const board = SudokuModule.getBoard();
+                if (board && board[tower.row] && board[tower.row][tower.col]) {
+                    board[tower.row][tower.col] = 0;
+                }
             }
             
             // Remove tower from array
@@ -419,6 +449,11 @@ const TowersModule = (function() {
         // Update board display
         if (Game.updateBoard) {
             Game.updateBoard();
+        }
+        
+        // Check unit completions again after removing towers
+        if (window.SudokuModule && typeof SudokuModule.checkUnitCompletion === 'function') {
+            SudokuModule.checkUnitCompletion();
         }
     }
     
