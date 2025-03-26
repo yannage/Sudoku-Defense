@@ -183,13 +183,21 @@ const Game = (function() {
      * Update game state
      * @param {number} deltaTime - Time elapsed since last update
      */
-    function update(deltaTime) {
-        // Update enemies
-        EnemiesModule.update(deltaTime);
-        
-        // Update towers
-        TowersModule.update(deltaTime);
+    // Update game state
+function update(deltaTime) {
+    // Update enemies
+    EnemiesModule.update(deltaTime);
+    
+    // Update towers
+    TowersModule.update(deltaTime);
+    
+    // Add this new code:
+    // Update completion bonus system if it exists
+    if (window.CompletionBonusModule && 
+        typeof CompletionBonusModule.checkBoardCompletions === 'function') {
+        CompletionBonusModule.checkBoardCompletions();
     }
+}
     
     /**
      * Render game state
