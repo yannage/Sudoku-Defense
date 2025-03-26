@@ -56,130 +56,9 @@ const SudokuModule = (function() {
                     return false;
                 }
             }
-            
-            // Calculate how many non-path cells are in each unit
-            let rowNonPathCount = 0;
-            let colNonPathCount = 0;
-            let boxNonPathCount = 0;
-            
-            for (let j = 0; j < 9; j++) {
-                if (!pathCells.has(`${i},${j}`)) rowNonPathCount++;
-                if (!pathCells.has(`${j},${i}`)) colNonPathCount++;
-                
-                let r = boxRow + Math.floor(j / 3);
-                let c = boxCol + (j % 3);
-                if (!pathCells.has(`${r},${c}`)) boxNonPathCount++;
-            }
-            
-            // Check if all non-path cells have unique values
-            if (rowSet.size !== rowNonPathCount) return false;
-            if (colSet.size !== colNonPathCount) return false;
-            if (boxSet.size !== boxNonPathCount) return false;
         }
         
         return true;
-    }
-    
-    /**
-     * Get the current board state
-     * @returns {number[][]} Current board state
-     */
-    function getBoard() {
-        return board;
-    }
-    
-    /**
-     * Get the solution
-     * @returns {number[][]} Solution board
-     */
-    function getSolution() {
-        return solution;
-    }
-    
-    /**
-     * Get the fixed cells
-     * @returns {boolean[][]} Fixed cells
-     */
-    function getFixedCells() {
-        return fixedCells;
-    }
-    
-    /**
-     * Get the path cells
-     * @returns {Set<string>} Path cells
-     */
-    function getPathCells() {
-        return pathCells;
-    }
-    
-    /**
-     * Set the game difficulty
-     * @param {string} newDifficulty - The new difficulty (easy, medium, hard)
-     */
-    function setDifficulty(newDifficulty) {
-        if (difficultySettings[newDifficulty]) {
-            difficulty = newDifficulty;
-        }
-    }
-    
-    /**
-     * Convert path cells to an array of coordinates
-     * @returns {number[][]} Array of [row, col] coordinates
-     */
-    function getPathArray() {
-        return Array.from(pathCells).map(pos => pos.split(',').map(Number));
-    }
-    
-    /**
-     * Get the completion status of rows, columns, and grids
-     * @returns {Object} Completion status
-     */
-    function getCompletionStatus() {
-        return {
-            rows: Array.from(completedRows),
-            columns: Array.from(completedColumns),
-            grids: Array.from(completedGrids)
-        };
-    }
-    
-    /**
-     * Initialize event listeners
-     */
-    function init() {
-        // Listen for game initialization
-        EventSystem.subscribe(GameEvents.GAME_INIT, function() {
-            generatePuzzle();
-        });
-        
-        // Listen for new game
-        EventSystem.subscribe(GameEvents.GAME_START, function() {
-            generatePuzzle();
-        });
-    }
-    
-    // Initialize event listeners
-    init();
-    
-    // Public API
-    return {
-        generatePuzzle,
-        setCellValue,
-        getBoard,
-        getSolution,
-        getFixedCells,
-        getPathCells,
-        getPathArray,
-        setDifficulty,
-        isValidMove,
-        getPossibleValues,
-        generateEnemyPath,
-        checkUnitCompletion,
-        getCompletionStatus
-    };
-})();
-
-// Make module available globally
-window.SudokuModule = SudokuModule;
     }
     
     /**
@@ -770,78 +649,76 @@ window.SudokuModule = SudokuModule;
     /**
      * Check for completed units (rows, columns, 3x3 grids)
      * Triggers completion bonus events for newly completed units
-     * FIXED: Now correctly checks for valid completions
      */
     function checkUnitCompletion() {
-        // Check rows
-        for (let row = 0; row < 9; row++) {
-            let nonPathCellCount = 0;
-            let correctCellCount = 0;
-            let numberSet = new Set();
-            
-            for (let col = 0; col < 9; col++) {
-                if (!pathCells.has(`${row},${col}`)) {
-                    nonPathCellCount++;
-                    
-                    // Check if cell is filled AND matches the solution
-                    if (board[row][col] > 0) {
-                        if (board[row][col] === solution[row][col]) {
-                            correctCellCount++;
-                            numberSet.add(board[row][col]);
-                        }
-                    }
-                }
-            }
-            
-            // Row is complete if all non-path cells have correct values
-            const isComplete = (correctCellCount === nonPathCellCount) && 
-                               (numberSet.size === nonPathCellCount) && 
-                               (nonPathCellCount > 0);
-            
-            // Update completion status
-            if (isComplete && !completedRows.has(row)) {
-                completedRows.add(row);
-                console.log(`Row ${row} completed with correct values!`);
+    // Check rows
+    for (let row = 0; row < 9; row++) {
+        let nonPathCellCount = 0;
+        let correctCellCount = 0;
+        let numberSet = new Set();
+        
+        for (let col = 0; col < 9; col++) {
+            if (!pathCells.has(`${row},${col}`)) {
+                nonPathCellCount++;
                 
-                // Trigger the completion bonus system
-                if (window.CompletionBonusModule && 
-                    typeof CompletionBonusModule.onUnitCompleted === 'function') {
-                    CompletionBonusModule.onUnitCompleted('row', row);
+                // Check if the value matches the solution
+                if (board[row][col] > 0 && board[row][col] === solution[row][col]) {
+                    correctCellCount++;
+                    numberSet.add(board[row][col]);
                 }
-            } else if (!isComplete && completedRows.has(row)) {
-                completedRows.delete(row);
             }
         }
         
+        // Row is complete if all non-path cells have correct values
+        const isComplete = (correctCellCount === nonPathCellCount) && 
+                           (numberSet.size === nonPathCellCount) && 
+                           (nonPathCellCount > 0);
+        
+        // Update completion status
+        if (isComplete && !completedRows.has(row)) {
+            completedRows.add(row);
+            console.log(`Row ${row} completed with correct values!`);
+            
+            // Trigger the completion bonus system
+            if (window.CompletionBonusModule && 
+                typeof CompletionBonusModule.onUnitCompleted === 'function') {
+                CompletionBonusModule.onUnitCompleted('row', row);
+            }
+        } else if (!isComplete && completedRows.has(row)) {
+            completedRows.delete(row);
+        }
+    }
+    
+   
+        
         // Check columns
         for (let col = 0; col < 9; col++) {
+            let isColComplete = true;
             let nonPathCellCount = 0;
-            let correctCellCount = 0;
+            let filledCellCount = 0;
             let numberSet = new Set();
             
             for (let row = 0; row < 9; row++) {
                 if (!pathCells.has(`${row},${col}`)) {
                     nonPathCellCount++;
                     
-                    // Check if cell is filled AND matches the solution
                     if (board[row][col] > 0) {
-                        if (board[row][col] === solution[row][col]) {
-                            correctCellCount++;
-                            numberSet.add(board[row][col]);
-                        }
+                        filledCellCount++;
+                        numberSet.add(board[row][col]);
+                    } else {
+                        isColComplete = false;
                     }
                 }
             }
             
-            // Column is complete if all non-path cells have correct values
-            const isComplete = (correctCellCount === nonPathCellCount) && 
-                               (numberSet.size === nonPathCellCount) && 
-                               (nonPathCellCount > 0);
+            // Column is complete if all non-path cells are filled with unique numbers
+            const isComplete = (isColComplete && filledCellCount === nonPathCellCount && 
+                               numberSet.size === nonPathCellCount && nonPathCellCount > 0);
             
-            // Update completion status
+            // Check if this is a newly completed column
             if (isComplete && !completedColumns.has(col)) {
                 completedColumns.add(col);
-                console.log(`Column ${col} completed with correct values!`);
+                console.log(`Column ${col} completed!`);
                 
                 // Trigger the completion bonus system if it exists
                 if (window.CompletionBonusModule && 
@@ -849,15 +726,18 @@ window.SudokuModule = SudokuModule;
                     CompletionBonusModule.onUnitCompleted('column', col);
                 }
             } else if (!isComplete && completedColumns.has(col)) {
+                // Column was previously complete but is no longer
                 completedColumns.delete(col);
+                console.log(`Column ${col} is no longer complete.`);
             }
         }
         
         // Check 3x3 grids
         for (let gridRow = 0; gridRow < 3; gridRow++) {
             for (let gridCol = 0; gridCol < 3; gridCol++) {
+                let isGridComplete = true;
                 let nonPathCellCount = 0;
-                let correctCellCount = 0;
+                let filledCellCount = 0;
                 let numberSet = new Set();
                 
                 // Check each cell in this 3x3 grid
@@ -869,29 +749,27 @@ window.SudokuModule = SudokuModule;
                         if (!pathCells.has(`${row},${col}`)) {
                             nonPathCellCount++;
                             
-                            // Check if cell is filled AND matches the solution
                             if (board[row][col] > 0) {
-                                if (board[row][col] === solution[row][col]) {
-                                    correctCellCount++;
-                                    numberSet.add(board[row][col]);
-                                }
+                                filledCellCount++;
+                                numberSet.add(board[row][col]);
+                            } else {
+                                isGridComplete = false;
                             }
                         }
                     }
                 }
                 
-                // Grid is complete if all non-path cells have correct values
-                const isComplete = (correctCellCount === nonPathCellCount) && 
-                                   (numberSet.size === nonPathCellCount) && 
-                                   (nonPathCellCount > 0);
+                // Grid is complete if all non-path cells are filled with unique numbers
+                const isComplete = (isGridComplete && filledCellCount === nonPathCellCount && 
+                                   numberSet.size === nonPathCellCount && nonPathCellCount > 0);
                 
                 // Create a key for this grid
                 const gridKey = `${gridRow}-${gridCol}`;
                 
-                // Update completion status
+                // Check if this is a newly completed grid
                 if (isComplete && !completedGrids.has(gridKey)) {
                     completedGrids.add(gridKey);
-                    console.log(`Grid ${gridKey} completed with correct values!`);
+                    console.log(`Grid ${gridKey} completed!`);
                     
                     // Trigger the completion bonus system if it exists
                     if (window.CompletionBonusModule && 
@@ -899,7 +777,9 @@ window.SudokuModule = SudokuModule;
                         CompletionBonusModule.onUnitCompleted('grid', gridKey);
                     }
                 } else if (!isComplete && completedGrids.has(gridKey)) {
+                    // Grid was previously complete but is no longer
                     completedGrids.delete(gridKey);
+                    console.log(`Grid ${gridKey} is no longer complete.`);
                 }
             }
         }
@@ -947,3 +827,128 @@ window.SudokuModule = SudokuModule;
                 if (!pathCells.has(`${r},${c}`) && board[r][c] !== 0) {
                     boxSet.add(board[r][c]);
                 }
+            }
+            
+            // Calculate how many non-path cells are in each unit
+            let rowNonPathCount = 0;
+            let colNonPathCount = 0;
+            let boxNonPathCount = 0;
+            
+            for (let j = 0; j < 9; j++) {
+                if (!pathCells.has(`${i},${j}`)) rowNonPathCount++;
+                if (!pathCells.has(`${j},${i}`)) colNonPathCount++;
+                
+                let r = boxRow + Math.floor(j / 3);
+                let c = boxCol + (j % 3);
+                if (!pathCells.has(`${r},${c}`)) boxNonPathCount++;
+            }
+            
+            // Check if all non-path cells have unique values
+            if (rowSet.size !== rowNonPathCount) return false;
+            if (colSet.size !== colNonPathCount) return false;
+            if (boxSet.size !== boxNonPathCount) return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Get the current board state
+     * @returns {number[][]} Current board state
+     */
+    function getBoard() {
+        return board;
+    }
+    
+    /**
+     * Get the solution
+     * @returns {number[][]} Solution board
+     */
+    function getSolution() {
+        return solution;
+    }
+    
+    /**
+     * Get the fixed cells
+     * @returns {boolean[][]} Fixed cells
+     */
+    function getFixedCells() {
+        return fixedCells;
+    }
+    
+    /**
+     * Get the path cells
+     * @returns {Set<string>} Path cells
+     */
+    function getPathCells() {
+        return pathCells;
+    }
+    
+    /**
+     * Set the game difficulty
+     * @param {string} newDifficulty - The new difficulty (easy, medium, hard)
+     */
+    function setDifficulty(newDifficulty) {
+        if (difficultySettings[newDifficulty]) {
+            difficulty = newDifficulty;
+        }
+    }
+    
+    /**
+     * Convert path cells to an array of coordinates
+     * @returns {number[][]} Array of [row, col] coordinates
+     */
+    function getPathArray() {
+        return Array.from(pathCells).map(pos => pos.split(',').map(Number));
+    }
+    
+    /**
+     * Get the completion status of rows, columns, and grids
+     * @returns {Object} Completion status
+     */
+    function getCompletionStatus() {
+        return {
+            rows: Array.from(completedRows),
+            columns: Array.from(completedColumns),
+            grids: Array.from(completedGrids)
+        };
+    }
+    
+    /**
+     * Initialize event listeners
+     */
+    function init() {
+        // Listen for game initialization
+        EventSystem.subscribe(GameEvents.GAME_INIT, function() {
+            generatePuzzle();
+        });
+        
+        // Listen for new game
+        EventSystem.subscribe(GameEvents.GAME_START, function() {
+            generatePuzzle();
+        });
+    }
+    
+    // Initialize event listeners
+    init();
+    
+    // Public API
+    return {
+        generatePuzzle,
+        setCellValue,
+        getBoard,
+        getSolution,
+        getFixedCells,
+        getPathCells,
+        getPathArray,
+        setDifficulty,
+        isValidMove,
+        getPossibleValues,
+        generateEnemyPath,
+        checkUnitCompletion,
+        getCompletionStatus
+    };
+})();
+
+// Make module available globally
+window.SudokuModule = SudokuModule;
