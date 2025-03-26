@@ -651,46 +651,45 @@ const SudokuModule = (function() {
      * Triggers completion bonus events for newly completed units
      */
     function checkUnitCompletion() {
-        // Check rows
-        for (let row = 0; row < 9; row++) {
-            let isRowComplete = true;
-            let nonPathCellCount = 0;
-            let filledCellCount = 0;
-            let numberSet = new Set();
-            
-            for (let col = 0; col < 9; col++) {
-                if (!pathCells.has(`${row},${col}`)) {
-                    nonPathCellCount++;
-                    
-                    if (board[row][col] > 0) {
-                        filledCellCount++;
-                        numberSet.add(board[row][col]);
-                    } else {
-                        isRowComplete = false;
-                    }
-                }
-            }
-            
-            // Row is complete if all non-path cells are filled with unique numbers
-            const isComplete = (isRowComplete && filledCellCount === nonPathCellCount && 
-                               numberSet.size === nonPathCellCount && nonPathCellCount > 0);
-            
-            // Check if this is a newly completed row
-            if (isComplete && !completedRows.has(row)) {
-                completedRows.add(row);
-                console.log(`Row ${row} completed!`);
+    // Check rows
+    for (let row = 0; row < 9; row++) {
+        let nonPathCellCount = 0;
+        let correctCellCount = 0;
+        let numberSet = new Set();
+        
+        for (let col = 0; col < 9; col++) {
+            if (!pathCells.has(`${row},${col}`)) {
+                nonPathCellCount++;
                 
-                // Trigger the completion bonus system if it exists
-                if (window.CompletionBonusModule && 
-                    typeof CompletionBonusModule.onUnitCompleted === 'function') {
-                    CompletionBonusModule.onUnitCompleted('row', row);
+                // Check if the value matches the solution
+                if (board[row][col] > 0 && board[row][col] === solution[row][col]) {
+                    correctCellCount++;
+                    numberSet.add(board[row][col]);
                 }
-            } else if (!isComplete && completedRows.has(row)) {
-                // Row was previously complete but is no longer
-                completedRows.delete(row);
-                console.log(`Row ${row} is no longer complete.`);
             }
         }
+        
+        // Row is complete if all non-path cells have correct values
+        const isComplete = (correctCellCount === nonPathCellCount) && 
+                           (numberSet.size === nonPathCellCount) && 
+                           (nonPathCellCount > 0);
+        
+        // Update completion status
+        if (isComplete && !completedRows.has(row)) {
+            completedRows.add(row);
+            console.log(`Row ${row} completed with correct values!`);
+            
+            // Trigger the completion bonus system
+            if (window.CompletionBonusModule && 
+                typeof CompletionBonusModule.onUnitCompleted === 'function') {
+                CompletionBonusModule.onUnitCompleted('row', row);
+            }
+        } else if (!isComplete && completedRows.has(row)) {
+            completedRows.delete(row);
+        }
+    }
+    
+   
         
         // Check columns
         for (let col = 0; col < 9; col++) {
