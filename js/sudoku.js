@@ -653,132 +653,129 @@ const SudokuModule = (function() {
  * Check for completed units (rows, columns, 3x3 grids)
  * Triggers completion bonus events for newly completed units
  */
-function checkUnitCompletion() {
-    // Check rows
-    for (let row = 0; row < 9; row++) {
-        let nonPathCellCount = 0;
-        let correctCellCount = 0;
-        let numberSet = new Set();
-        
-        for (let col = 0; col < 9; col++) {
-            if (!pathCells.has(`${row},${col}`)) {
-                nonPathCellCount++;
-                
-                // Check if the value matches the solution
-                if (board[row][col] > 0 && board[row][col] === solution[row][col]) {
-                    correctCellCount++;
-                    numberSet.add(board[row][col]);
-                }
-            }
-        }
-        
-        // Row is complete if all non-path cells have correct values AND there's at least one cell
-        const isComplete = (nonPathCellCount > 0) && 
-                          (correctCellCount === nonPathCellCount) && 
-                          (numberSet.size === nonPathCellCount);
-        
-        // Update completion status
-        if (isComplete && !completedRows.has(row)) {
-            completedRows.add(row);
-            console.log(`Row ${row} completed with correct values!`);
-            
-            // Trigger the completion bonus system
-            if (window.CompletionBonusModule && 
-                typeof CompletionBonusModule.onUnitCompleted === 'function') {
-                CompletionBonusModule.onUnitCompleted('row', row);
-            }
-        } else if (!isComplete && completedRows.has(row)) {
-            completedRows.delete(row);
-        }
-    }
+/**
+ * Check for completed units (rows, columns, 3x3 grids)
+ * Triggers completion bonus events for newly completed units
+ */
+ //XXX
+ function checkUnitCompletion() {
+  // Check rows
+  for (let row = 0; row < 9; row++) {
+    let availableCells = 0; // Non-path cells
+    let correctCells = 0; // Cells with correct values (including fixed cells)
     
-    // Check columns - same logic as rows
     for (let col = 0; col < 9; col++) {
-        let nonPathCellCount = 0;
-        let correctCellCount = 0;
-        let numberSet = new Set();
-        
-        for (let row = 0; row < 9; row++) {
-            if (!pathCells.has(`${row},${col}`)) {
-                nonPathCellCount++;
-                
-                // Check if the value matches the solution
-                if (board[row][col] > 0 && board[row][col] === solution[row][col]) {
-                    correctCellCount++;
-                    numberSet.add(board[row][col]);
-                }
-            }
+      // Skip path cells
+      if (pathCells.has(`${row},${col}`)) {
+        continue;
+      }
+      
+      // Count this as an available cell
+      availableCells++;
+      
+      // Check if there's a value in this cell (either placed or fixed)
+      if (board[row][col] > 0) {
+        // Check if it's correct according to solution
+        if (board[row][col] === solution[row][col]) {
+          correctCells++;
         }
-        
-        // Column is complete if all non-path cells have correct values AND there's at least one cell
-        const isComplete = (nonPathCellCount > 0) && 
-                          (correctCellCount === nonPathCellCount) && 
-                          (numberSet.size === nonPathCellCount);
-        
-        // Update completion status
-        if (isComplete && !completedColumns.has(col)) {
-            completedColumns.add(col);
-            console.log(`Column ${col} completed with correct values!`);
-            
-            // Trigger the completion bonus system
-            if (window.CompletionBonusModule && 
-                typeof CompletionBonusModule.onUnitCompleted === 'function') {
-                CompletionBonusModule.onUnitCompleted('column', col);
-            }
-        } else if (!isComplete && completedColumns.has(col)) {
-            completedColumns.delete(col);
-        }
+      }
     }
     
-    // Check 3x3 grids
-    for (let gridRow = 0; gridRow < 3; gridRow++) {
-        for (let gridCol = 0; gridCol < 3; gridCol++) {
-            let nonPathCellCount = 0;
-            let correctCellCount = 0;
-            let numberSet = new Set();
-            
-            // Check each cell in this 3x3 grid
-            for (let i = 0; i < 3; i++) {
-                for (let j = 0; j < 3; j++) {
-                    const row = gridRow * 3 + i;
-                    const col = gridCol * 3 + j;
-                    
-                    if (!pathCells.has(`${row},${col}`)) {
-                        nonPathCellCount++;
-                        
-                        // Check if the value matches the solution
-                        if (board[row][col] > 0 && board[row][col] === solution[row][col]) {
-                            correctCellCount++;
-                            numberSet.add(board[row][col]);
-                        }
-                    }
-                }
-            }
-            
-            // Grid is complete if all non-path cells have correct values AND there's at least one cell
-            const isComplete = (nonPathCellCount > 0) && 
-                              (correctCellCount === nonPathCellCount) && 
-                              (numberSet.size === nonPathCellCount);
-            
-            // Create a key for this grid
-            const gridKey = `${gridRow}-${gridCol}`;
-            
-            // Update completion status
-            if (isComplete && !completedGrids.has(gridKey)) {
-                completedGrids.add(gridKey);
-                console.log(`Grid ${gridKey} completed with correct values!`);
-                
-                // Trigger the completion bonus system
-                if (window.CompletionBonusModule && 
-                    typeof CompletionBonusModule.onUnitCompleted === 'function') {
-                    CompletionBonusModule.onUnitCompleted('grid', gridKey);
-                }
-            } else if (!isComplete && completedGrids.has(gridKey)) {
-                completedGrids.delete(gridKey);
-            }
-        }
+    // Row is complete when all available cells have correct values
+    const isComplete = (availableCells > 0 && correctCells === availableCells);
+    
+    // Update completion status
+    if (isComplete && !completedRows.has(row)) {
+      completedRows.add(row);
+      console.log(`Row ${row} completed with ${correctCells} correct values!`);
+      
+      if (window.CompletionBonusModule &&
+        typeof CompletionBonusModule.onUnitCompleted === 'function') {
+        CompletionBonusModule.onUnitCompleted('row', row);
+      }
+    } else if (!isComplete && completedRows.has(row)) {
+      completedRows.delete(row);
     }
+  }
+  
+  // Check columns (similar logic)
+  for (let col = 0; col < 9; col++) {
+    let availableCells = 0;
+    let correctCells = 0;
+    
+    for (let row = 0; row < 9; row++) {
+      if (pathCells.has(`${row},${col}`)) {
+        continue;
+      }
+      
+      availableCells++;
+      
+      if (board[row][col] > 0) {
+        if (board[row][col] === solution[row][col]) {
+          correctCells++;
+        }
+      }
+    }
+    
+    const isComplete = (availableCells > 0 && correctCells === availableCells);
+    
+    if (isComplete && !completedColumns.has(col)) {
+      completedColumns.add(col);
+      console.log(`Column ${col} completed with ${correctCells} correct values!`);
+      
+      if (window.CompletionBonusModule &&
+        typeof CompletionBonusModule.onUnitCompleted === 'function') {
+        CompletionBonusModule.onUnitCompleted('column', col);
+      }
+    } else if (!isComplete && completedColumns.has(col)) {
+      completedColumns.delete(col);
+    }
+  }
+  
+  // Check 3x3 grids
+  for (let gridRow = 0; gridRow < 3; gridRow++) {
+    for (let gridCol = 0; gridCol < 3; gridCol++) {
+      let availableCells = 0;
+      let correctCells = 0;
+      
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          const row = gridRow * 3 + i;
+          const col = gridCol * 3 + j;
+          
+          if (pathCells.has(`${row},${col}`)) {
+            continue;
+          }
+          
+          availableCells++;
+          
+          if (board[row][col] > 0) {
+            if (board[row][col] === solution[row][col]) {
+              correctCells++;
+            }
+          }
+        }
+      }
+      
+      const isComplete = (availableCells > 0 && correctCells === availableCells);
+      const gridKey = `${gridRow}-${gridCol}`;
+      
+      if (isComplete && !completedGrids.has(gridKey)) {
+        completedGrids.add(gridKey);
+        console.log(`Grid ${gridKey} completed with ${correctCells} correct values!`);
+        
+        if (window.CompletionBonusModule &&
+          typeof CompletionBonusModule.onUnitCompleted === 'function') {
+          CompletionBonusModule.onUnitCompleted('grid', gridKey);
+        }
+      } else if (!isComplete && completedGrids.has(gridKey)) {
+        completedGrids.delete(gridKey);
+      }
+    }
+  }
 }
+//XXX
     
     /**
      * Check if the Sudoku is complete and correct
