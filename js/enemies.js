@@ -1,6 +1,7 @@
 /**
  * enemies.js - Handles enemy generation, movement, and behavior
  * This module creates and manages enemy entities in the tower defense game
+ * UPDATED: Enhanced enemy movement to move directly from cell center to cell center
  */
 
 const EnemiesModule = (function() {
@@ -75,7 +76,6 @@ const EnemiesModule = (function() {
             x: startX,
             y: startY,
             pathIndex: 0,
-            progress: 0, // Progress within current path segment (0-1)
             active: true
         };
         
@@ -188,7 +188,7 @@ const EnemiesModule = (function() {
     }
     
     /**
-     * Move an enemy along the path
+     * Move an enemy along the path - UPDATED for direct cell-to-cell movement
      * @param {Object} enemy - The enemy to move
      * @param {number} deltaTime - Time elapsed since last update
      */
@@ -202,44 +202,41 @@ const EnemiesModule = (function() {
         // Calculate movement speed based on enemy speed and deltaTime
         const moveSpeed = enemy.speed * 50 * deltaTime;
         
-        // Get current path segment
+        // Get current and next path cells
         const currentCell = path[enemy.pathIndex];
         const nextCell = path[enemy.pathIndex + 1];
         
-        // Calculate cell centers
-        const currentX = currentCell[1] * cellSize + cellSize / 2;
-        const currentY = currentCell[0] * cellSize + cellSize / 2;
-        const nextX = nextCell[1] * cellSize + cellSize / 2;
-        const nextY = nextCell[0] * cellSize + cellSize / 2;
+        // Calculate cell center positions
+        const currentCenterX = currentCell[1] * cellSize + cellSize / 2;
+        const currentCenterY = currentCell[0] * cellSize + cellSize / 2;
+        const nextCenterX = nextCell[1] * cellSize + cellSize / 2;
+        const nextCenterY = nextCell[0] * cellSize + cellSize / 2;
         
-        // Update progress along current path segment
-        enemy.progress += moveSpeed / Math.sqrt(
-            Math.pow(nextX - currentX, 2) + Math.pow(nextY - currentY, 2)
-        );
+        // Calculate distance to next cell center
+        const dx = nextCenterX - enemy.x;
+        const dy = nextCenterY - enemy.y;
+        const distanceToNext = Math.sqrt(dx * dx + dy * dy);
         
-        // Move to next path segment if progress is complete
-        if (enemy.progress >= 1) {
-            enemy.pathIndex++;
-            enemy.progress = 0;
+        // If we're very close to the next cell center or would overshoot it
+        if (distanceToNext <= moveSpeed) {
+            // Move directly to the next cell center
+            enemy.x = nextCenterX;
+            enemy.y = nextCenterY;
             
-            // Check if enemy reached the end
+            // Advance to the next path segment
+            enemy.pathIndex++;
+            
+            // Check if we've reached the end
             if (enemy.pathIndex >= path.length - 1) {
                 enemyReachedEnd(enemy);
                 return;
             }
+        } else {
+            // Move toward the next cell center
+            const moveRatio = moveSpeed / distanceToNext;
+            enemy.x += dx * moveRatio;
+            enemy.y += dy * moveRatio;
         }
-        
-        // Interpolate position between current and next cells
-        const currentSegment = path[enemy.pathIndex];
-        const nextSegment = path[enemy.pathIndex + 1];
-        
-        const startX = currentSegment[1] * cellSize + cellSize / 2;
-        const startY = currentSegment[0] * cellSize + cellSize / 2;
-        const endX = nextSegment[1] * cellSize + cellSize / 2;
-        const endY = nextSegment[0] * cellSize + cellSize / 2;
-        
-        enemy.x = startX + (endX - startX) * enemy.progress;
-        enemy.y = startY + (endY - startY) * enemy.progress;
     }
     
     /**
@@ -324,9 +321,6 @@ const EnemiesModule = (function() {
         EventSystem.publish(GameEvents.WAVE_COMPLETE, {
             waveNumber: waveNumber
         });
-        
-        // Don't increment wave number here - let LevelsModule handle it
-        // waveNumber++; 
         
         // Generate new path for the next wave immediately
         setTimeout(() => {
