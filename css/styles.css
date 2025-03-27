@@ -155,22 +155,24 @@ h1 {
 }
 
 .enemy {
-    font-size: 1.5rem;
     position: absolute;
     transform: translate(-50%, -50%);
-    z-index: 10;
-    transition: transform 0.3s ease-out;
+    z-index: 15;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Mobile Safari sometimes needs this */
+    -webkit-transform: translate(-50%, -50%);
 }
 
 .enemy-health-bar {
     position: absolute;
-    bottom: -8px;
-    left: -10px;
-    width: 20px;
-    height: 4px;
-    background-color: #333;
     border-radius: 2px;
     overflow: hidden;
+    background-color: rgba(0, 0, 0, 0.5);
+    left: 50%;
+    transform: translateX(-50%);
+    -webkit-transform: translateX(-50%);
 }
 
 .enemy-health-fill {
