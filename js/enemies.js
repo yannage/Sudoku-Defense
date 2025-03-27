@@ -193,51 +193,51 @@ const EnemiesModule = (function() {
      * @param {number} deltaTime - Time elapsed since last update
      */
     function moveEnemy(enemy, deltaTime) {
+    if (enemy.pathIndex >= path.length - 1) {
+        // Enemy reached the end of the path
+        enemyReachedEnd(enemy);
+        return;
+    }
+    
+    // Calculate movement speed based on enemy speed and deltaTime
+    const moveSpeed = enemy.speed * 50 * deltaTime;
+    
+    // Get current and next path cells
+    const currentCell = path[enemy.pathIndex];
+    const nextCell = path[enemy.pathIndex + 1];
+    
+    // Calculate cell center positions
+    const currentCenterX = currentCell[1] * cellSize + cellSize / 2;
+    const currentCenterY = currentCell[0] * cellSize + cellSize / 2;
+    const nextCenterX = nextCell[1] * cellSize + cellSize / 2;
+    const nextCenterY = nextCell[0] * cellSize + cellSize / 2;
+    
+    // Calculate distance to next cell center
+    const dx = nextCenterX - enemy.x;
+    const dy = nextCenterY - enemy.y;
+    const distanceToNext = Math.sqrt(dx * dx + dy * dy);
+    
+    // If we're very close to the next cell center or would overshoot it
+    if (distanceToNext <= moveSpeed) {
+        // Move directly to the next cell center
+        enemy.x = nextCenterX;
+        enemy.y = nextCenterY;
+        
+        // Advance to the next path segment
+        enemy.pathIndex++;
+        
+        // Check if we've reached the end
         if (enemy.pathIndex >= path.length - 1) {
-            // Enemy reached the end of the path
             enemyReachedEnd(enemy);
             return;
         }
-        
-        // Calculate movement speed based on enemy speed and deltaTime
-        const moveSpeed = enemy.speed * 50 * deltaTime;
-        
-        // Get current and next path cells
-        const currentCell = path[enemy.pathIndex];
-        const nextCell = path[enemy.pathIndex + 1];
-        
-        // Calculate cell center positions
-        const currentCenterX = currentCell[1] * cellSize + cellSize / 2;
-        const currentCenterY = currentCell[0] * cellSize + cellSize / 2;
-        const nextCenterX = nextCell[1] * cellSize + cellSize / 2;
-        const nextCenterY = nextCell[0] * cellSize + cellSize / 2;
-        
-        // Calculate distance to next cell center
-        const dx = nextCenterX - enemy.x;
-        const dy = nextCenterY - enemy.y;
-        const distanceToNext = Math.sqrt(dx * dx + dy * dy);
-        
-        // If we're very close to the next cell center or would overshoot it
-        if (distanceToNext <= moveSpeed) {
-            // Move directly to the next cell center
-            enemy.x = nextCenterX;
-            enemy.y = nextCenterY;
-            
-            // Advance to the next path segment
-            enemy.pathIndex++;
-            
-            // Check if we've reached the end
-            if (enemy.pathIndex >= path.length - 1) {
-                enemyReachedEnd(enemy);
-                return;
-            }
-        } else {
-            // Move toward the next cell center
-            const moveRatio = moveSpeed / distanceToNext;
-            enemy.x += dx * moveRatio;
-            enemy.y += dy * moveRatio;
-        }
+    } else {
+        // Move toward the next cell center
+        const moveRatio = moveSpeed / distanceToNext;
+        enemy.x += dx * moveRatio;
+        enemy.y += dy * moveRatio;
     }
+}
     
     /**
      * Handle an enemy reaching the end of the path
