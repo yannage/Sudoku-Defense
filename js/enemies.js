@@ -192,25 +192,38 @@ const EnemiesModule = (function() {
      * @param {Object} enemy - The enemy to move
      * @param {number} deltaTime - Time elapsed since last update
      */
-    function moveEnemy(enemy, deltaTime) {
-    if (enemy.pathIndex >= path.length - 1) {
-        // Enemy reached the end of the path
+    /**
+ * Updated moveEnemy function for consistent cross-platform behavior
+ * This function should be in your enemies.js file
+ */
+function moveEnemy(enemy, deltaTime) {
+    // Exit if enemy reached end or path is empty
+    if (!path || path.length === 0 || enemy.pathIndex >= path.length - 1) {
         enemyReachedEnd(enemy);
         return;
     }
     
-    // Calculate movement speed based on enemy speed and deltaTime
-    const moveSpeed = enemy.speed * 50 * deltaTime;
+    // Calculate proper cell centers based on current board dimensions
+    const boardElement = document.getElementById('sudoku-board');
+    const currentCellSize = boardElement ? boardElement.clientWidth / 9 : cellSize;
     
     // Get current and next path cells
     const currentCell = path[enemy.pathIndex];
     const nextCell = path[enemy.pathIndex + 1];
     
-    // Calculate cell center positions
-    const currentCenterX = currentCell[1] * cellSize + cellSize / 2;
-    const currentCenterY = currentCell[0] * cellSize + cellSize / 2;
-    const nextCenterX = nextCell[1] * cellSize + cellSize / 2;
-    const nextCenterY = nextCell[0] * cellSize + cellSize / 2;
+    if (!currentCell || !nextCell) {
+        console.error("Invalid path cells", enemy.pathIndex, path.length);
+        return;
+    }
+    
+    // Calculate exact cell center positions (very important for consistent movement)
+    const currentCenterX = currentCell[1] * currentCellSize + currentCellSize / 2;
+    const currentCenterY = currentCell[0] * currentCellSize + currentCellSize / 2;
+    const nextCenterX = nextCell[1] * currentCellSize + currentCellSize / 2;
+    const nextCenterY = nextCell[0] * currentCellSize + currentCellSize / 2;
+    
+    // Use base speed * a consistent factor (50 can be too fast on some devices)
+    const moveSpeed = enemy.speed * 30 * deltaTime;
     
     // Calculate distance to next cell center
     const dx = nextCenterX - enemy.x;
@@ -229,10 +242,9 @@ const EnemiesModule = (function() {
         // Check if we've reached the end
         if (enemy.pathIndex >= path.length - 1) {
             enemyReachedEnd(enemy);
-            return;
         }
     } else {
-        // Move toward the next cell center
+        // Move toward the next cell center at the appropriate speed
         const moveRatio = moveSpeed / distanceToNext;
         enemy.x += dx * moveRatio;
         enemy.y += dy * moveRatio;
