@@ -266,7 +266,6 @@ function renderEnemies() {
         enemyElement.style.fontSize = `${enemySize}px`;
         
         // Position the enemy precisely at the cell center
-        // Use absolute values and 50% transform to ensure exact centering
         enemyElement.style.position = 'absolute';
         enemyElement.style.left = `${enemy.x}px`;
         enemyElement.style.top = `${enemy.y}px`;
@@ -282,12 +281,14 @@ function renderEnemies() {
             healthBar.style.position = 'absolute';
             healthBar.style.width = `${healthBarWidth}px`;
             healthBar.style.height = `${cellSize * 0.06}px`; // 6% of cell height
-            healthBar.style.left = `${-healthBarWidth/2}px`; // Center it horizontally
+            
+            // Center the health bar horizontally
+            healthBar.style.left = '50%'; // Position at 50% of the enemy element
+            healthBar.style.transform = 'translateX(-50%)'; // Center it
+            
             healthBar.style.bottom = `${-cellSize * 0.12}px`; // Place it below the enemy
             healthBar.style.borderRadius = `${cellSize * 0.01}px`;
             healthBar.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            healthBar.style.padding = '0px';
-            healthBar.style.margin = '0px';
             healthBar.style.border = `${cellSize * 0.005}px solid rgba(255, 255, 255, 0.3)`;
         }
         
