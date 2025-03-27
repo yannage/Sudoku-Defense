@@ -212,12 +212,20 @@ function update(deltaTime) {
      */
     
 
+/**
+ * Updated renderEnemies function for consistent display across platforms
+ * This function should be in your game.js file
+ */
 function renderEnemies() {
     // Get all enemies
     const enemies = EnemiesModule.getEnemies();
+    if (!enemies || enemies.length === 0) return;
     
     // Get or create enemy container
     let enemyContainer = document.getElementById('enemy-container');
+    const boardElement = document.getElementById('sudoku-board');
+    
+    if (!boardElement) return;
     
     if (!enemyContainer) {
         enemyContainer = document.createElement('div');
@@ -231,7 +239,7 @@ function renderEnemies() {
         boardElement.appendChild(enemyContainer);
     }
     
-    // Get the current cell size for proper scaling
+    // Get the current cell size based on actual board dimensions
     const cellSize = boardElement.clientWidth / 9;
     
     // Update existing enemy elements and create new ones as needed
@@ -260,36 +268,41 @@ function renderEnemies() {
             enemyElement.appendChild(healthBar);
         }
         
-        // Update enemy size and position
-        const enemySize = cellSize * 0.6; // 60% of cell size
+        // Update enemy size - use a percentage of cell size
+        const enemySize = Math.max(cellSize * 0.5, 16); // At least 16px or 50% of cell size
         enemyElement.style.fontSize = `${enemySize}px`;
         
-        // Important: We need to use the transform for final positioning
-        // But we still update left/top to the actual coordinates
+        // Position the enemy precisely
         enemyElement.style.position = 'absolute';
         enemyElement.style.left = `${enemy.x}px`;
         enemyElement.style.top = `${enemy.y}px`;
         enemyElement.style.transform = 'translate(-50%, -50%)';
+        enemyElement.style.display = 'flex';
+        enemyElement.style.justifyContent = 'center';
+        enemyElement.style.alignItems = 'center';
+        enemyElement.style.zIndex = '15';
+        
+        // Set data attribute for enemy type (useful for styling)
+        enemyElement.setAttribute('data-type', enemy.type);
         
         // Adjust health bar size and position
         const healthBar = enemyElement.querySelector('.enemy-health-bar');
         if (healthBar) {
-            // Make health bar width proportional to enemy size
-            const healthBarWidth = cellSize * 0.5; // 50% of cell size
+            // Health bar should be proportional to enemy size
+            const healthBarWidth = cellSize * 0.45; // 45% of cell width
             
-            // Position health bar properly below the enemy
             healthBar.style.position = 'absolute';
             healthBar.style.width = `${healthBarWidth}px`;
-            healthBar.style.height = `${cellSize * 0.06}px`; // 6% of cell height
+            healthBar.style.height = `${cellSize * 0.05}px`; // 5% of cell height
             
-            // Center the health bar horizontally under the enemy
+            // Important: Center the health bar under the enemy
             healthBar.style.left = '50%';
             healthBar.style.transform = 'translateX(-50%)';
-            healthBar.style.bottom = `${-cellSize * 0.12}px`;
+            healthBar.style.bottom = `${-cellSize * 0.15}px`; // Position it below the enemy
             
-            healthBar.style.borderRadius = `${cellSize * 0.01}px`;
+            healthBar.style.borderRadius = `${healthBarWidth * 0.1}px`;
             healthBar.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            healthBar.style.border = `${cellSize * 0.005}px solid rgba(255, 255, 255, 0.3)`;
+            healthBar.style.overflow = 'hidden';
         }
         
         // Update health bar fill
