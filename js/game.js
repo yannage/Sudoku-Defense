@@ -261,11 +261,11 @@ function renderEnemies() {
         }
         
         // Update enemy size and position
-        // Set the size first
         const enemySize = cellSize * 0.6; // 60% of cell size
         enemyElement.style.fontSize = `${enemySize}px`;
         
-        // Position the enemy precisely at the cell center
+        // Important: We need to use the transform for final positioning
+        // But we still update left/top to the actual coordinates
         enemyElement.style.position = 'absolute';
         enemyElement.style.left = `${enemy.x}px`;
         enemyElement.style.top = `${enemy.y}px`;
@@ -282,11 +282,11 @@ function renderEnemies() {
             healthBar.style.width = `${healthBarWidth}px`;
             healthBar.style.height = `${cellSize * 0.06}px`; // 6% of cell height
             
-            // Center the health bar horizontally
-            healthBar.style.left = '50%'; // Position at 50% of the enemy element
-            healthBar.style.transform = 'translateX(-50%)'; // Center it
+            // Center the health bar horizontally under the enemy
+            healthBar.style.left = '50%';
+            healthBar.style.transform = 'translateX(-50%)';
+            healthBar.style.bottom = `${-cellSize * 0.12}px`;
             
-            healthBar.style.bottom = `${-cellSize * 0.12}px`; // Place it below the enemy
             healthBar.style.borderRadius = `${cellSize * 0.01}px`;
             healthBar.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
             healthBar.style.border = `${cellSize * 0.005}px solid rgba(255, 255, 255, 0.3)`;
