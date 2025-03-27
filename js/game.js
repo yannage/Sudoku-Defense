@@ -260,28 +260,44 @@ function renderEnemies() {
             enemyElement.appendChild(healthBar);
         }
         
-        // Update enemy position
-        enemyElement.style.transform = `translate(-50%, -50%)`;
+        // Update enemy size and position
+        // Set the size first
+        const enemySize = cellSize * 0.6; // 60% of cell size
+        enemyElement.style.fontSize = `${enemySize}px`;
+        
+        // Position the enemy precisely at the cell center
+        // Use absolute values and 50% transform to ensure exact centering
+        enemyElement.style.position = 'absolute';
         enemyElement.style.left = `${enemy.x}px`;
         enemyElement.style.top = `${enemy.y}px`;
+        enemyElement.style.transform = 'translate(-50%, -50%)';
         
-        // Scale enemy size based on cell size (KEY CHANGE)
-        enemyElement.style.fontSize = `${cellSize * 0.5}px`; // 50% of cell size
-        
-        // Update health bar size and position based on cell size
+        // Adjust health bar size and position
         const healthBar = enemyElement.querySelector('.enemy-health-bar');
         if (healthBar) {
-            healthBar.style.width = `${cellSize * 0.6}px`; // 60% of cell width
-            healthBar.style.bottom = `-${cellSize * 0.15}px`; // 15% of cell height below
-            healthBar.style.left = `-${cellSize * 0.3}px`; // Centered
-            healthBar.style.height = `${cellSize * 0.08}px`; // 8% of cell height
+            // Make health bar width proportional to enemy size
+            const healthBarWidth = cellSize * 0.5; // 50% of cell size
+            
+            // Position health bar properly below the enemy
+            healthBar.style.position = 'absolute';
+            healthBar.style.width = `${healthBarWidth}px`;
+            healthBar.style.height = `${cellSize * 0.06}px`; // 6% of cell height
+            healthBar.style.left = `${-healthBarWidth/2}px`; // Center it horizontally
+            healthBar.style.bottom = `${-cellSize * 0.12}px`; // Place it below the enemy
+            healthBar.style.borderRadius = `${cellSize * 0.01}px`;
+            healthBar.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            healthBar.style.padding = '0px';
+            healthBar.style.margin = '0px';
+            healthBar.style.border = `${cellSize * 0.005}px solid rgba(255, 255, 255, 0.3)`;
         }
         
-        // Update health bar
+        // Update health bar fill
         const healthFill = enemyElement.querySelector('.enemy-health-fill');
-        const healthPercent = (enemy.health / enemy.maxHealth) * 100;
         if (healthFill) {
+            const healthPercent = (enemy.health / enemy.maxHealth) * 100;
             healthFill.style.width = `${healthPercent}%`;
+            healthFill.style.height = '100%';
+            healthFill.style.backgroundColor = '#ff0000';
         }
     });
     
