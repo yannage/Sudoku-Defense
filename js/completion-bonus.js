@@ -29,13 +29,42 @@ const CompletionBonusModule = (function() {
     const columnBonuses = {};  // Format: "col-3": {type: "POINTS", expiry: null}
     const gridBonuses = {};    // Format: "grid-1-2": {type: "CURRENCY", expiry: null}
     
+    // Track which units have already had bonuses awarded this game/board
+    const bonusAwarded = {
+        rows: new Set(),      // Tracks rows that have already received a bonus
+        columns: new Set(),   // Tracks columns that have already received a bonus
+        grids: new Set()      // Tracks grids that have already received a bonus
+    };
+    
     /**
      * Called when a unit (row, column, or grid) is completed
      * @param {string} unitType - Type of unit ('row', 'column', or 'grid')
      * @param {number|string} unitIndex - Index of the unit
      */
     function onUnitCompleted(unitType, unitIndex) {
-        console.log(`Unit completed: ${unitType} ${unitIndex}`);
+        console.log(`DEBUG: Unit completed: ${unitType} ${unitIndex}`);
+        
+        // Check if this unit has already been awarded a bonus in this game
+        let alreadyAwarded = false;
+        if (unitType === 'row' && bonusAwarded.rows.has(parseInt(unitIndex))) {
+            console.log(`DEBUG: Row ${unitIndex} already received a bonus, skipping`);
+            alreadyAwarded = true;
+        } else if (unitType === 'column' && bonusAwarded.columns.has(parseInt(unitIndex))) {
+            console.log(`DEBUG: Column ${unitIndex} already received a bonus, skipping`);
+            alreadyAwarded = true;
+        } else if (unitType === 'grid' && bonusAwarded.grids.has(unitIndex)) {
+            console.log(`DEBUG: Grid ${unitIndex} already received a bonus, skipping`);
+            alreadyAwarded = true;
+        }
+        
+        if (alreadyAwarded) {
+            // Show a message to let the player know why no bonus is offered
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                `${capitalizeFirst(unitType)} ${getDisplayIndex(unitType, unitIndex)} already has a bonus applied!`);
+            return;
+        }
+        
+        console.log(`DEBUG: Showing bonus modal for ${unitType} ${unitIndex}`);
         
         // Pause the game (optional - remove if you don't want to pause)
         if (window.Game && typeof Game.pause === 'function') {
@@ -123,19 +152,27 @@ const CompletionBonusModule = (function() {
      * @param {string} bonusType - Type of bonus (DAMAGE, POINTS, CURRENCY)
      */
     function applyBonus(unitType, unitIndex, bonusType) {
+        console.log(`DEBUG: Applying ${bonusType} bonus to ${unitType} ${unitIndex}`);
+        
         const bonusKey = `${unitType}-${unitIndex}`;
         const bonusData = {
             type: bonusType,
             expiry: null // Permanent until row is broken
         };
         
-        // Store the bonus choice
+        // Store the bonus choice and mark as awarded
         if (unitType === 'row') {
             rowBonuses[bonusKey] = bonusData;
+            bonusAwarded.rows.add(parseInt(unitIndex)); // Make sure we store as number
+            console.log(`DEBUG: Marked row ${unitIndex} as awarded, set has ${Array.from(bonusAwarded.rows).join(',')}`);
         } else if (unitType === 'column') {
             columnBonuses[bonusKey] = bonusData;
+            bonusAwarded.columns.add(parseInt(unitIndex)); // Make sure we store as number
+            console.log(`DEBUG: Marked column ${unitIndex} as awarded, set has ${Array.from(bonusAwarded.columns).join(',')}`);
         } else if (unitType === 'grid') {
             gridBonuses[bonusKey] = bonusData;
+            bonusAwarded.grids.add(unitIndex); // Grid index might be a string like "0-1"
+            console.log(`DEBUG: Marked grid ${unitIndex} as awarded, set has ${Array.from(bonusAwarded.grids).join(',')}`);
         }
         
         // Apply visual effect to the completed unit
@@ -573,14 +610,30 @@ const CompletionBonusModule = (function() {
         
         // Set up event listeners
         EventSystem.subscribe(GameEvents.GAME_INIT, function() {
+            console.log("DEBUG: Game initialized, clearing all bonuses and awarded tracking");
             // Clear all bonuses when game is initialized
             Object.keys(rowBonuses).forEach(key => delete rowBonuses[key]);
             Object.keys(columnBonuses).forEach(key => delete columnBonuses[key]);
             Object.keys(gridBonuses).forEach(key => delete gridBonuses[key]);
+            
+            // Clear awarded tracking when starting a new game
+            bonusAwarded.rows.clear();
+            bonusAwarded.columns.clear();
+            bonusAwarded.grids.clear();
+        });
+        
+        // Also clear awarded tracking when a new Sudoku board is generated
+        EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function() {
+            console.log("DEBUG: New Sudoku board generated, clearing awarded tracking");
+            // Clear bonus awarded tracking for new board
+            bonusAwarded.rows.clear();
+            bonusAwarded.columns.clear();
+            bonusAwarded.grids.clear();
         });
         
         // Listen for board changes to check completions
-        EventSystem.subscribe(GameEvents.TOWER_PLACED, function() {
+        EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
+            console.log(`DEBUG: Tower placed at row ${tower.row}, col ${tower.col}, checking completions`);
             checkBoardCompletions();
         });
         
@@ -608,4 +661,4 @@ const CompletionBonusModule = (function() {
 })();
 
 // Make module available globally
-window.CompletionBonusModule = CompletionBonusModule;
+window.CompletionBonusModule = CompletionBonusModule
