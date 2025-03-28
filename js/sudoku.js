@@ -138,53 +138,44 @@ const SudokuModule = (function() {
      * @param {number} numToReveal - Number of cells to reveal
      * @returns {Object} Board and fixed cells
      */
-    function createPuzzleFromSolution(solution, pathCells, numToReveal) {
-        // Create copies to work with
-        const puzzle = JSON.parse(JSON.stringify(solution));
-        const fixed = Array(9).fill().map(() => Array(9).fill(false));
-        
-        // Create a list of all positions
-        let positions = [];
-        for (let i = 0; i < 9; i++) {
-            for (let j = 0; j < 9; j++) {
-                positions.push([i, j]);
-            }
-        }
-        
-        // Shuffle positions
-        shuffle(positions);
-        
-        // Keep track of cells to reveal
-        let revealed = 0;
-        
-        // First, clear all path cells
-        for (let pos of pathCells) {
-            const [row, col] = pos.split(',').map(Number);
-            puzzle[row][col] = 0;
-            fixed[row][col] = false;
-        }
-        
-        // Mark cells for revealing
-        for (let [row, col] of positions) {
-            // Skip path cells
-            if (pathCells.has(`${row},${col}`)) {
-                continue;
-            }
-            
-            if (revealed < numToReveal) {
-                // Keep this cell visible
-                fixed[row][col] = true;
-                revealed++;
-            } else {
-                // Hide this cell
-                puzzle[row][col] = 0;
-                fixed[row][col] = false;
-            }
-        }
-        
-        return { puzzle, fixed };
-    }
+     //XXX
     
+    function createPuzzleFromSolution(solution, pathCells, numToReveal) {
+  const puzzle = JSON.parse(JSON.stringify(solution));
+  const fixed = Array(9).fill().map(() => Array(9).fill(false));
+  
+  let positions = [];
+  for (let i = 0; i < 9; i++) {
+    for (let j = 0; j < 9; j++) {
+      positions.push([i, j]);
+    }
+  }
+  
+  shuffle(positions);
+  let revealed = 0;
+  
+  // Set path cells to correct value and mark them fixed (readonly)
+  for (let pos of pathCells) {
+    const [row, col] = pos.split(',').map(Number);
+    puzzle[row][col] = solution[row][col];
+    fixed[row][col] = true;
+  }
+  
+  // Reveal additional non-path cells
+  for (let [row, col] of positions) {
+    if (pathCells.has(`${row},${col}`)) continue;
+    
+    if (revealed < numToReveal) {
+      fixed[row][col] = true;
+      revealed++;
+    } else {
+      puzzle[row][col] = 0;
+      fixed[row][col] = false;
+    }
+  }
+  
+  return { puzzle, fixed };
+}
     /**
      * Count the number of solutions for a puzzle (up to a maximum)
      * @param {number[][]} puzzle - The puzzle to check
@@ -629,15 +620,17 @@ const SudokuModule = (function() {
             return false;
         }
         
-        // Set the cell value
-        board[row][col] = value;
-        console.log(`Successfully set cell (${row},${col}) to ${value}`);
-        
-        // Publish event
-        EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
-        
-        // Check for unit completions ONLY in the affected units
-        checkUnitCompletion(row, col);
+// Set the cell value
+board[row][col] = value;
+console.log(`Successfully set cell (${row},${col}) to ${value}`);
+
+// Publish event
+EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
+
+// Only check completions if value is correct
+if (solution[row][col] === value) {
+    checkUnitCompletion(row, col);
+}
         
         // Check if the Sudoku is complete
         if (isComplete()) {
@@ -652,6 +645,7 @@ const SudokuModule = (function() {
      * @param {number} row - Row where tower was placed
      * @param {number} col - Column where tower was placed
      */
+     
     function checkUnitCompletion(row, col) {
         // Check only the specific row, column, and grid where a tower was placed
         if (row !== undefined && col !== undefined) {
