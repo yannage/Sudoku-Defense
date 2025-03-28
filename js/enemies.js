@@ -1,6 +1,7 @@
 /**
  * enemies.js - Handles enemy generation, movement, and behavior
  * This module creates and manages enemy entities in the tower defense game
+ * UPDATED: Enhanced enemy movement to move directly from cell center to cell center
  */
 
 const EnemiesModule = (function() {
@@ -75,7 +76,6 @@ const EnemiesModule = (function() {
             x: startX,
             y: startY,
             pathIndex: 0,
-            progress: 0, // Progress within current path segment (0-1)
             active: true
         };
         
@@ -188,60 +188,68 @@ const EnemiesModule = (function() {
     }
     
     /**
-     * Move an enemy along the path
+     * Move an enemy along the path - UPDATED for direct cell-to-cell movement
      * @param {Object} enemy - The enemy to move
      * @param {number} deltaTime - Time elapsed since last update
      */
-    function moveEnemy(enemy, deltaTime) {
-        if (enemy.pathIndex >= path.length - 1) {
-            // Enemy reached the end of the path
-            enemyReachedEnd(enemy);
-            return;
-        }
-        
-        // Calculate movement speed based on enemy speed and deltaTime
-        // Ensure minimum speed to prevent stalling when deltaTime is very small
-        const moveSpeed = Math.max(enemy.speed * 50 * deltaTime, 0.005);
-        
-        // Get current path segment
-        const currentCell = path[enemy.pathIndex];
-        const nextCell = path[enemy.pathIndex + 1];
-        
-        // Calculate cell centers
-        const currentX = currentCell[1] * cellSize + cellSize / 2;
-        const currentY = currentCell[0] * cellSize + cellSize / 2;
-        const nextX = nextCell[1] * cellSize + cellSize / 2;
-        const nextY = nextCell[0] * cellSize + cellSize / 2;
-        
-        // Update progress along current path segment
-        enemy.progress += moveSpeed / Math.sqrt(
-            Math.pow(nextX - currentX, 2) + Math.pow(nextY - currentY, 2)
-        );
-        
-        // Move to next path segment if progress is complete
-        if (enemy.progress >= 1) {
-            enemy.pathIndex++;
-            enemy.progress = 0;
-            
-            // Check if enemy reached the end
-            if (enemy.pathIndex >= path.length - 1) {
-                enemyReachedEnd(enemy);
-                return;
-            }
-        }
-        
-        // Interpolate position between current and next cells
-        const currentSegment = path[enemy.pathIndex];
-        const nextSegment = path[enemy.pathIndex + 1];
-        
-        const startX = currentSegment[1] * cellSize + cellSize / 2;
-        const startY = currentSegment[0] * cellSize + cellSize / 2;
-        const endX = nextSegment[1] * cellSize + cellSize / 2;
-        const endY = nextSegment[0] * cellSize + cellSize / 2;
-        
-        enemy.x = startX + (endX - startX) * enemy.progress;
-        enemy.y = startY + (endY - startY) * enemy.progress;
+    /**
+ * Updated moveEnemy function for consistent cross-platform behavior
+ * This function should be in your enemies.js file
+ */
+function moveEnemy(enemy, deltaTime) {
+    // Exit if enemy reached end or path is empty
+    if (!path || path.length === 0 || enemy.pathIndex >= path.length - 1) {
+        enemyReachedEnd(enemy);
+        return;
     }
+    
+    // Calculate proper cell centers based on current board dimensions
+    const boardElement = document.getElementById('sudoku-board');
+    const currentCellSize = boardElement ? boardElement.clientWidth / 9 : cellSize;
+    
+    // Get current and next path cells
+    const currentCell = path[enemy.pathIndex];
+    const nextCell = path[enemy.pathIndex + 1];
+    
+    if (!currentCell || !nextCell) {
+        console.error("Invalid path cells", enemy.pathIndex, path.length);
+        return;
+    }
+    
+    // Calculate exact cell center positions (very important for consistent movement)
+    const currentCenterX = currentCell[1] * currentCellSize + currentCellSize / 2;
+    const currentCenterY = currentCell[0] * currentCellSize + currentCellSize / 2;
+    const nextCenterX = nextCell[1] * currentCellSize + currentCellSize / 2;
+    const nextCenterY = nextCell[0] * currentCellSize + currentCellSize / 2;
+    
+    // Use base speed * a consistent factor (50 can be too fast on some devices)
+    const moveSpeed = enemy.speed * 30 * deltaTime;
+    
+    // Calculate distance to next cell center
+    const dx = nextCenterX - enemy.x;
+    const dy = nextCenterY - enemy.y;
+    const distanceToNext = Math.sqrt(dx * dx + dy * dy);
+    
+    // If we're very close to the next cell center or would overshoot it
+    if (distanceToNext <= moveSpeed) {
+        // Move directly to the next cell center
+        enemy.x = nextCenterX;
+        enemy.y = nextCenterY;
+        
+        // Advance to the next path segment
+        enemy.pathIndex++;
+        
+        // Check if we've reached the end
+        if (enemy.pathIndex >= path.length - 1) {
+            enemyReachedEnd(enemy);
+        }
+    } else {
+        // Move toward the next cell center at the appropriate speed
+        const moveRatio = moveSpeed / distanceToNext;
+        enemy.x += dx * moveRatio;
+        enemy.y += dy * moveRatio;
+    }
+}
     
     /**
      * Handle an enemy reaching the end of the path
@@ -252,12 +260,6 @@ const EnemiesModule = (function() {
         
         // Remove from enemies array
         enemies = enemies.filter(e => e.id !== enemy.id);
-        
-        // Remove the enemy element from the DOM
-        const enemyElement = document.getElementById(enemy.id);
-        if (enemyElement) {
-            enemyElement.remove();
-        }
         
         // Publish event
         EventSystem.publish(GameEvents.ENEMY_REACHED_END, enemy);
@@ -293,7 +295,6 @@ const EnemiesModule = (function() {
             return true;
         }
         
-        // Don't interrupt movement, always return false unless defeated
         return false;
     }
     
@@ -304,14 +305,8 @@ const EnemiesModule = (function() {
     function defeatEnemy(enemy) {
         enemy.active = false;
         
-        // Remove from enemies array immediately
+        // Remove from enemies array
         enemies = enemies.filter(e => e.id !== enemy.id);
-        
-        // Also remove the enemy element from the DOM directly
-        const enemyElement = document.getElementById(enemy.id);
-        if (enemyElement) {
-            enemyElement.remove();
-        }
         
         // Publish enemy defeated event
         EventSystem.publish(GameEvents.ENEMY_DEFEATED, {
@@ -322,13 +317,6 @@ const EnemiesModule = (function() {
         
         // Decrement enemies remaining
         enemiesRemaining--;
-        
-        // Check if this was the last enemy
-        if (enemies.length === 0 && enemiesRemaining === 0 && !spawnInterval) {
-            setTimeout(() => {
-                waveComplete();
-            }, 100);
-        }
     }
     
     /**
@@ -337,13 +325,7 @@ const EnemiesModule = (function() {
     function waveComplete() {
         isWaveActive = false;
         
-        // Force clear any enemies that might still be around
-        const remainingEnemyElements = document.querySelectorAll('.enemy');
-        remainingEnemyElements.forEach(element => {
-            element.remove();
-        });
-        
-        // Clear enemies array
+        // Clear any enemies that might still be around
         enemies = [];
         
         // Publish wave complete event first, before incrementing
@@ -351,9 +333,6 @@ const EnemiesModule = (function() {
         EventSystem.publish(GameEvents.WAVE_COMPLETE, {
             waveNumber: waveNumber
         });
-        
-        // Don't increment wave number here - let LevelsModule handle it
-        // waveNumber++; 
         
         // Generate new path for the next wave immediately
         setTimeout(() => {
