@@ -810,7 +810,6 @@ function checkUnitCompletion() {
     }
   }
 }
-  
     
     /**
      * Check if the Sudoku is complete and correct
