@@ -1,4 +1,4 @@
- 
+
 /**
  * sudoku.js - Handles Sudoku puzzle generation and validation
  * This module generates Sudoku puzzles and provides validation functions
@@ -650,18 +650,17 @@ if (solution[row][col] === value) {
 /**
  * Modified checkUnitCompletion function for sudoku.js - streamlined version
  */
+ //xxx
 function checkUnitCompletion() {
-  // Track which units were just completed by the player's last action
-  let newlyCompletedByPlayer = false;
+  console.log("DEBUG: Running checkUnitCompletion");
   
   // Check rows
   for (let row = 0; row < 9; row++) {
-    // Count cells and check completeness
     let nonPathCellCount = 0;
     let filledCellCount = 0;
     let fixedCellCount = 0;
-    let isComplete = true;
     let numberSet = new Set();
+    let isComplete = true;
     
     for (let col = 0; col < 9; col++) {
       if (!pathCells.has(`${row},${col}`)) {
@@ -684,19 +683,24 @@ function checkUnitCompletion() {
     isComplete = isComplete && (filledCellCount === nonPathCellCount) &&
       (numberSet.size === nonPathCellCount) && (nonPathCellCount > 0);
     
-    // Only trigger bonus if this is newly completed and requires player input
-    const playerCompleted = isComplete && (filledCellCount > fixedCellCount);
+    // Only consider a row player-completed if player placed at least one tower
+    const playerContributed = (filledCellCount > fixedCellCount);
+    
+    console.log(`DEBUG: Row ${row}: complete=${isComplete}, playerContributed=${playerContributed}, was_complete=${completedRows.has(row)}`);
     
     if (isComplete && !completedRows.has(row)) {
       // Newly completed row
       completedRows.add(row);
+      console.log(`DEBUG: Row ${row} newly completed`);
       
       // Only trigger bonus if player placed at least one tower
-      if (playerCompleted) {
+      if (playerContributed) {
+        console.log(`DEBUG: Player contributed to row ${row} completion, triggering bonus`);
         if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
           CompletionBonusModule.onUnitCompleted('row', row);
-          newlyCompletedByPlayer = true;
         }
+      } else {
+        console.log(`DEBUG: Row ${row} completed but player didn't contribute (all fixed cells)`);
       }
     } else if (!isComplete && completedRows.has(row)) {
       // No longer complete
@@ -709,8 +713,8 @@ function checkUnitCompletion() {
     let nonPathCellCount = 0;
     let filledCellCount = 0;
     let fixedCellCount = 0;
-    let isComplete = true;
     let numberSet = new Set();
+    let isComplete = true;
     
     for (let row = 0; row < 9; row++) {
       if (!pathCells.has(`${row},${col}`)) {
@@ -732,15 +736,18 @@ function checkUnitCompletion() {
     isComplete = isComplete && (filledCellCount === nonPathCellCount) &&
       (numberSet.size === nonPathCellCount) && (nonPathCellCount > 0);
     
-    const playerCompleted = isComplete && (filledCellCount > fixedCellCount);
+    const playerContributed = (filledCellCount > fixedCellCount);
+    
+    console.log(`DEBUG: Column ${col}: complete=${isComplete}, playerContributed=${playerContributed}, was_complete=${completedColumns.has(col)}`);
     
     if (isComplete && !completedColumns.has(col)) {
       completedColumns.add(col);
+      console.log(`DEBUG: Column ${col} newly completed`);
       
-      if (playerCompleted) {
+      if (playerContributed) {
+        console.log(`DEBUG: Player contributed to column ${col} completion, triggering bonus`);
         if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
           CompletionBonusModule.onUnitCompleted('column', col);
-          newlyCompletedByPlayer = true;
         }
       }
     } else if (!isComplete && completedColumns.has(col)) {
@@ -754,8 +761,8 @@ function checkUnitCompletion() {
       let nonPathCellCount = 0;
       let filledCellCount = 0;
       let fixedCellCount = 0;
-      let isComplete = true;
       let numberSet = new Set();
+      let isComplete = true;
       
       for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 3; j++) {
@@ -782,16 +789,19 @@ function checkUnitCompletion() {
       isComplete = isComplete && (filledCellCount === nonPathCellCount) &&
         (numberSet.size === nonPathCellCount) && (nonPathCellCount > 0);
       
-      const playerCompleted = isComplete && (filledCellCount > fixedCellCount);
+      const playerContributed = (filledCellCount > fixedCellCount);
       const gridKey = `${gridRow}-${gridCol}`;
+      
+      console.log(`DEBUG: Grid ${gridKey}: complete=${isComplete}, playerContributed=${playerContributed}, was_complete=${completedGrids.has(gridKey)}`);
       
       if (isComplete && !completedGrids.has(gridKey)) {
         completedGrids.add(gridKey);
+        console.log(`DEBUG: Grid ${gridKey} newly completed`);
         
-        if (playerCompleted) {
+        if (playerContributed) {
+          console.log(`DEBUG: Player contributed to grid ${gridKey} completion, triggering bonus`);
           if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
             CompletionBonusModule.onUnitCompleted('grid', gridKey);
-            newlyCompletedByPlayer = true;
           }
         }
       } else if (!isComplete && completedGrids.has(gridKey)) {
@@ -799,8 +809,6 @@ function checkUnitCompletion() {
       }
     }
   }
-  
-  return newlyCompletedByPlayer; // Optionally return whether any new completions happened
 }
   
     
