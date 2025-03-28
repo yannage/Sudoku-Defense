@@ -1,667 +1,448 @@
-// Add this at the beginning of the Game module to ensure events are properly initialized
-const Game = (function() {
+/**
+ * enemies.js - Handles enemy generation, movement, and behavior
+ * This module creates and manages enemy entities in the tower defense game
+ * UPDATED: Enhanced enemy movement to move directly from cell center to cell center
+ */
+
+const EnemiesModule = (function() {
     // Private variables
-    let isInitialized = false;
-    let isRunning = false;
-    let isPaused = false;
-    let lastUpdateTime = 0;
+    let enemies = [];
+    let enemyId = 0;
+    let waveNumber = 1;
+    let isWaveActive = false;
+    let spawnInterval = null;
+    let enemiesRemaining = 0;
+    let path = [];
     let cellSize = 0;
-    let boardElement = null;
+    
+    // Enemy types with their properties - FIXED EMOJIS
+    const enemyTypes = {
+        1: { emoji: '1️⃣', health: 60, speed: 0.9, reward: 15, points: 5 },
+        2: { emoji: '2️⃣', health: 70, speed: 1.0, reward: 18, points: 7 },
+        3: { emoji: '3️⃣', health: 80, speed: 1.1, reward: 21, points: 9 },
+        4: { emoji: '4️⃣', health: 90, speed: 1.2, reward: 24, points: 11 },
+        5: { emoji: '5️⃣', health: 100, speed: 1.3, reward: 27, points: 13 },
+        6: { emoji: '6️⃣', health: 120, speed: 1.4, reward: 30, points: 15 },
+        7: { emoji: '7️⃣', health: 140, speed: 1.5, reward: 33, points: 17 },
+        8: { emoji: '8️⃣', health: 160, speed: 1.6, reward: 36, points: 19 },
+        9: { emoji: '9️⃣', health: 180, speed: 1.7, reward: 39, points: 21 },
+        'boss': { emoji: '👹', health: 300, speed: 0.7, reward: 75, points: 50 }
+    };
     
     /**
-     * Initialize the game
+     * Initialize the enemies module
+     * @param {Object} options - Initialization options
      */
-    function init() {
-        if (isInitialized) {
-            return;
+    function init(options = {}) {
+        enemies = [];
+        enemyId = 0;
+        waveNumber = 1;
+        isWaveActive = false;
+        enemiesRemaining = 0;
+        cellSize = options.cellSize || 55; // Default cell size
+        
+        // Stop any active spawn interval
+        if (spawnInterval) {
+            clearInterval(spawnInterval);
+            spawnInterval = null;
         }
+    }
+    
+    /**
+     * Create a new enemy
+     * @param {number|string} type - Enemy type
+     * @returns {Object} The created enemy
+     */
+    function createEnemy(type) {
+        const typeData = enemyTypes[type] || enemyTypes[1];
         
-        console.log("Game initialization started");
+        // Calculate starting position (first cell in the path)
+        const startCell = path[0];
+        const startX = startCell[1] * cellSize + cellSize / 2;
+        const startY = startCell[0] * cellSize + cellSize / 2;
         
-        // Get the board element
-        boardElement = document.getElementById('sudoku-board');
+        // Apply wave difficulty scaling
+        const healthScale = 1 + (waveNumber - 1) * 0.2; // 20% more health per wave
         
-        // Calculate cell size based on board size
-        const boardWidth = boardElement.clientWidth;
-        cellSize = Math.floor(boardWidth / 9);
-        
-        // Initialize other modules with game settings
-        const gameSettings = {
-            cellSize: cellSize
+        const enemy = {
+            id: `enemy_${++enemyId}`,
+            type: type,
+            emoji: typeData.emoji,
+            health: typeData.health * healthScale,
+            maxHealth: typeData.health * healthScale,
+            speed: typeData.speed,
+            reward: typeData.reward,
+            points: typeData.points,
+            x: startX,
+            y: startY,
+            pathIndex: 0,
+            active: true
         };
         
-        // Publish initialization event
-        EventSystem.publish(GameEvents.GAME_INIT, gameSettings);
+        // Add to enemies array
+        enemies.push(enemy);
         
-        // Set up the Sudoku board
-        setupBoard();
+        // Publish enemy spawn event
+        EventSystem.publish(GameEvents.ENEMY_SPAWN, enemy);
         
-        // Set up UI event listeners
-        setupUIEventListeners();
-        
-        // Make sure UI is updated with initial values
-        updateUI();
-        
-        // Start the game loop
-        isInitialized = true;
-        start();
-        
-        console.log("Game initialization completed");
+        return enemy;
     }
     
     /**
-     * Update UI elements with current game state
+     * Start a wave of enemies
      */
-    function updateUI() {
-        // Get current player state
-        const playerState = PlayerModule.getState();
-        
-        // Update UI elements directly
-        document.getElementById('score-value').textContent = playerState.score;
-        document.getElementById('lives-value').textContent = playerState.lives;
-        document.getElementById('currency-value').textContent = playerState.currency;
-        
-        // Update wave number
-        document.getElementById('wave-value').textContent = EnemiesModule.getWaveNumber();
-        
-        console.log("UI updated with: Lives=" + playerState.lives + ", Currency=" + playerState.currency);
-    }
-    
-    /**
-     * Start the game
-     */
-    function start() {
-        if (isRunning) {
+    function startWave() {
+        if (isWaveActive) {
             return;
         }
         
-        isRunning = true;
-        isPaused = false;
-        lastUpdateTime = performance.now();
+        // Get the latest path from the Sudoku module
+        path = SudokuModule.getPathArray();
         
-        // Publish game start event
-        EventSystem.publish(GameEvents.GAME_START);
-        
-        // Start game loop
-        requestAnimationFrame(gameLoop);
-    }
-    
-    /**
-     * Pause the game
-     */
-    function pause() {
-        if (!isRunning || isPaused) {
+        if (path.length === 0) {
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot start wave: No path defined!");
             return;
         }
         
-        isPaused = true;
+        isWaveActive = true;
         
-        // Publish game pause event
-        EventSystem.publish(GameEvents.GAME_PAUSE);
+        // Calculate number of enemies based on wave number - MODIFIED FOR EASIER PROGRESSION
+        const baseEnemyCount = 6; // Was 10
+        const enemyCount = baseEnemyCount + Math.floor((waveNumber - 1) * 3); // Was (waveNumber - 1) * 5
+        enemiesRemaining = enemyCount;
+        
+        // Determine which enemy types to use in this wave
+        const availableTypes = Math.min(9, Math.ceil(waveNumber / 2));
+        
+        // Publish wave start event
+        EventSystem.publish(GameEvents.WAVE_START, {
+            waveNumber: waveNumber,
+            enemyCount: enemyCount
+        });
+        
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, `Wave ${waveNumber} started! Enemies: ${enemyCount}`);
+        
+        let enemiesSpawned = 0;
+        
+        // Clear any existing interval
+        if (spawnInterval) {
+            clearInterval(spawnInterval);
+        }
+        
+        // Spawn enemies at an interval
+        spawnInterval = setInterval(() => {
+            if (enemiesSpawned >= enemyCount) {
+                clearInterval(spawnInterval);
+                spawnInterval = null;
+                return;
+            }
+            
+            // Determine enemy type - higher waves have more varied and stronger enemies
+            let enemyType;
+            
+            // Boss enemy at the end of each wave (last 10% of enemies)
+            if (enemiesSpawned >= enemyCount * 0.9 && waveNumber % 3 === 0) {
+                enemyType = 'boss';
+            } else {
+                // Random enemy type based on available types
+                enemyType = Math.ceil(Math.random() * availableTypes);
+            }
+            
+            createEnemy(enemyType);
+            enemiesSpawned++;
+        }, 1000 / Math.sqrt(waveNumber)); // Spawn faster in higher waves
     }
     
     /**
-     * Resume the game
+     * Update all enemies
+     * @param {number} deltaTime - Time elapsed since last update in seconds
      */
-    function resume() {
-        if (!isRunning || !isPaused) {
+    function update(deltaTime) {
+        if (!isWaveActive) {
             return;
         }
         
-        isPaused = false;
-        lastUpdateTime = performance.now();
+        let activeEnemies = 0;
         
-        // Publish game resume event
-        EventSystem.publish(GameEvents.GAME_RESUME);
-        
-        // Resume game loop
-        requestAnimationFrame(gameLoop);
-    }
-    
-    /**
-     * Stop the game
-     */
-    function stop() {
-        isRunning = false;
-        isPaused = false;
-    }
-    
-    /**
-     * Reset the game
-     */
-    function reset() {
-        console.log("Game reset started");
-        
-        // Stop the game loop
-        stop();
-        
-        // Clear the board
-        clearBoard();
-        
-        // Reset all modules explicitly
-        PlayerModule.reset();
-        SudokuModule.generatePuzzle();
-        EnemiesModule.init();
-        TowersModule.init();
-        
-        // Force full re-initialization
-        isInitialized = false;
-        init();
-        
-        // Update UI with initial values
-        updateUI();
-        
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, "New game started!");
-        
-        console.log("Game reset completed");
-    }
-    
-    /**
-     * Main game loop
-     * @param {number} timestamp - Current timestamp
-     */
-    function gameLoop(timestamp) {
-        if (!isRunning || isPaused) {
-            return;
+        // Update each enemy
+        for (let i = 0; i < enemies.length; i++) {
+            const enemy = enemies[i];
+            
+            if (!enemy.active) {
+                continue;
+            }
+            
+            activeEnemies++;
+            
+            // Move enemy along the path
+            moveEnemy(enemy, deltaTime);
+            
+            // Publish enemy move event
+            EventSystem.publish(GameEvents.ENEMY_MOVE, enemy);
         }
         
-        // Calculate delta time
-        const deltaTime = (timestamp - lastUpdateTime) / 1000; // Convert to seconds
-        lastUpdateTime = timestamp;
-        
-        // Update game state
-        update(deltaTime);
-        
-        // Render game state
-        render();
-        
-        // Continue loop
-        requestAnimationFrame(gameLoop);
+        // Check if wave is complete (no active enemies and none remaining to spawn)
+        if (activeEnemies === 0 && enemiesRemaining === 0 && !spawnInterval) {
+            waveComplete();
+        }
     }
     
     /**
-     * Update game state
+     * Move an enemy along the path - UPDATED for direct cell-to-cell movement
+     * @param {Object} enemy - The enemy to move
      * @param {number} deltaTime - Time elapsed since last update
      */
-    // Update game state
-function update(deltaTime) {
-    // Update enemies
-    EnemiesModule.update(deltaTime);
-    
-    // Update towers
-    TowersModule.update(deltaTime);
-    
-    // Add this new code:
-    // Update completion bonus system if it exists
-    if (window.CompletionBonusModule && 
-        typeof CompletionBonusModule.checkBoardCompletions === 'function') {
-        CompletionBonusModule.checkBoardCompletions();
-    }
-}
-    
     /**
-     * Render game state
-     */
-    function render() {
-        // Update enemy elements
-        renderEnemies();
-    }
-    
-    /**
-     * Render enemies on the board
-     */
-    
-
-/**
- * Updated renderEnemies function for consistent display across platforms
- * This function should be in your game.js file
+ * Updated moveEnemy function for consistent cross-platform behavior
+ * This function should be in your enemies.js file
  */
-function renderEnemies() {
-    // Get all enemies
-    const enemies = EnemiesModule.getEnemies();
-    if (!enemies || enemies.length === 0) return;
-    
-    // Get or create enemy container
-    let enemyContainer = document.getElementById('enemy-container');
-    const boardElement = document.getElementById('sudoku-board');
-    
-    if (!boardElement) return;
-    
-    if (!enemyContainer) {
-        enemyContainer = document.createElement('div');
-        enemyContainer.id = 'enemy-container';
-        enemyContainer.style.position = 'absolute';
-        enemyContainer.style.top = '0';
-        enemyContainer.style.left = '0';
-        enemyContainer.style.width = '100%';
-        enemyContainer.style.height = '100%';
-        enemyContainer.style.pointerEvents = 'none';
-        boardElement.appendChild(enemyContainer);
+function moveEnemy(enemy, deltaTime) {
+    // Exit if enemy reached end or path is empty
+    if (!path || path.length === 0 || enemy.pathIndex >= path.length - 1) {
+        enemyReachedEnd(enemy);
+        return;
     }
     
-    // Get the current cell size based on actual board dimensions
-    const cellSize = boardElement.clientWidth / 9;
+    // Calculate proper cell centers based on current board dimensions
+    const boardElement = document.getElementById('sudoku-board');
+    const currentCellSize = boardElement ? boardElement.clientWidth / 9 : cellSize;
     
-    // Update existing enemy elements and create new ones as needed
-    enemies.forEach(enemy => {
-        let enemyElement = document.getElementById(enemy.id);
-        
-        if (!enemyElement) {
-            // Create new enemy element
-            enemyElement = document.createElement('div');
-            enemyElement.id = enemy.id;
-            enemyElement.className = 'enemy';
-            enemyElement.textContent = enemy.emoji;
-            enemyContainer.appendChild(enemyElement);
-            
-            // Create health bar
-            const healthBar = document.createElement('div');
-            healthBar.className = 'enemy-health-bar';
-            
-            const healthFill = document.createElement('div');
-            healthFill.className = 'enemy-health-fill';
-            healthFill.style.width = '100%';
-            healthFill.style.height = '100%';
-            healthFill.style.backgroundColor = '#ff0000';
-            
-            healthBar.appendChild(healthFill);
-            enemyElement.appendChild(healthBar);
-        }
-        
-        // Update enemy size - use a percentage of cell size
-        const enemySize = Math.max(cellSize * 0.5, 16); // At least 16px or 50% of cell size
-        enemyElement.style.fontSize = `${enemySize}px`;
-        
-        // Position the enemy precisely
-        enemyElement.style.position = 'absolute';
-        enemyElement.style.left = `${enemy.x}px`;
-        enemyElement.style.top = `${enemy.y}px`;
-        enemyElement.style.transform = 'translate(-50%, -50%)';
-        enemyElement.style.display = 'flex';
-        enemyElement.style.justifyContent = 'center';
-        enemyElement.style.alignItems = 'center';
-        enemyElement.style.zIndex = '15';
-        
-        // Set data attribute for enemy type (useful for styling)
-        enemyElement.setAttribute('data-type', enemy.type);
-        
-        // Adjust health bar size and position
-        const healthBar = enemyElement.querySelector('.enemy-health-bar');
-        if (healthBar) {
-            // Health bar should be proportional to enemy size
-            const healthBarWidth = cellSize * 0.45; // 45% of cell width
-            
-            healthBar.style.position = 'absolute';
-            healthBar.style.width = `${healthBarWidth}px`;
-            healthBar.style.height = `${cellSize * 0.05}px`; // 5% of cell height
-            
-            // Important: Center the health bar under the enemy
-            healthBar.style.left = '50%';
-            healthBar.style.transform = 'translateX(-50%)';
-            healthBar.style.bottom = `${-cellSize * 0.15}px`; // Position it below the enemy
-            
-            healthBar.style.borderRadius = `${healthBarWidth * 0.1}px`;
-            healthBar.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            healthBar.style.overflow = 'hidden';
-        }
-        
-        // Update health bar fill
-        const healthFill = enemyElement.querySelector('.enemy-health-fill');
-        if (healthFill) {
-            const healthPercent = (enemy.health / enemy.maxHealth) * 100;
-            healthFill.style.width = `${healthPercent}%`;
-            healthFill.style.height = '100%';
-            healthFill.style.backgroundColor = '#ff0000';
-        }
-    });
+    // Get current and next path cells
+    const currentCell = path[enemy.pathIndex];
+    const nextCell = path[enemy.pathIndex + 1];
     
-    // Remove enemy elements for defeated enemies
-    const enemyElements = enemyContainer.getElementsByClassName('enemy');
+    if (!currentCell || !nextCell) {
+        console.error("Invalid path cells", enemy.pathIndex, path.length);
+        return;
+    }
     
-    for (let i = enemyElements.length - 1; i >= 0; i--) {
-        const element = enemyElements[i];
-        const enemyId = element.id;
+    // Calculate exact cell center positions (very important for consistent movement)
+    const currentCenterX = currentCell[1] * currentCellSize + currentCellSize / 2;
+    const currentCenterY = currentCell[0] * currentCellSize + currentCellSize / 2;
+    const nextCenterX = nextCell[1] * currentCellSize + currentCellSize / 2;
+    const nextCenterY = nextCell[0] * currentCellSize + currentCellSize / 2;
+    
+    // Use base speed * a consistent factor (50 can be too fast on some devices)
+    const moveSpeed = enemy.speed * 30 * deltaTime;
+    
+    // Calculate distance to next cell center
+    const dx = nextCenterX - enemy.x;
+    const dy = nextCenterY - enemy.y;
+    const distanceToNext = Math.sqrt(dx * dx + dy * dy);
+    
+    // If we're very close to the next cell center or would overshoot it
+    if (distanceToNext <= moveSpeed) {
+        // Move directly to the next cell center
+        enemy.x = nextCenterX;
+        enemy.y = nextCenterY;
         
-        if (!enemies.find(e => e.id === enemyId)) {
-            element.remove();
+        // Advance to the next path segment
+        enemy.pathIndex++;
+        
+        // Check if we've reached the end
+        if (enemy.pathIndex >= path.length - 1) {
+            enemyReachedEnd(enemy);
         }
+    } else {
+        // Move toward the next cell center at the appropriate speed
+        const moveRatio = moveSpeed / distanceToNext;
+        enemy.x += dx * moveRatio;
+        enemy.y += dy * moveRatio;
     }
 }
     
     /**
-     * Set up the Sudoku board
+     * Handle an enemy reaching the end of the path
+     * @param {Object} enemy - The enemy that reached the end
      */
-    function setupBoard() {
-        console.log("Setting up board");
+    function enemyReachedEnd(enemy) {
+        enemy.active = false;
         
-        // Clear any existing board
-        clearBoard();
+        // Remove from enemies array
+        enemies = enemies.filter(e => e.id !== enemy.id);
         
-        // Create cells
-        for (let row = 0; row < 9; row++) {
-            for (let col = 0; col < 9; col++) {
-                const cell = document.createElement('div');
-                cell.className = 'sudoku-cell';
-                cell.dataset.row = row;
-                cell.dataset.col = col;
-                
-                // Add click event listener
-                cell.addEventListener('click', function() {
-                    handleCellClick(row, col);
-                });
-                
-                boardElement.appendChild(cell);
-            }
-        }
+        // Publish event
+        EventSystem.publish(GameEvents.ENEMY_REACHED_END, enemy);
         
-        // Count cells to ensure all were created
-        console.log("Created " + boardElement.childElementCount + " cells");
-        
-        // Update board with initial values
-        updateBoard();
+        // Decrement enemies remaining
+        enemiesRemaining--;
     }
     
     /**
-     * Clear the Sudoku board
+     * Damage an enemy
+     * @param {string} enemyId - ID of the enemy to damage
+     * @param {number} damage - Amount of damage to deal
+     * @returns {boolean} Whether the enemy was killed
      */
-    function clearBoard() {
-        console.log("Clearing board");
-        while (boardElement.firstChild) {
-            boardElement.removeChild(boardElement.firstChild);
+    function damageEnemy(enemyId, damage) {
+        const enemy = enemies.find(e => e.id === enemyId);
+        
+        if (!enemy || !enemy.active) {
+            return false;
         }
+        
+        enemy.health -= damage;
+        
+        // Publish enemy damage event
+        EventSystem.publish(GameEvents.ENEMY_DAMAGE, {
+            enemy: enemy,
+            damage: damage
+        });
+        
+        // Check if enemy is defeated
+        if (enemy.health <= 0) {
+            defeatEnemy(enemy);
+            return true;
+        }
+        
+        return false;
     }
     
     /**
-     * Update the Sudoku board display
-     * This function has been modified to properly handle path cells with numbers
+     * Defeat an enemy
+     * @param {Object} enemy - The enemy to defeat
      */
-    function updateBoard() {
-        console.log("Updating board display");
-        const board = SudokuModule.getBoard();
-        const fixedCells = SudokuModule.getFixedCells();
-        const pathCells = SudokuModule.getPathCells();
+    function defeatEnemy(enemy) {
+        enemy.active = false;
         
-        // Update each cell
-        for (let row = 0; row < 9; row++) {
-            for (let col = 0; col < 9; col++) {
-                const cellElement = boardElement.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-                
-                if (!cellElement) {
-                    console.warn(`Cell element not found for row ${row}, col ${col}`);
-                    continue;
+        // Remove from enemies array
+        enemies = enemies.filter(e => e.id !== enemy.id);
+        
+        // Publish enemy defeated event
+        EventSystem.publish(GameEvents.ENEMY_DEFEATED, {
+            enemy: enemy,
+            reward: enemy.reward,
+            points: enemy.points
+        });
+        
+        // Decrement enemies remaining
+        enemiesRemaining--;
+    }
+    
+    /**
+     * Handle wave completion
+     */
+    function waveComplete() {
+        isWaveActive = false;
+        
+        // Clear any enemies that might still be around
+        enemies = [];
+        
+        // Publish wave complete event first, before incrementing
+        // This way LevelsModule can handle the increment
+        EventSystem.publish(GameEvents.WAVE_COMPLETE, {
+            waveNumber: waveNumber
+        });
+        
+        // Generate new path for the next wave immediately
+        setTimeout(() => {
+            if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
+                // Clear existing path
+                const pathCells = SudokuModule.getPathCells();
+                if (pathCells && typeof pathCells.clear === 'function') {
+                    pathCells.clear();
                 }
                 
-                // Clear previous classes
-                cellElement.classList.remove('fixed', 'path');
+                // Generate new path
+                SudokuModule.generateEnemyPath();
+                console.log("New path generated after wave completion");
                 
-                // Set value
-                const value = board[row][col];
-                cellElement.textContent = value > 0 ? value : '';
-                
-                // Mark fixed cells
-                if (fixedCells[row][col]) {
-                    cellElement.classList.add('fixed');
+                // Update the board to show the new path
+                if (window.Game && typeof Game.updateBoard === 'function') {
+                    Game.updateBoard();
                 }
                 
-                // Mark path cells - a cell can be both a path and have a number
-                if (pathCells.has(`${row},${col}`)) {
-                    cellElement.classList.add('path');
-                }
-                
-                // Check for tower
-                const tower = TowersModule.getTowerAt(row, col);
-                
-                if (tower && !pathCells.has(`${row},${col}`)) {
-                    // Clear number and show tower emoji
-                    cellElement.textContent = tower.emoji;
+                // Notify other modules of the path change
+                if (typeof SudokuModule.getPathArray === 'function') {
+                    const newPath = SudokuModule.getPathArray();
+                    EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
+                        pathCells: newPath
+                    });
                     
-                    // Add level indicator if tower level > 1
-                    if (tower.level > 1) {
-                        const levelIndicator = document.createElement('span');
-                        levelIndicator.className = 'tower-level';
-                        levelIndicator.textContent = tower.level;
-                        levelIndicator.style.position = 'absolute';
-                        levelIndicator.style.bottom = '2px';
-                        levelIndicator.style.right = '2px';
-                        levelIndicator.style.fontSize = '12px';
-                        levelIndicator.style.fontWeight = 'bold';
-                        levelIndicator.style.color = '#fff';
-                        levelIndicator.style.backgroundColor = '#333';
-                        levelIndicator.style.borderRadius = '50%';
-                        levelIndicator.style.padding = '1px 3px';
-                        
-                        // Remove existing level indicator
-                        const existingIndicator = cellElement.querySelector('.tower-level');
-                        if (existingIndicator) {
-                            existingIndicator.remove();
-                        }
-                        
-                        cellElement.appendChild(levelIndicator);
-                    }
+                    // Also publish a specific event for path updates
+                    EventSystem.publish('path:updated', newPath);
                 }
             }
+        }, 500); // Short delay to make sure the wave completion processing is done
+    }
+    
+    /**
+     * Set the wave number
+     * @param {number} num - New wave number
+     */
+    function setWaveNumber(num) {
+        if (typeof num === 'number' && num > 0) {
+            waveNumber = num;
+            console.log("EnemiesModule wave number set to: " + waveNumber);
         }
     }
     
     /**
-     * Handle cell click event
-     * @param {number} row - Row index
-     * @param {number} col - Column index
+     * Get all active enemies
+     * @returns {Object[]} Array of active enemies
      */
-    function handleCellClick(row, col) {
-        const selectedTower = PlayerModule.getSelectedTower();
-        
-        if (!selectedTower) {
-            // No tower selected, show info about existing tower
-            const tower = TowersModule.getTowerAt(row, col);
-            
-            if (tower) {
-                showTowerInfo(tower);
-            }
-            
-            return;
-        }
-        
-        // Attempt to place the selected tower
-        const newTower = TowersModule.createTower(selectedTower, row, col);
-        
-        // If tower was successfully placed, update the UI immediately
-        if (newTower) {
-            updateUI();
-        }
-        
-        // Update the board
-        updateBoard();
+    function getEnemies() {
+        return enemies.filter(e => e.active);
     }
     
     /**
-     * Show tower information
-     * @param {Object} tower - The tower to show info for
+     * Get the current wave number
+     * @returns {number} Current wave number
      */
-    function showTowerInfo(tower) {
-        const towerType = TowersModule.getTowerTypeData(tower.type);
-        
-        if (!towerType) {
-            return;
-        }
-        
-        const upgradeCost = Math.floor(towerType.cost * 0.75 * tower.level);
-        
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-            `Tower Level ${tower.level}: Damage ${tower.damage}, Range ${Math.floor(tower.range / cellSize)}, Attack Speed ${(1 / tower.attackSpeed).toFixed(1)}/s. Upgrade Cost: ${upgradeCost}`
-        );
+    function getWaveNumber() {
+        return waveNumber;
     }
     
     /**
-     * Set up UI event listeners
+     * Check if a wave is currently active
+     * @returns {boolean} Whether a wave is active
      */
-    function setupUIEventListeners() {
-        console.log("Setting up UI event listeners");
-        
-        // Tower selection
-        const towerOptions = document.querySelectorAll('.tower-option');
-        
-        towerOptions.forEach(option => {
-            option.addEventListener('click', function() {
-                const towerType = this.dataset.towerType;
-                const cost = TowersModule.getTowerCost(towerType);
-                
-                // Remove selected class from all options
-                towerOptions.forEach(opt => {
-                    opt.classList.remove('selected');
-                });
-                
-                // Add selected class to clicked option
-                this.classList.add('selected');
-                
-                // Select the tower
-                PlayerModule.selectTower(towerType);
-                
-                EventSystem.publish(GameEvents.STATUS_MESSAGE, `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
-            });
-        });
-        
-        // Game controls
-        document.getElementById('start-wave').addEventListener('click', function() {
-            LevelsModule.startWave();
-        });
-        
-        document.getElementById('pause-game').addEventListener('click', function() {
-            if (isPaused) {
-                resume();
-                this.textContent = 'Pause';
-            } else {
-                pause();
-                this.textContent = 'Resume';
-            }
-        });
-        
-        document.getElementById('new-game').addEventListener('click', function() {
-            console.log("New Game button clicked");
-            reset();
-        });
-        
-        // Subscribe to events for UI updates
-        EventSystem.subscribe(GameEvents.PLAYER_UPDATE, function(data) {
-            // Update UI with player data
-            document.getElementById('score-value').textContent = data.score;
-            document.getElementById('lives-value').textContent = data.lives;
-            document.getElementById('currency-value').textContent = data.currency;
-            console.log("Player update event received: Lives=" + data.lives + ", Currency=" + data.currency);
-        });
-        
-        // Add direct listeners for individual stat changes
-        EventSystem.subscribe(GameEvents.CURRENCY_CHANGE, function(newCurrency) {
-            document.getElementById('currency-value').textContent = newCurrency;
-            console.log("Currency change event received: " + newCurrency);
-        });
-        
-        EventSystem.subscribe(GameEvents.LIVES_CHANGE, function(newLives) {
-            document.getElementById('lives-value').textContent = newLives;
-            console.log("Lives change event received: " + newLives);
-        });
-        
-        EventSystem.subscribe(GameEvents.SCORE_CHANGE, function(newScore) {
-            document.getElementById('score-value').textContent = newScore;
-            console.log("Score change event received: " + newScore);
-        });
-        
-        EventSystem.subscribe(GameEvents.UI_UPDATE, function(data) {
-            // Update wave display
-            if (data.waveNumber !== undefined) {
-                document.getElementById('wave-value').textContent = data.waveNumber;
-            }
-            
-            // Update other UI elements if data is provided
-            if (data.currency !== undefined) {
-                document.getElementById('currency-value').textContent = data.currency;
-            }
-            
-            if (data.lives !== undefined) {
-                document.getElementById('lives-value').textContent = data.lives;
-            }
-            
-            if (data.score !== undefined) {
-                document.getElementById('score-value').textContent = data.score;
-            }
-        });
-        
-        EventSystem.subscribe(GameEvents.STATUS_MESSAGE, function(message) {
-            // Update status message
-            document.getElementById('status-message').textContent = message;
-            
-            // Clear message after 5 seconds
-            setTimeout(() => {
-                if (document.getElementById('status-message').textContent === message) {
-                    document.getElementById('status-message').textContent = 'Place towers to defend against enemies!';
-                }
-            }, 5000);
-        });
-        
-        EventSystem.subscribe(GameEvents.GAME_OVER, function(data) {
-            alert(`Game Over! Final Score: ${data.score}`);
-            reset();
-        });
-        
-        EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function(data) {
-            // Update the board when a new puzzle is generated or path changes
-            updateBoard();
-        });
-        
-        EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
-            // Update the board when a tower is placed
-            updateBoard();
-            // Immediately update UI to reflect currency change
-            updateUI();
-        });
-        
-        EventSystem.subscribe(GameEvents.TOWER_REMOVED, function() {
-            // Update the board when a tower is removed
-            updateBoard();
-        });
-        
-        EventSystem.subscribe(GameEvents.TOWER_UPGRADE, function() {
-            // Update the board when a tower is upgraded
-            updateBoard();
-            // Immediately update UI to reflect currency change
-            updateUI();
-        });
-        
-        EventSystem.subscribe(GameEvents.ENEMY_REACHED_END, function() {
-            // Update UI to reflect lives change
-            updateUI();
-        });
-        
-        // Listen for specific path updates
-        EventSystem.subscribe('path:updated', function() {
-            // Update the board to show the new path
-            updateBoard();
-        });
-        
-        // Listen for window resize to adjust cell size
-        window.addEventListener('resize', function() {
-            if (!boardElement) return;
-            
-            const boardWidth = boardElement.clientWidth;
-            cellSize = Math.floor(boardWidth / 9);
-            
-            // Update cell size in other modules
-            EnemiesModule.setCellSize(cellSize);
-            TowersModule.setCellSize(cellSize);
-            
-            // Update board display
-            updateBoard();
-        });
+    function isWaveInProgress() {
+        return isWaveActive;
+    }
+    
+    /**
+     * Get the cell size
+     * @returns {number} Cell size in pixels
+     */
+    function getCellSize() {
+        return cellSize;
+    }
+    
+    /**
+     * Set the cell size
+     * @param {number} size - Cell size in pixels
+     */
+    function setCellSize(size) {
+        cellSize = size;
     }
     
     /**
      * Initialize event listeners
      */
     function initEventListeners() {
-        // Listen for DOM content loaded to initialize the game
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("DOMContentLoaded event received");
+        // Listen for game initialization
+        EventSystem.subscribe(GameEvents.GAME_INIT, function(options) {
+            init(options);
+        });
+        
+        // Listen for new game
+        EventSystem.subscribe(GameEvents.GAME_START, function() {
             init();
+        });
+        
+        // Listen for Sudoku board generation to get the path
+        EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function(data) {
+            if (data.pathCells) {
+                path = data.pathCells;
+            }
+        });
+        
+        // Listen for specific path updates
+        EventSystem.subscribe('path:updated', function(newPath) {
+            if (newPath && Array.isArray(newPath)) {
+                path = newPath;
+            }
         });
     }
     
@@ -671,330 +452,17 @@ function renderEnemies() {
     // Public API
     return {
         init,
-        start,
-        pause,
-        resume,
-        stop,
-        reset,
-        updateUI, // Export updateUI for manual refreshes if needed
-        updateBoard // Export updateBoard so it can be called from other modules
+        startWave,
+        update,
+        damageEnemy,
+        getEnemies,
+        getWaveNumber,
+        setWaveNumber,
+        isWaveInProgress,
+        getCellSize,
+        setCellSize
     };
 })();
 
 // Make module available globally
-window.Game = Game;
-
-
-// Function to add highlighting feature to the game
-(function() {
-    // Add CSS for highlighting
-    const style = document.createElement('style');
-    style.textContent = `
-        .sudoku-cell.number-highlighted {
-            background-color: rgba(135, 206, 250, 0.4) !important; /* Light blue highlight */
-            box-shadow: inset 0 0 0 2px #2196F3; /* Blue border */
-            transition: all 0.2s ease;
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // Track the currently highlighted number
-    let highlightedNumber = null;
-    
-    // Function to highlight all cells with a specific number
-    function highlightNumberCells(number) {
-        // Clear any existing highlights
-        clearHighlights();
-        
-        if (!number || number === highlightedNumber) {
-            highlightedNumber = null;
-            return;
-        }
-        
-        highlightedNumber = number;
-        
-        // Get the board element
-        const boardElement = document.getElementById('sudoku-board');
-        if (!boardElement) return;
-        
-        // Get all cells
-        const cells = boardElement.querySelectorAll('.sudoku-cell');
-        
-        // Highlight cells with the matching number
-        cells.forEach(cell => {
-            // Check if the cell contains the number
-            // We need to check both text content and if it has a tower with that number
-            const cellText = cell.textContent.trim();
-            
-            if (cellText === number.toString() || cellText === `${number}ï¸âƒ£`) {
-                cell.classList.add('number-highlighted');
-            } else {
-                // Check for towers (might have additional elements inside)
-                const row = parseInt(cell.dataset.row);
-                const col = parseInt(cell.dataset.col);
-                
-                // If we have access to the tower data directly
-                if (window.TowersModule && typeof TowersModule.getTowerAt === 'function') {
-                    const tower = TowersModule.getTowerAt(row, col);
-                    if (tower && tower.type == number) {
-                        cell.classList.add('number-highlighted');
-                    }
-                }
-            }
-        });
-    }
-    
-    // Function to clear all highlights
-    function clearHighlights() {
-        const highlightedCells = document.querySelectorAll('.sudoku-cell.number-highlighted');
-        highlightedCells.forEach(cell => {
-            cell.classList.remove('number-highlighted');
-        });
-    }
-    
-    // Override the tower selection event
-    // First, store the original event listeners
-    const towerOptions = document.querySelectorAll('.tower-option');
-    
-    // Remove existing event listeners and add new ones
-    towerOptions.forEach(option => {
-        // Clone the element to remove all event listeners
-        const newOption = option.cloneNode(true);
-        option.parentNode.replaceChild(newOption, option);
-        
-        // Add our new event listener
-        newOption.addEventListener('click', function() {
-            const towerType = this.dataset.towerType;
-            const cost = TowersModule.getTowerCost(towerType);
-            
-            // Remove selected class from all options
-            towerOptions.forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            
-            // Add selected class to clicked option
-            this.classList.add('selected');
-            
-            // Select the tower in the game logic
-            PlayerModule.selectTower(towerType);
-            
-            // Show status message
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-                `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
-            
-            // Highlight matching numbers
-            if (towerType !== 'special') {
-                highlightNumberCells(parseInt(towerType));
-            } else {
-                clearHighlights();
-            }
-        });
-    });
-    
-    // Also update the board when new towers are placed
-    EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
-        if (highlightedNumber && tower.type == highlightedNumber) {
-            // Update highlights after a brief delay to ensure the DOM is updated
-            setTimeout(() => highlightNumberCells(highlightedNumber), 50);
-        }
-    });
-    
-    // Update highlights when the board is updated (such as after placing a tower)
-    const originalUpdateBoard = Game.updateBoard || window.updateBoard;
-    if (typeof originalUpdateBoard === 'function') {
-        Game.updateBoard = function() {
-            originalUpdateBoard.apply(this, arguments);
-            // Reapply highlighting after board update
-            if (highlightedNumber) {
-                highlightNumberCells(highlightedNumber);
-            }
-        };
-    }
-    
-    console.log("Number highlighting feature installed successfully!");
-})();
-
-/**
- * Comprehensive fix for incorrect tower visuals with semi-transparent X mark
- * This addresses issues with the cell background color and makes the X mark more subtle
- */
-(function() {
-    // Add CSS for the incorrect tower indicators with a more subtle X mark
-    const style = document.createElement('style');
-    style.textContent = `
-        /* Force all existing incorrect tower styles to be overridden */
-        .sudoku-cell.incorrect-tower {
-            background-color: rgba(255, 0, 0, 0.5) !important;
-            box-shadow: inset 0 0 0 2px #ff0000 !important;
-            z-index: 5 !important;
-        }
-        
-        /* Reset any hover effects that might override our styling */
-        .sudoku-cell.incorrect-tower:hover {
-            background-color: rgba(255, 0, 0, 0.6) !important;
-        }
-        
-        /* Make X mark semi-transparent so the tower number is still visible */
-        .incorrect-marker {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            font-size: 1.6em !important;
-            color: rgba(255, 0, 0, 0.25) !important; /* Semi-transparent red */
-            pointer-events: none !important;
-            z-index: 10 !important;
-            text-shadow: none !important; /* Remove text shadow for subtlety */
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // Directly override the updateBoard function in Game module
-    if (window.Game && typeof window.Game.updateBoard === 'function') {
-        const originalUpdateBoard = window.Game.updateBoard;
-        
-        window.Game.updateBoard = function() {
-            // Call original function
-            originalUpdateBoard.apply(this, arguments);
-            
-            // Direct manipulation after board update
-            setTimeout(() => {
-                applyIncorrectTowerIndicators();
-            }, 10);
-        };
-    }
-    
-    // Create a function to apply incorrect tower indicators
-    function applyIncorrectTowerIndicators() {
-        const boardElement = document.getElementById('sudoku-board');
-        if (!boardElement) return;
-        
-        // First, clear all indicators
-        const allCells = boardElement.querySelectorAll('.sudoku-cell');
-        allCells.forEach(cell => {
-            cell.classList.remove('incorrect-tower');
-            const xMark = cell.querySelector('.incorrect-marker');
-            if (xMark) xMark.remove();
-        });
-        
-        // Get all towers
-        if (!window.TowersModule || typeof window.TowersModule.getTowers !== 'function') return;
-        
-        const towers = window.TowersModule.getTowers();
-        
-        // Apply indicators to incorrect towers
-        towers.forEach(tower => {
-            if (tower.isCorrect === false) {
-                const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
-                if (cell) {
-                    // Apply incorrect tower class
-                    cell.classList.add('incorrect-tower');
-                    
-                    // Add semi-transparent X mark
-                    if (!cell.querySelector('.incorrect-marker')) {
-                        const xMark = document.createElement('div');
-                        xMark.className = 'incorrect-marker';
-                        xMark.textContent = '❌';
-                        cell.appendChild(xMark);
-                    }
-                }
-            }
-        });
-    }
-    
-    // Hook into tower placement event
-    EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
-        setTimeout(() => {
-            applyIncorrectTowerIndicators();
-        }, 50);
-    });
-    
-    // Apply on cell click
-    const sudokuBoard = document.getElementById('sudoku-board');
-    if (sudokuBoard) {
-        const originalClickHandler = sudokuBoard.onclick;
-        
-        sudokuBoard.onclick = function(event) {
-            // Call original handler if it exists
-            if (typeof originalClickHandler === 'function') {
-                originalClickHandler.apply(this, arguments);
-            }
-            
-            // Apply our indicators after a short delay
-            setTimeout(() => {
-                applyIncorrectTowerIndicators();
-            }, 50);
-        };
-    }
-    
-    // Apply on game init
-    EventSystem.subscribe(GameEvents.GAME_INIT, function() {
-        setTimeout(() => {
-            applyIncorrectTowerIndicators();
-        }, 500);
-    });
-    
-    // Apply on wave complete
-    EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
-        setTimeout(() => {
-            applyIncorrectTowerIndicators();
-        }, 200);
-    });
-    
-    // Apply immediately
-    setTimeout(() => {
-        applyIncorrectTowerIndicators();
-    }, 100);
-    
-    console.log("Comprehensive incorrect tower visual fix applied with semi-transparent X mark!");
-
-
-// Integrate Tower Animation Module with Game Module
-(function() {
-    // Ensure the TowerAnimationsModule is loaded after the game starts
-    const originalStart = Game.start;
-    
-    if (typeof originalStart === 'function') {
-        Game.start = function() {
-            // Call the original start method
-            originalStart.apply(this, arguments);
-            
-            // Initialize the tower animations module
-            if (window.TowerAnimationsModule && typeof TowerAnimationsModule.init === 'function') {
-                setTimeout(() => {
-                    TowerAnimationsModule.init();
-                }, 100);
-            }
-        };
-    }
-    
-    // Make sure projectile container is recreated when the board is cleared
-    const originalClearBoard = Game.clearBoard;
-    
-    if (typeof originalClearBoard === 'function') {
-        Game.clearBoard = function() {
-            // Call the original clearBoard method
-            originalClearBoard.apply(this, arguments);
-            
-            // Remove projectile container if it exists
-            const projectileContainer = document.getElementById('projectile-container');
-            if (projectileContainer) {
-                projectileContainer.remove();
-            }
-        };
-    }
-    
-    // Make sure projectile positions are updated when the board size changes
-    window.addEventListener('resize', function() {
-        if (window.TowerAnimationsModule && typeof TowerAnimationsModule.init === 'function') {
-            TowerAnimationsModule.init();
-        }
-    });
-    
-    console.log("Tower attack animations integration complete!");
-})();
-})();
+window.EnemiesModule = EnemiesModule;
