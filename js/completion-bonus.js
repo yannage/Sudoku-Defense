@@ -36,6 +36,13 @@ const CompletionBonusModule = (function() {
         grids: new Set()      // Tracks grids that have already received a bonus
     };
     
+
+const completedUnits = {
+  rows: new Set(), // Tracks rows that were already completed
+  columns: new Set(), // Tracks columns that were already completed
+  grids: new Set() // Tracks grids that were already completed
+};
+    
     /**
      * Called when a unit (row, column, or grid) is completed
      * @param {string} unitType - Type of unit ('row', 'column', or 'grid')
