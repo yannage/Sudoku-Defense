@@ -368,41 +368,63 @@ function findClosestEnemy(tower, enemies) {
      * @param {Object} tower - The tower
      * @param {Object} enemy - The enemy
      */
-    function attackEnemy(tower, enemy) {
-        // Get base values
-        const baseDamage = tower.damage;
-        const basePoints = enemy.points || 5;
-        const baseCurrency = enemy.reward || 10;
-        
-        // Apply completion bonuses if the module exists
-        let damage = baseDamage;
-        let points = basePoints;
-        let currency = baseCurrency;
-        
-        if (window.CompletionBonusModule && 
-            typeof CompletionBonusModule.applyEffects === 'function') {
-            const bonusEffects = CompletionBonusModule.applyEffects(
-                tower, enemy, basePoints, baseCurrency
-            );
-            damage = bonusEffects.damage;
-            points = bonusEffects.points;
-            currency = bonusEffects.currency;
-        }
-        
-        // Damage the enemy
-        const isKilled = EnemiesModule.damageEnemy(enemy.id, damage);
-        
-        // Publish tower attack event with bonus information
-        EventSystem.publish(GameEvents.TOWER_ATTACK, {
-            tower: tower,
-            enemy: enemy,
-            damage: damage,
-            killed: isKilled,
-            points: isKilled ? points : 0,
-            currency: isKilled ? currency : 0
-        });
+function attackEnemy(tower, enemy) {
+    // First ensure the animation module is ready
+    if (window.TowerAnimationsModule && typeof TowerAnimationsModule.ensureProjectileContainer === 'function') {
+        TowerAnimationsModule.ensureProjectileContainer();
+    }
+
+    // Get base values
+    const baseDamage = tower.damage;
+    const basePoints = enemy.points || 5;
+    const baseCurrency = enemy.reward || 10;
+    
+    // Apply completion bonuses if the module exists
+    let damage = baseDamage;
+    let points = basePoints;
+    let currency = baseCurrency;
+    
+    if (window.CompletionBonusModule && 
+        typeof CompletionBonusModule.applyEffects === 'function') {
+        const bonusEffects = CompletionBonusModule.applyEffects(
+            tower, enemy, basePoints, baseCurrency
+        );
+        damage = bonusEffects.damage;
+        points = bonusEffects.points;
+        currency = bonusEffects.currency;
     }
     
+    // Damage the enemy
+    const isKilled = EnemiesModule.damageEnemy(enemy.id, damage);
+    
+    // Create a complete copy of the tower and enemy data to ensure all needed properties are available
+    const towerCopy = { ...tower };
+    const enemyCopy = { ...enemy };
+    
+    // Publish tower attack event with bonus information
+    EventSystem.publish(GameEvents.TOWER_ATTACK, {
+        tower: towerCopy,
+        enemy: enemyCopy,
+        damage: damage,
+        killed: isKilled,
+        points: isKilled ? points : 0,
+        currency: isKilled ? currency : 0
+    });
+    
+    // For the first wave, add a small delay and send the event again to ensure it's processed
+    if (window.EnemiesModule && EnemiesModule.getWaveNumber && EnemiesModule.getWaveNumber() === 1) {
+        setTimeout(() => {
+            EventSystem.publish(GameEvents.TOWER_ATTACK, {
+                tower: towerCopy,
+                enemy: enemyCopy,
+                damage: 0, // No actual damage in this second event
+                killed: false,
+                points: 0,
+                currency: 0
+            });
+        }, 50);
+    }
+}
     /**
      * Remove incorrect towers after a wave
      */

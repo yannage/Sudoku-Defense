@@ -83,8 +83,9 @@ function start() {
     // Publish game start event
     EventSystem.publish(GameEvents.GAME_START);
     
-    // Initialize tower animations explicitly
+    // Explicitly initialize tower animations if available
     if (window.TowerAnimationsModule && typeof TowerAnimationsModule.init === 'function') {
+        console.log("Initializing TowerAnimationsModule from Game.start");
         TowerAnimationsModule.init();
     }
     
@@ -985,4 +986,33 @@ window.Game = Game;
     
     console.log("Tower attack animations integration complete!");
 })();
+})();
+
+(function() {
+    // Ensure the TowerAnimationsModule is loaded after the game starts
+    if (window.Game && window.Game.start) {
+        const originalStart = Game.start;
+        
+        Game.start = function() {
+            // Call the original start method
+            originalStart.apply(this, arguments);
+            
+            // Initialize the tower animations module
+            if (window.TowerAnimationsModule && typeof TowerAnimationsModule.init === 'function') {
+                console.log("Explicitly initializing TowerAnimationsModule after Game.start");
+                setTimeout(() => {
+                    TowerAnimationsModule.init();
+                }, 200); // Delay to ensure board is ready
+            }
+        };
+    }
+    
+    // Make sure the animation system is ready when any wave starts
+    EventSystem.subscribe(GameEvents.WAVE_START, function(data) {
+        if (window.TowerAnimationsModule) {
+            TowerAnimationsModule.ensureProjectileContainer();
+        }
+    });
+    
+    console.log("Tower animation integration with Game module complete");
 })();
