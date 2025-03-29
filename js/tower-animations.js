@@ -438,3 +438,140 @@ setTimeout(() => {
         console.log("Created projectile container after initial timeout");
     }
 }, 1000);
+
+
+/**
+ * This is a debugging version of the enemy position calculation function.
+ * Add this at the END of your tower-animations.js file.
+ */
+
+(function() {
+    // Add a very simplified fallback enemy position calculator
+    function simplifiedEnemyPosition(enemy) {
+        if (!enemy) {
+            console.error("No enemy data provided to position calculator");
+            return { x: 0, y: 0 };
+        }
+        
+        // Dump the entire enemy object to console for inspection
+        console.log("Enemy object structure:", JSON.stringify(enemy, null, 2));
+        
+        // Direct properties check
+        if (typeof enemy.x === 'number' && typeof enemy.y === 'number') {
+            console.log("Using direct x,y coordinates:", enemy.x, enemy.y);
+            return { x: enemy.x, y: enemy.y };
+        }
+        
+        // Check if we have the required properties
+        console.log("Enemy properties:", {
+            hasPathIndex: typeof enemy.pathIndex !== 'undefined',
+            pathIndexValue: enemy.pathIndex,
+            hasProgress: typeof enemy.progress !== 'undefined', 
+            progressValue: enemy.progress
+        });
+        
+        // Get information about available data for diagnosis
+        console.log("Environment state:", {
+            enemiesModuleAvailable: typeof window.EnemiesModule !== 'undefined',
+            enemiesPathAvailable: window.EnemiesModule && Array.isArray(window.EnemiesModule.path),
+            pathLength: window.EnemiesModule && Array.isArray(window.EnemiesModule.path) ? window.EnemiesModule.path.length : 0,
+            sudokuModuleAvailable: typeof window.SudokuModule !== 'undefined',
+            getPathArrayAvailable: window.SudokuModule && typeof SudokuModule.getPathArray === 'function'
+        });
+        
+        // Try to access path through EnemiesModule
+        let path = null;
+        if (window.EnemiesModule) {
+            console.log("Examining EnemiesModule for path data:");
+            for (const key in window.EnemiesModule) {
+                if (Array.isArray(window.EnemiesModule[key]) && window.EnemiesModule[key].length > 0) {
+                    console.log(`- Found array in EnemiesModule.${key} with length ${window.EnemiesModule[key].length}`);
+                }
+            }
+        }
+        
+        // Get cell size for calculation
+        let cellSize = 55; // Default fallback
+        if (window.EnemiesModule && typeof EnemiesModule.getCellSize === 'function') {
+            const enemyCellSize = EnemiesModule.getCellSize();
+            console.log("Cell size from EnemiesModule:", enemyCellSize);
+            if (enemyCellSize && enemyCellSize > 0) {
+                cellSize = enemyCellSize;
+            }
+        }
+        
+        // Last resort - if the enemy is available in the EnemiesModule enemies list, try to get its position
+        if (window.EnemiesModule && typeof EnemiesModule.getEnemies === 'function') {
+            const allEnemies = EnemiesModule.getEnemies();
+            if (allEnemies && Array.isArray(allEnemies)) {
+                const foundEnemy = allEnemies.find(e => e.id === enemy.id);
+                if (foundEnemy && typeof foundEnemy.x === 'number' && typeof foundEnemy.y === 'number') {
+                    console.log("Found enemy position in EnemiesModule list:", foundEnemy.x, foundEnemy.y);
+                    return { x: foundEnemy.x, y: foundEnemy.y };
+                }
+            }
+        }
+        
+        // Get any tower to use as reference point if all else fails
+        if (window.TowersModule && typeof TowersModule.getTowers === 'function') {
+            const towers = TowersModule.getTowers();
+            if (towers && towers.length > 0) {
+                const tower = towers[0];
+                const x = (tower.col + 0.5) * cellSize;
+                const y = (tower.row + 0.5) * cellSize;
+                console.log("Using tower position as fallback:", x, y);
+                return { x, y };
+            }
+        }
+        
+        // Absolute fallback - use board center
+        console.error("Using fallback center position");
+        return { x: cellSize * 4.5, y: cellSize * 4.5 };
+    }
+    
+    // Override the calculate enemy position function with our debugging version
+    // This is a temporary approach that logs information but ensures projectiles appear
+    if (TowerAnimationsModule) {
+        // If we can't access the internal function directly, intercept the tower attack event
+        const originalHandler = EventSystem.events[GameEvents.TOWER_ATTACK][0];
+        EventSystem.clear(GameEvents.TOWER_ATTACK);
+        
+        // Add our modified handler
+        EventSystem.subscribe(GameEvents.TOWER_ATTACK, function(data) {
+            if (data && data.tower && data.enemy) {
+                console.log("Tower attack event. Debugging enemy position:");
+                
+                // If enemy is missing x,y, try to add them
+                if (typeof data.enemy.x !== 'number' || typeof data.enemy.y !== 'number') {
+                    const position = simplifiedEnemyPosition(data.enemy);
+                    // Add position to the enemy object
+                    data.enemy.x = position.x;
+                    data.enemy.y = position.y;
+                    console.log("Added position to enemy:", position);
+                }
+                
+                // Call original handler or createTowerAttackEffect directly
+                if (typeof TowerAnimationsModule.createTowerAttackEffect === 'function') {
+                    TowerAnimationsModule.createTowerAttackEffect(data.tower, data.enemy);
+                } else if (originalHandler) {
+                    originalHandler(data);
+                } else {
+                    // Direct DOM approach if all else fails
+                    const boardElement = document.getElementById('sudoku-board');
+                    if (boardElement) {
+                        // Visual feedback on attack
+                        const towerElement = boardElement.querySelector(`.sudoku-cell[data-row="${data.tower.row}"][data-col="${data.tower.col}"]`);
+                        if (towerElement) {
+                            towerElement.classList.add('tower-attacking');
+                            setTimeout(() => {
+                                towerElement.classList.remove('tower-attacking');
+                            }, 300);
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log("Installed debugging enemy position handler");
+    }
+})();
