@@ -159,34 +159,49 @@ const EnemiesModule = (function() {
      * @param {number} deltaTime - Time elapsed since last update in seconds
      */
     function update(deltaTime) {
-        if (!isWaveActive) {
-            return;
-        }
-        
-        let activeEnemies = 0;
-        
-        // Update each enemy
-        for (let i = 0; i < enemies.length; i++) {
-            const enemy = enemies[i];
-            
-            if (!enemy.active) {
-                continue;
-            }
-            
-            activeEnemies++;
-            
-            // Move enemy along the path
-            moveEnemy(enemy, deltaTime);
-            
-            // Publish enemy move event
-            EventSystem.publish(GameEvents.ENEMY_MOVE, enemy);
-        }
-        
-        // Check if wave is complete (no active enemies and none remaining to spawn)
-        if (activeEnemies === 0 && enemiesRemaining === 0 && !spawnInterval) {
-            waveComplete();
-        }
+    if (!isWaveActive) {
+        return;
     }
+    
+    let activeEnemies = 0;
+    
+    // Add debugging for first enemy position data
+    if (enemies.length > 0) {
+        const enemy = enemies[0];
+        console.log("Enemy position data:", {
+            id: enemy.id,
+            x: enemy.x, 
+            y: enemy.y,
+            pathIndex: enemy.pathIndex,
+            progress: enemy.progress,
+            hasPosition: (typeof enemy.x === 'number' && typeof enemy.y === 'number'),
+            active: enemy.active,
+            wave: waveNumber
+        });
+    }
+    
+    // Update each enemy
+    for (let i = 0; i < enemies.length; i++) {
+        const enemy = enemies[i];
+        
+        if (!enemy.active) {
+            continue;
+        }
+        
+        activeEnemies++;
+        
+        // Move enemy along the path
+        moveEnemy(enemy, deltaTime);
+        
+        // Publish enemy move event
+        EventSystem.publish(GameEvents.ENEMY_MOVE, enemy);
+    }
+    
+    // Check if wave is complete (no active enemies and none remaining to spawn)
+    if (activeEnemies === 0 && enemiesRemaining === 0 && !spawnInterval) {
+        waveComplete();
+    }
+}
     
     /**
      * Move an enemy along the path
