@@ -35,34 +35,60 @@
         console.log("Tower attack event interception enabled");
     }
     
-    // Ensure enemy object has x,y position coordinates
-    function ensureEnemyPosition(enemy) {
-        // Skip if enemy already has position or is inactive
-        if (!enemy || enemy.active === false || (enemy.x !== undefined && enemy.y !== undefined)) {
+/**
+ * Update this function in your first-wave-fix.js file
+ * This enhanced version uses more methods to determine enemy position
+ */
+
+// Ensure enemy object has x,y position coordinates
+function ensureEnemyPosition(enemy) {
+    // Skip if enemy already has position or is inactive
+    if (!enemy || enemy.active === false) {
+        return;
+    }
+    
+    // If enemy already has valid coordinates, keep them
+    if (typeof enemy.x === 'number' && typeof enemy.y === 'number') {
+        console.log(`Enemy ${enemy.id} already has position: x=${enemy.x}, y=${enemy.y}`);
+        return;
+    }
+    
+    try {
+        // Get board and calculate cell size
+        const boardElement = document.getElementById('sudoku-board');
+        if (!boardElement) {
+            console.error("Board element not found");
             return;
         }
         
-        try {
-            // Calculate position based on path
-            const cellSize = document.getElementById('sudoku-board').clientWidth / 9;
+        const cellSize = boardElement.clientWidth / 9;
+        console.log(`Using cell size: ${cellSize}`);
+        
+        // METHOD 1: Use pathIndex and progress if available
+        if (typeof enemy.pathIndex === 'number' && enemy.pathIndex >= 0) {
+            console.log(`Trying to calculate position using pathIndex=${enemy.pathIndex}`);
             
             // Try to get path data
             let path;
             if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
                 path = SudokuModule.getPathArray();
+                console.log(`Got path with ${path.length} cells`);
+            } else if (window.EnemiesModule && EnemiesModule.path) {
+                path = EnemiesModule.path;
+                console.log(`Got path from EnemiesModule with ${path.length} cells`);
             }
             
-            // If we have valid path data and enemy has pathIndex
-            if (path && path.length > 0 && enemy.pathIndex !== undefined && enemy.pathIndex < path.length) {
+            // If we have valid path data
+            if (path && path.length > 0) {
                 let currentCell, nextCell;
                 
                 // Handle edge case where enemy is at last path index
                 if (enemy.pathIndex >= path.length - 1) {
-                    currentCell = path[path.length - 2];
-                    nextCell = path[path.length - 1];
+                    currentCell = path[path.length - 2] || path[0];
+                    nextCell = path[path.length - 1] || path[path.length - 2] || path[0];
                 } else {
                     currentCell = path[enemy.pathIndex];
-                    nextCell = path[enemy.pathIndex + 1];
+                    nextCell = path[Math.min(enemy.pathIndex + 1, path.length - 1)];
                 }
                 
                 if (currentCell && nextCell) {
@@ -72,67 +98,77 @@
                     const nextX = nextCell[1] * cellSize + cellSize / 2;
                     const nextY = nextCell[0] * cellSize + cellSize / 2;
                     
-                    // Interpolate position based on progress
-                    const progress = enemy.progress || 0;
+                    // Interpolate position based on progress (default to 0 if not set)
+                    const progress = typeof enemy.progress === 'number' ? enemy.progress : 0;
                     enemy.x = currentX + (nextX - currentX) * progress;
                     enemy.y = currentY + (nextY - currentY) * progress;
                     
-                    console.log(`Added missing position to enemy ${enemy.id}: x=${enemy.x}, y=${enemy.y}`);
+                    console.log(`Set position from path: x=${enemy.x}, y=${enemy.y}`);
+                    return;
                 }
             }
-            // Fallback if we couldn't calculate from path
-            else if (enemy.row !== undefined && enemy.col !== undefined) {
-                // Calculate position based on grid coordinates
-                enemy.x = (enemy.col + 0.5) * cellSize;
-                enemy.y = (enemy.row + 0.5) * cellSize;
-                console.log(`Added position to enemy ${enemy.id} from row/col: x=${enemy.x}, y=${enemy.y}`);
-            }
-        } catch (err) {
-            console.error("Error ensuring enemy position:", err);
-        }
-    }
-    
-    // Create a direct projectile that bypasses the normal animation system
-    function createDirectProjectile(tower, enemy) {
-        // Check that we have the necessary elements
-        const boardElement = document.getElementById('sudoku-board');
-        if (!boardElement || !tower || !enemy) return;
-        
-        // Create or get projectile container with forced z-index
-        let container = document.getElementById('direct-projectile-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'direct-projectile-container';
-            container.style.position = 'absolute';
-            container.style.top = '0';
-            container.style.left = '0';
-            container.style.width = '100%';
-            container.style.height = '100%';
-            container.style.pointerEvents = 'none';
-            container.style.zIndex = '9999';
-            
-            // Ensure board has relative positioning
-            if (getComputedStyle(boardElement).position === 'static') {
-                boardElement.style.position = 'relative';
-            }
-            
-            boardElement.appendChild(container);
-            console.log("Created direct projectile container");
         }
         
-        // Calculate tower position
-        const cellSize = boardElement.clientWidth / 9;
-        const towerX = (tower.col + 0.5) * cellSize;
-        const towerY = (tower.row + 0.5) * cellSize;
-        
-        // Ensure enemy has x,y coordinates
-        ensureEnemyPosition(enemy);
-        
-        // If enemy position is still invalid, skip projectile
-        if (enemy.x === undefined || enemy.y === undefined) {
-            console.log("Skipping projectile - invalid enemy position");
+        // METHOD 2: Use row/col if available
+        if (typeof enemy.row === 'number' && typeof enemy.col === 'number') {
+            console.log(`Calculating position from row=${enemy.row}, col=${enemy.col}`);
+            
+            // Calculate position based on grid coordinates
+            enemy.x = (enemy.col + 0.5) * cellSize;
+            enemy.y = (enemy.row + 0.5) * cellSize;
+            
+            console.log(`Set position from row/col: x=${enemy.x}, y=${enemy.y}`);
             return;
         }
+        
+        // METHOD 3: Try to find the enemy in the DOM and get its position
+        const enemyElements = document.getElementsByClassName('enemy');
+        for (let i = 0; i < enemyElements.length; i++) {
+            const el = enemyElements[i];
+            if (el.id === enemy.id || el.textContent === enemy.emoji) {
+                // Found matching element
+                const rect = el.getBoundingClientRect();
+                const boardRect = boardElement.getBoundingClientRect();
+                
+                // Calculate position relative to board
+                enemy.x = rect.left - boardRect.left + rect.width / 2;
+                enemy.y = rect.top - boardRect.top + rect.height / 2;
+                
+                console.log(`Set position from DOM element: x=${enemy.x}, y=${enemy.y}`);
+                return;
+            }
+        }
+        
+        // METHOD 4: Fallback - use the path start position
+        let path;
+        if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
+            path = SudokuModule.getPathArray();
+        } else if (window.EnemiesModule && EnemiesModule.path) {
+            path = EnemiesModule.path;
+        }
+        
+        if (path && path.length > 0) {
+            const startCell = path[0];
+            enemy.x = startCell[1] * cellSize + cellSize / 2;
+            enemy.y = startCell[0] * cellSize + cellSize / 2;
+            
+            console.log(`Set position using path start: x=${enemy.x}, y=${enemy.y}`);
+            return;
+        }
+        
+        // METHOD 5: Last resort - use center of board
+        enemy.x = boardElement.clientWidth / 2;
+        enemy.y = boardElement.clientHeight / 2;
+        console.log(`FALLBACK: Using board center for position: x=${enemy.x}, y=${enemy.y}`);
+        
+    } catch (err) {
+        console.error("Error ensuring enemy position:", err);
+        
+        // Emergency fallback - at least set some values
+        enemy.x = 200;
+        enemy.y = 200;
+    }
+}
         
         // Create projectile element
         const projectile = document.createElement('div');
