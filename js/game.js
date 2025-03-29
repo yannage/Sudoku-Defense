@@ -652,7 +652,7 @@ function renderEnemies() {
         updateUI, // Export updateUI for manual refreshes if needed
         updateBoard // Export updateBoard so it can be called from other modules
     };
-})();
+}();
 
 // Make module available globally
 window.Game = Game;
