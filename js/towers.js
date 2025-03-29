@@ -12,15 +12,15 @@ const TowersModule = (function() {
     // Tower types with their properties - ENHANCED DAMAGE VERSION
     const towerTypes = {
         // Number towers with reduced costs and improved stats
-        1: { emoji: '1️⃣', damage: 60, range: 2.5, attackSpeed: 0.7, cost: 30 },
-        2: { emoji: '2️⃣', damage: 70, range: 2.5, attackSpeed: 0.7, cost: 30 },
-        3: { emoji: '3️⃣', damage: 80, range: 2.5, attackSpeed: 0.7, cost: 30 },
-        4: { emoji: '4️⃣', damage: 90, range: 2.5, attackSpeed: 0.7, cost: 35 },
-        5: { emoji: '5️⃣', damage: 100, range: 2.5, attackSpeed: 0.7, cost: 35 },
-        6: { emoji: '6️⃣', damage: 110, range: 2.5, attackSpeed: 0.7, cost: 35 },
-        7: { emoji: '7️⃣', damage: 120, range: 2.5, attackSpeed: 0.7, cost: 40 },
-        8: { emoji: '8️⃣', damage: 130, range: 2.5, attackSpeed: 0.7, cost: 40 },
-        9: { emoji: '9️⃣', damage: 140, range: 3.0, attackSpeed: 0.7, cost: 40 },
+        1: { damage: 60, range: 2.5, attackSpeed: 0.7, cost: 30 },
+        2: { damage: 70, range: 2.5, attackSpeed: 0.7, cost: 30 },
+        3: { damage: 80, range: 2.5, attackSpeed: 0.7, cost: 30 },
+        4: { damage: 90, range: 2.5, attackSpeed: 0.7, cost: 35 },
+        5: { damage: 100, range: 2.5, attackSpeed: 0.7, cost: 35 },
+        6: { damage: 110, range: 2.5, attackSpeed: 0.7, cost: 35 },
+        7: { damage: 120, range: 2.5, attackSpeed: 0.7, cost: 40 },
+        8: { damage: 130, range: 2.5, attackSpeed: 0.7, cost: 40 },
+        9: { damage: 140, range: 3.0, attackSpeed: 0.7, cost: 40 },
         // Special tower
         'special': { emoji: '🔮', damage: 80, range: 4.0, attackSpeed: 0.3, cost: 100 }
     };

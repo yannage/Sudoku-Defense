@@ -152,11 +152,13 @@ h1 {
 .tower {
     width: 32px;
     height: 32px;
-    background-image: url('assets/spritesheet.png');
-    background-size: 96px 96px; /* 3x3 grid of 32px cells */
+    background-image: url('assets/spritesheet.png'); /* Adjust path as needed */
+    background-size: 96px 96px; /* 3x3 grid of 32px */
     background-repeat: no-repeat;
     display: inline-block;
+    position: relative;
 }
+
 .tower.tower-1 { background-position: 0px 0px; }
 .tower.tower-2 { background-position: -32px 0px; }
 .tower.tower-3 { background-position: -64px 0px; }
@@ -166,7 +168,12 @@ h1 {
 .tower.tower-7 { background-position: 0px -64px; }
 .tower.tower-8 { background-position: -32px -64px; }
 .tower.tower-9 { background-position: -64px -64px; }
-
+.tower-special {
+    width: 32px;
+    height: 32px;
+    background-color: purple;
+    border-radius: 50%;
+}
 
 
 /* Updated Enemy styling to match grid cells */

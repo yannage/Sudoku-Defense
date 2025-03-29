@@ -393,34 +393,32 @@ const Game = (function() {
                 // Check for tower
                 const tower = TowersModule.getTowerAt(row, col);
                 
-                if (tower && !pathCells.has(`${row},${col}`)) {
-                    // Clear number and show tower emoji
-                    cellElement.textContent = tower.emoji;
-                    
-                    // Add level indicator if tower level > 1
-                    if (tower.level > 1) {
-                        const levelIndicator = document.createElement('span');
-                        levelIndicator.className = 'tower-level';
-                        levelIndicator.textContent = tower.level;
-                        levelIndicator.style.position = 'absolute';
-                        levelIndicator.style.bottom = '2px';
-                        levelIndicator.style.right = '2px';
-                        levelIndicator.style.fontSize = '12px';
-                        levelIndicator.style.fontWeight = 'bold';
-                        levelIndicator.style.color = '#fff';
-                        levelIndicator.style.backgroundColor = '#333';
-                        levelIndicator.style.borderRadius = '50%';
-                        levelIndicator.style.padding = '1px 3px';
-                        
-                        // Remove existing level indicator
-                        const existingIndicator = cellElement.querySelector('.tower-level');
-                        if (existingIndicator) {
-                            existingIndicator.remove();
-                        }
-                        
-                        cellElement.appendChild(levelIndicator);
-                    }
-                }
+if (tower && !pathCells.has(`${row},${col}`)) {
+    // Clear existing content
+    cellElement.textContent = '';
+
+    // Create tower sprite element
+    const towerSprite = document.createElement('div');
+    towerSprite.classList.add('tower');
+
+    if (tower.type === 'special') {
+        towerSprite.classList.add('tower-special');
+    } else {
+        towerSprite.classList.add(`tower-${tower.type}`);
+    }
+
+    // Add level indicator if tower level > 1
+    if (tower.level > 1) {
+        const levelIndicator = document.createElement('span');
+        levelIndicator.className = 'tower-level';
+        levelIndicator.textContent = tower.level;
+        towerSprite.appendChild(levelIndicator);
+    }
+
+    // Append sprite to cell
+    cellElement.appendChild(towerSprite);
+}
+
             }
         }
     }
