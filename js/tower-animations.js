@@ -99,16 +99,59 @@ const TowerAnimationsModule = (function() {
      * @param {Object} enemy - The enemy object
      * @returns {Object} Position {x, y} relative to the board
      */
-    function calculateEnemyPosition(enemy) {
-        // Enemy positions are already calculated relative to the board
-        // Just ensure they're valid
-        if (!enemy || typeof enemy.x !== 'number' || typeof enemy.y !== 'number') {
-            console.error("Invalid enemy data:", enemy);
-            return { x: 0, y: 0 };
-        }
-        
+/**
+ * Drop this function into your tower-animations.js file to replace the current calculateEnemyPosition function
+ */
+function calculateEnemyPosition(enemy) {
+    // Check if enemy has direct x,y coordinates
+    if (enemy && typeof enemy.x === 'number' && typeof enemy.y === 'number') {
         return { x: enemy.x, y: enemy.y };
     }
+    
+    // If enemy has row, col, and progress (based on your error log), calculate position
+    if (enemy && typeof enemy.row === 'number' && typeof enemy.col === 'number') {
+        // Calculate position based on row, col and cellSize
+        const x = enemy.col * cellSize;
+        const y = enemy.row * cellSize;
+        
+        console.log("Calculated enemy position from row/col:", { x, y });
+        return { x, y };
+    }
+    
+    // Last fallback for other properties
+    if (enemy) {
+        console.log("Enemy missing standard coordinates, checking for other properties:", enemy);
+        
+        // Check if enemy has pathIndex and we can get path data
+        if (typeof enemy.currentPathIndex === 'number' || typeof enemy.pathIndex === 'number') {
+            // Use whichever path index is available
+            const pathIndex = (typeof enemy.currentPathIndex === 'number') ? 
+                  enemy.currentPathIndex : enemy.pathIndex;
+            
+            // Get path data if available
+            let path = null;
+            if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
+                path = SudokuModule.getPathArray();
+                
+                if (path && path.length > pathIndex) {
+                    const pathCell = path[pathIndex];
+                    if (pathCell && pathCell.length >= 2) {
+                        // Path cells are usually [row, col] format
+                        const x = pathCell[1] * cellSize + cellSize / 2;
+                        const y = pathCell[0] * cellSize + cellSize / 2; 
+                        
+                        console.log("Calculated position from path:", { x, y });
+                        return { x, y };
+                    }
+                }
+            }
+        }
+    }
+    
+    // If no calculation methods worked, use fallback
+    console.error("Could not determine enemy position, using fallback:", enemy);
+    return { x: cellSize * 4, y: cellSize * 4 }; // Center of board as fallback
+}
     
     /**
      * Create a tower attack effect
