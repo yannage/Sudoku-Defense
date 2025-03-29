@@ -4,6 +4,7 @@
  * FIXED: Properly handles enemy positioning and inactive enemies
  */
 
+
 const TowerAnimationsModule = (function() {
     // Private variables
     let projectiles = [];
@@ -696,3 +697,39 @@ EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function() {
         }, 1000);
     });
 })();
+
+// Add a ready flag
+let animationsReady = false;
+
+// Modify the init function to set the ready flag
+const originalInit = TowerAnimationsModule.init;
+TowerAnimationsModule.init = function() {
+    // Call the original init
+    originalInit.apply(this, arguments);
+    
+    // Set ready flag
+    animationsReady = true;
+    console.log("Tower animations system ready");
+    
+    // Ensure the container exists
+    ensureProjectileContainer();
+};
+
+// Add a wave start event listener to ensure container is ready for first wave
+EventSystem.subscribe(GameEvents.WAVE_START, function(data) {
+    // Make sure animations are initialized for the first wave
+    if (!animationsReady) {
+        console.log("Ensuring tower animations are ready for wave");
+        TowerAnimationsModule.init();
+    }
+    
+    // Make sure container exists
+    if (typeof ensureProjectileContainer === 'function') {
+        ensureProjectileContainer();
+    }
+});
+
+// Initialize immediately if not already done
+if (!animationsReady && typeof TowerAnimationsModule.init === 'function') {
+    setTimeout(TowerAnimationsModule.init, 100);
+}
