@@ -1,7 +1,7 @@
 /**
  * tower-animations.js - Handles visual effects for tower attacks
  * This module adds projectile animations and visual feedback when towers attack
- * FIXED: Improved projectile rendering with proper z-index and positioning
+ * FIXED: Properly handles enemy positioning and inactive enemies
  */
 
 const TowerAnimationsModule = (function() {
@@ -95,14 +95,58 @@ const TowerAnimationsModule = (function() {
      * @returns {Object} Position {x, y} relative to the board
      */
     function calculateEnemyPosition(enemy) {
-        // Enemy positions are already calculated relative to the board
-        // Just ensure they're valid
-        if (!enemy || typeof enemy.x !== 'number' || typeof enemy.y !== 'number') {
-            console.error("Invalid enemy data:", enemy);
-            return { x: 0, y: 0 };
+        // First check if the enemy is active
+        if (!enemy || enemy.active === false) {
+            console.log("Skipping inactive enemy:", enemy);
+            return null;
+        }
+    
+        // Check if enemy already has x,y coordinates
+        if (typeof enemy.x === 'number' && typeof enemy.y === 'number') {
+            return { x: enemy.x, y: enemy.y };
         }
         
-        return { x: enemy.x, y: enemy.y };
+        // If enemy uses row/col/progress format, calculate position
+        if (typeof enemy.row === 'number' && typeof enemy.col === 'number') {
+            // Calculate position based on grid coordinates plus progress
+            const x = (enemy.col + (enemy.progress || 0)) * cellSize;
+            const y = (enemy.row + (enemy.progress || 0)) * cellSize;
+            return { x, y };
+        }
+        
+        // If enemy uses pathIndex format from your enemy data
+        if (typeof enemy.pathIndex === 'number' && typeof enemy.progress === 'number') {
+            try {
+                // Get the current path from SudokuModule if available
+                if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
+                    const path = SudokuModule.getPathArray();
+                    
+                    if (path && enemy.pathIndex < path.length - 1) {
+                        const currentCell = path[enemy.pathIndex];
+                        const nextCell = path[enemy.pathIndex + 1];
+                        
+                        if (currentCell && nextCell) {
+                            // Calculate cell centers
+                            const currentX = currentCell[1] * cellSize + cellSize / 2;
+                            const currentY = currentCell[0] * cellSize + cellSize / 2;
+                            const nextX = nextCell[1] * cellSize + cellSize / 2;
+                            const nextY = nextCell[0] * cellSize + cellSize / 2;
+                            
+                            // Interpolate position
+                            const x = currentX + (nextX - currentX) * enemy.progress;
+                            const y = currentY + (nextY - currentY) * enemy.progress;
+                            
+                            return { x, y };
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Error calculating enemy position from path:", err);
+            }
+        }
+        
+        console.error("Unable to determine enemy position:", enemy);
+        return null;
     }
     
     /**
@@ -120,6 +164,11 @@ const TowerAnimationsModule = (function() {
         // Ensure tower is actually on the board (has row and col)
         if (typeof tower.row !== 'number' || typeof tower.col !== 'number') {
             console.error("Tower doesn't have valid position data:", tower);
+            return;
+        }
+        
+        // Don't create effects for inactive enemies
+        if (enemy.active === false) {
             return;
         }
         
@@ -158,6 +207,11 @@ const TowerAnimationsModule = (function() {
         // Get correct positions
         const towerPos = calculateTowerPosition(tower);
         const enemyPos = calculateEnemyPosition(enemy);
+        
+        // Skip if we couldn't determine enemy position
+        if (!enemyPos) {
+            return;
+        }
         
         // Create projectile object
         const projectile = {
