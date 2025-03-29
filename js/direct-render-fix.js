@@ -127,43 +127,49 @@
                 // Render or update enemy
                 if (!renderedEnemies[enemy.id]) {
                     // Create new enemy element
-                    const element = document.createElement('div');
-                    element.id = `direct-enemy-${enemy.id}`;
-                    element.className = 'direct-enemy';
-                    element.textContent = enemy.emoji;
-                    element.style.position = 'absolute';
-                    element.style.transform = `translate(-50%, -50%)`;
-                    element.style.fontSize = `${cellSize * 0.6}px`;
-                    element.style.zIndex = '50';
-                    
-                    // Create health bar
-                    const healthBar = document.createElement('div');
-                    healthBar.className = 'direct-enemy-health';
-                    healthBar.style.position = 'absolute';
-                    healthBar.style.bottom = '-8px';
-                    healthBar.style.left = '-10px';
-                    healthBar.style.width = '20px';
-                    healthBar.style.height = '4px';
-                    healthBar.style.backgroundColor = '#333';
-                    healthBar.style.borderRadius = '2px';
-                    
-                    const healthFill = document.createElement('div');
-                    healthFill.className = 'direct-enemy-health-fill';
-                    healthFill.style.height = '100%';
-                    healthFill.style.backgroundColor = '#ff0000';
-                    healthFill.style.width = '100%';
-                    
-                    healthBar.appendChild(healthFill);
-                    element.appendChild(healthBar);
-                    
-                    ourContainer.appendChild(element);
-                    
-                    // Store rendered enemy
-                    renderedEnemies[enemy.id] = {
-                        element: element,
-                        healthFill: healthFill
-                    };
-                }
+// Create new enemy element
+const element = document.createElement('div');
+element.id = `direct-enemy-${enemy.id}`;
+element.className = 'direct-enemy';
+element.textContent = enemy.emoji;
+element.style.position = 'absolute';
+element.style.transform = `translate(-50%, -50%)`;
+element.style.fontSize = `${cellSize * 0.4}px`; // Reduced size
+element.style.zIndex = '50';
+element.style.lineHeight = '1'; // Prevent extra vertical space
+element.style.display = 'flex'; // Better emoji centering
+element.style.justifyContent = 'center';
+element.style.alignItems = 'center';
+element.style.width = `${cellSize * 0.8}px`; // Control width
+element.style.height = `${cellSize * 0.8}px`; // Control height
+
+// Create health bar
+const healthBar = document.createElement('div');
+healthBar.className = 'direct-enemy-health';
+healthBar.style.position = 'absolute';
+healthBar.style.bottom = '-6px'; // Moved slightly closer
+healthBar.style.left = '-10px';
+healthBar.style.width = '20px';
+healthBar.style.height = '3px'; // Slightly smaller
+healthBar.style.backgroundColor = '#333';
+healthBar.style.borderRadius = '2px';
+
+const healthFill = document.createElement('div');
+healthFill.className = 'direct-enemy-health-fill';
+healthFill.style.height = '100%';
+healthFill.style.backgroundColor = '#ff0000';
+healthFill.style.width = '100%';
+
+healthBar.appendChild(healthFill);
+element.appendChild(healthBar);
+
+ourContainer.appendChild(element);
+
+// Store rendered enemy
+renderedEnemies[enemy.id] = {
+    element: element,
+    healthFill: healthFill
+};
                 
                 // Update position
                 const rendered = renderedEnemies[enemy.id];
