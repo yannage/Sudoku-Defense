@@ -57,44 +57,12 @@ const LevelsModule = (function() {
         return;
     }
     
-    // Only generate a new path if it's NOT the first wave
-    // This ensures the initial path remains the same for the first wave
-    if (currentWave > 1) {
-        // Clear existing path before generating a new one
-        if (window.SudokuModule && typeof SudokuModule.getPathCells === 'function') {
-            const pathCells = SudokuModule.getPathCells();
-            if (pathCells && typeof pathCells.clear === 'function') {
-                pathCells.clear();
-            }
-        }
-        
-        // Generate a new path for this wave
-        if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
-            SudokuModule.generateEnemyPath();
-            console.log("New path generated for wave " + currentWave);
-            
-            // Tell the game to update the board display to show the new path
-            if (window.Game && typeof Game.updateBoard === 'function') {
-                Game.updateBoard();
-            }
-            
-            // Make sure the Enemies module is aware of the new path
-            if (typeof SudokuModule.getPathArray === 'function') {
-                const newPath = SudokuModule.getPathArray();
-                EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
-                    pathCells: newPath
-                });
-                
-                // Also publish a specific event for path updates
-                EventSystem.publish('path:updated', newPath);
-            }
-        }
-    } else {
-        // For first wave, just ensure the Enemies module is aware of the current path
-        if (typeof SudokuModule.getPathArray === 'function') {
-            const currentPath = SudokuModule.getPathArray();
-            EventSystem.publish('path:updated', currentPath);
-        }
+    // REMOVED: Code that generated a new path when starting a wave
+    
+    // Make sure the Enemies module is aware of the current path
+    if (typeof SudokuModule.getPathArray === 'function') {
+        const currentPath = SudokuModule.getPathArray();
+        EventSystem.publish('path:updated', currentPath);
     }
     
     // Start the wave in the enemies module
