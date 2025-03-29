@@ -11,7 +11,7 @@
         const boardElement = document.getElementById('sudoku-board');
         if (!boardElement) {
             console.error("Board element not found!");
-            return;
+            return false;
         }
         
         // Check if we have all required cells
@@ -31,8 +31,12 @@
                     
                     // Add click event handler
                     newCell.addEventListener('click', function() {
+                        // Find any click handler we can use
                         if (window.Game && typeof Game.handleCellClick === 'function') {
                             Game.handleCellClick(row, col);
+                        } else if (window.SudokuModule && typeof SudokuModule.setCellValue === 'function') {
+                            // Try direct action if no handler found
+                            SudokuModule.setCellValue(row, col, 0);
                         }
                     });
                     
@@ -45,10 +49,14 @@
         if (missingCells) {
             console.log("Created missing cells in the board");
             
-            // Force board update
-            if (window.Game && typeof Game.updateBoard === 'function') {
-                console.log("Forcing board update after cell creation");
-                Game.updateBoard();
+            // Try to force board update in any way available
+            if (window.Game) {
+                // Try all possible update methods
+                if (typeof Game.updateBoard === 'function') {
+                    Game.updateBoard();
+                } else if (typeof Game.update === 'function') {
+                    Game.update(0);
+                }
             }
         }
         
@@ -70,7 +78,25 @@
         console.log(`Using cell size: ${cellSize}px for enemy movement`);
         
         // Store cell size in the module
-        EnemiesModule.setCellSize(cellSize);
+        if (typeof EnemiesModule.setCellSize === 'function') {
+            EnemiesModule.setCellSize(cellSize);
+        }
+        
+        // Create a projectile container if it doesn't exist
+        let projectileContainer = document.getElementById('projectile-container');
+        if (!projectileContainer) {
+            projectileContainer = document.createElement('div');
+            projectileContainer.id = 'projectile-container';
+            projectileContainer.style.position = 'absolute';
+            projectileContainer.style.top = '0';
+            projectileContainer.style.left = '0';
+            projectileContainer.style.width = '100%';
+            projectileContainer.style.height = '100%';
+            projectileContainer.style.pointerEvents = 'none';
+            projectileContainer.style.zIndex = '9999';
+            boardElement.appendChild(projectileContainer);
+            console.log("Created missing projectile container");
+        }
         
         // Override the moveEnemy function
         const originalMoveEnemy = EnemiesModule.moveEnemy;
@@ -79,7 +105,13 @@
             if (!enemy || !enemy.active) return;
             
             // Get the path
-            const path = SudokuModule.getPathArray();
+            let path;
+            if (typeof SudokuModule.getPathArray === 'function') {
+                path = SudokuModule.getPathArray();
+            } else if (this.path) {
+                path = this.path;
+            }
+            
             if (!path || path.length === 0) {
                 console.error("Path not available for enemy movement");
                 return;
@@ -87,7 +119,12 @@
             
             if (enemy.pathIndex >= path.length - 1) {
                 // Enemy reached the end of the path
-                this.enemyReachedEnd(enemy);
+                if (typeof this.enemyReachedEnd === 'function') {
+                    this.enemyReachedEnd(enemy);
+                } else {
+                    // If function isn't available, just mark as inactive
+                    enemy.active = false;
+                }
                 return;
             }
             
@@ -125,7 +162,12 @@
                 
                 // Check if enemy reached the end
                 if (enemy.pathIndex >= path.length - 1) {
-                    this.enemyReachedEnd(enemy);
+                    if (typeof this.enemyReachedEnd === 'function') {
+                        this.enemyReachedEnd(enemy);
+                    } else {
+                        // If function isn't available, just mark as inactive
+                        enemy.active = false;
+                    }
                     return;
                 }
             }
@@ -136,152 +178,224 @@
             enemy.y = currentY + (nextY - currentY) * enemy.progress;
         };
         
-        // Make sure enemies have correct coordinates from creation
-        const originalCreateEnemy = EnemiesModule.createEnemy;
-        EnemiesModule.createEnemy = function(type) {
-            const path = SudokuModule.getPathArray();
-            if (!path || path.length === 0) {
-                console.error("Path not available for enemy creation");
-                return null;
-            }
-            
-            // Call original function to create enemy
-            const enemy = originalCreateEnemy.call(this, type);
-            
-            if (enemy) {
-                // Explicitly set x,y based on path start
-                const startCell = path[0];
-                enemy.x = startCell[1] * cellSize + cellSize / 2;
-                enemy.y = startCell[0] * cellSize + cellSize / 2;
+        // Create an enemy observer that watches for enemy elements and fixes them
+        function setupEnemyObserver() {
+            // Function to update enemy element position
+            function updateEnemyElement(enemyElement) {
+                const enemyId = enemyElement.id;
+                if (!enemyId) return;
                 
-                console.log(`Created enemy with fixed coordinates: (${enemy.x}, ${enemy.y})`);
-            }
-            
-            return enemy;
-        };
-        
-        console.log("Enemy movement system fixed");
-        return true;
-    }
-    
-    // Fix rendering system
-    function fixRenderingSystem() {
-        if (!window.Game || typeof Game.renderEnemies !== 'function') {
-            console.error("Game.renderEnemies not found, cannot fix rendering");
-            return false;
-        }
-        
-        // Override the renderEnemies function
-        Game.renderEnemies = function() {
-            // Get all enemies
-            const enemies = EnemiesModule.getEnemies();
-            
-            // Get or create enemy container
-            let enemyContainer = document.getElementById('enemy-container');
-            
-            if (!enemyContainer) {
-                enemyContainer = document.createElement('div');
-                enemyContainer.id = 'enemy-container';
-                enemyContainer.style.position = 'absolute';
-                enemyContainer.style.top = '0';
-                enemyContainer.style.left = '0';
-                enemyContainer.style.width = '100%';
-                enemyContainer.style.height = '100%';
-                enemyContainer.style.pointerEvents = 'none';
+                // Find corresponding enemy object
+                const enemies = EnemiesModule.getEnemies();
+                const enemy = enemies.find(e => e.id === enemyId);
                 
-                const boardElement = document.getElementById('sudoku-board');
-                if (boardElement) {
-                    boardElement.appendChild(enemyContainer);
-                } else {
-                    document.body.appendChild(enemyContainer);
-                    console.error("Board element not found for enemyContainer attachment");
-                }
-            }
-            
-            // Update existing enemy elements and create new ones as needed
-            enemies.forEach(enemy => {
-                let enemyElement = document.getElementById(enemy.id);
-                
-                if (!enemyElement) {
-                    // Create new enemy element
-                    enemyElement = document.createElement('div');
-                    enemyElement.id = enemy.id;
-                    enemyElement.className = 'enemy';
-                    enemyElement.textContent = enemy.emoji;
-                    enemyContainer.appendChild(enemyElement);
-                    
-                    // Create health bar
-                    const healthBar = document.createElement('div');
-                    healthBar.className = 'enemy-health-bar';
-                    healthBar.style.position = 'absolute';
-                    healthBar.style.bottom = '-8px';
-                    healthBar.style.left = '0';
-                    healthBar.style.width = '100%';
-                    healthBar.style.height = '4px';
-                    healthBar.style.backgroundColor = '#333';
-                    
-                    const healthFill = document.createElement('div');
-                    healthFill.className = 'enemy-health-fill';
-                    healthFill.style.width = '100%';
-                    healthFill.style.height = '100%';
-                    healthFill.style.backgroundColor = '#ff0000';
-                    
-                    healthBar.appendChild(healthFill);
-                    enemyElement.appendChild(healthBar);
-                }
-                
-                // Apply position - use translate for performance and to match the original game's approach
-                // This is the critical part - using enemy.x and enemy.y directly with no assumptions
-                if (typeof enemy.x === 'number' && typeof enemy.y === 'number') {
+                if (enemy && typeof enemy.x === 'number' && typeof enemy.y === 'number') {
+                    // Directly set position
                     enemyElement.style.transform = `translate(${enemy.x}px, ${enemy.y}px)`;
                 }
-                
-                // Update health bar
-                const healthFill = enemyElement.querySelector('.enemy-health-fill');
-                if (healthFill) {
-                    const healthPercent = (enemy.health / enemy.maxHealth) * 100;
-                    healthFill.style.width = `${healthPercent}%`;
-                }
+            }
+            
+            // Set up mutation observer to watch for new enemy elements
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.addedNodes) {
+                        mutation.addedNodes.forEach(function(node) {
+                            // Check if it's an enemy element
+                            if (node.nodeType === 1 && node.classList && node.classList.contains('enemy')) {
+                                updateEnemyElement(node);
+                            }
+                        });
+                    }
+                });
             });
             
-            // Remove enemy elements for defeated enemies
-            const enemyElements = enemyContainer.getElementsByClassName('enemy');
+            // Start observing the whole document for enemy elements
+            observer.observe(document.body, { 
+                childList: true, 
+                subtree: true 
+            });
             
-            for (let i = enemyElements.length - 1; i >= 0; i--) {
-                const element = enemyElements[i];
-                const enemyId = element.id;
-                
-                if (!enemies.find(e => e.id === enemyId)) {
-                    element.remove();
-                }
-            }
-        };
+            console.log("Enemy element observer set up");
+            
+            // Also periodically check for existing enemies
+            setInterval(function() {
+                document.querySelectorAll('.enemy').forEach(updateEnemyElement);
+            }, 100);
+        }
         
-        console.log("Rendering system fixed");
+        // Set up the observer
+        setupEnemyObserver();
+        
+        console.log("Enemy movement system fixed");
         return true;
     }
     
     // Fix tower targeting
     function fixTowerTargeting() {
         // Override calculateEnemyPosition in TowerAnimationsModule if it exists
-        if (window.TowerAnimationsModule && typeof TowerAnimationsModule.calculateEnemyPosition === 'function') {
-            const originalCalculateEnemyPosition = TowerAnimationsModule.calculateEnemyPosition;
-            
-            TowerAnimationsModule.calculateEnemyPosition = function(enemy) {
-                // Just directly use the enemy's x,y coordinates that we've carefully ensured are correct
-                if (enemy && typeof enemy.x === 'number' && typeof enemy.y === 'number') {
-                    return { x: enemy.x, y: enemy.y };
-                }
+        if (window.TowerAnimationsModule) {
+            // Try to find the position calculation function
+            if (typeof TowerAnimationsModule.calculateEnemyPosition === 'function') {
+                const originalCalculateEnemyPosition = TowerAnimationsModule.calculateEnemyPosition;
                 
-                // Fall back to original function
-                return originalCalculateEnemyPosition.call(this, enemy);
-            };
-            
-            console.log("Tower targeting fixed");
-            return true;
+                TowerAnimationsModule.calculateEnemyPosition = function(enemy) {
+                    // Direct use of enemy's x,y coordinates
+                    if (enemy && typeof enemy.x === 'number' && typeof enemy.y === 'number') {
+                        return { x: enemy.x, y: enemy.y };
+                    }
+                    
+                    // Fall back to original function
+                    return originalCalculateEnemyPosition.call(this, enemy);
+                };
+                
+                console.log("Tower targeting fixed");
+                return true;
+            }
         }
         
         return false;
+    }
+    
+    // Add a completely new direct projectile rendering system
+    function setupProjectileSystem() {
+        // Create a standalone projectile handler that doesn't rely on existing code
+        window.ProjectileSystem = {
+            projectiles: [],
+            nextId: 0,
+            
+            // Create a projectile from tower to enemy
+            createProjectile: function(tower, enemy) {
+                if (!tower || !enemy) return;
+                
+                const boardElement = document.getElementById('sudoku-board');
+                if (!boardElement) return;
+                
+                // Get cell size for coordinates
+                const cellSize = boardElement.clientWidth / 9;
+                
+                // Calculate tower position
+                const towerX = (tower.col + 0.5) * cellSize;
+                const towerY = (tower.row + 0.5) * cellSize;
+                
+                // Use enemy position directly if available
+                let enemyX, enemyY;
+                if (typeof enemy.x === 'number' && typeof enemy.y === 'number') {
+                    enemyX = enemy.x;
+                    enemyY = enemy.y;
+                } else {
+                    // Calculate from path if needed
+                    const path = SudokuModule.getPathArray();
+                    if (path && path.length > 0 && typeof enemy.pathIndex === 'number') {
+                        const currentCell = path[enemy.pathIndex];
+                        const nextCell = path[Math.min(enemy.pathIndex + 1, path.length - 1)];
+                        
+                        const startX = currentCell[1] * cellSize + cellSize / 2;
+                        const startY = currentCell[0] * cellSize + cellSize / 2;
+                        const endX = nextCell[1] * cellSize + cellSize / 2;
+                        const endY = nextCell[0] * cellSize + cellSize / 2;
+                        
+                        enemyX = startX + (endX - startX) * (enemy.progress || 0);
+                        enemyY = startY + (endY - startY) * (enemy.progress || 0);
+                    } else {
+                        return; // Can't determine enemy position
+                    }
+                }
+                
+                // Create projectile object
+                const projectile = {
+                    id: 'direct-projectile-' + (this.nextId++),
+                    startX: towerX,
+                    startY: towerY,
+                    endX: enemyX,
+                    endY: enemyY,
+                    progress: 0,
+                    element: null
+                };
+                
+                // Create DOM element
+                let container = document.getElementById('projectile-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'projectile-container';
+                    container.style.position = 'absolute';
+                    container.style.top = '0';
+                    container.style.left = '0';
+                    container.style.width = '100%';
+                    container.style.height = '100%';
+                    container.style.pointerEvents = 'none';
+                    container.style.zIndex = '9999';
+                    boardElement.appendChild(container);
+                }
+                
+                const element = document.createElement('div');
+                element.id = projectile.id;
+                element.className = 'direct-projectile';
+                element.style.position = 'absolute';
+                element.style.width = '8px';
+                element.style.height = '8px';
+                element.style.backgroundColor = '#000';
+                element.style.borderRadius = '50%';
+                element.style.transform = `translate(${towerX}px, ${towerY}px)`;
+                element.style.zIndex = '9999';
+                
+                container.appendChild(element);
+                projectile.element = element;
+                
+                // Add to active projectiles
+                this.projectiles.push(projectile);
+                
+                return projectile;
+            },
+            
+            // Update all projectiles
+            update: function(deltaTime) {
+                for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                    const projectile = this.projectiles[i];
+                    
+                    // Update progress
+                    projectile.progress += deltaTime * 3; // Speed factor
+                    
+                    if (projectile.progress >= 1) {
+                        // Remove projectile
+                        if (projectile.element) {
+                            projectile.element.remove();
+                        }
+                        this.projectiles.splice(i, 1);
+                        continue;
+                    }
+                    
+                    // Update position
+                    if (projectile.element) {
+                        const x = projectile.startX + (projectile.endX - projectile.startX) * projectile.progress;
+                        const y = projectile.startY + (projectile.endY - projectile.startY) * projectile.progress;
+                        projectile.element.style.transform = `translate(${x}px, ${y}px)`;
+                    }
+                }
+            }
+        };
+        
+        // Hook into tower attack events
+        EventSystem.subscribe(GameEvents.TOWER_ATTACK, function(data) {
+            if (data && data.tower && data.enemy) {
+                ProjectileSystem.createProjectile(data.tower, data.enemy);
+            }
+        });
+        
+        // Set up update loop
+        let lastTime = 0;
+        function updateLoop(timestamp) {
+            const deltaTime = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+            
+            ProjectileSystem.update(deltaTime);
+            
+            requestAnimationFrame(updateLoop);
+        }
+        
+        requestAnimationFrame(updateLoop);
+        
+        console.log("Direct projectile system set up");
+        return true;
     }
     
     // Apply all fixes
@@ -292,36 +406,13 @@
         // Fix enemy movement
         const enemyFixed = fixEnemyMovement();
         
-        // Fix rendering
-        const renderingFixed = fixRenderingSystem();
-        
         // Fix tower targeting
         const targetingFixed = fixTowerTargeting();
         
-        console.log(`Fix status: Board=${boardFixed}, Enemy=${enemyFixed}, Rendering=${renderingFixed}, Targeting=${targetingFixed}`);
+        // Add standalone projectile system
+        const projectileSystemAdded = setupProjectileSystem();
         
-        // Show a notification if everything was fixed
-        if (boardFixed && enemyFixed && renderingFixed && targetingFixed) {
-            // Create a notification
-            const notification = document.createElement('div');
-            notification.style.position = 'fixed';
-            notification.style.top = '10px';
-            notification.style.left = '50%';
-            notification.style.transform = 'translateX(-50%)';
-            notification.style.background = '#4CAF50';
-            notification.style.color = 'white';
-            notification.style.padding = '10px 20px';
-            notification.style.borderRadius = '5px';
-            notification.style.zIndex = '9999';
-            notification.textContent = 'Game fixed! Reload if issues persist.';
-            
-            document.body.appendChild(notification);
-            
-            // Remove after 5 seconds
-            setTimeout(() => {
-                notification.remove();
-            }, 5000);
-        }
+        console.log(`Fix status: Board=${boardFixed}, Enemy=${enemyFixed}, Targeting=${targetingFixed}, ProjectileSystem=${projectileSystemAdded}`);
     }
     
     // Wait for DOM to be ready
