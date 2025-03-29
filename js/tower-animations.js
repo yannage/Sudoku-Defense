@@ -698,38 +698,38 @@ EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function() {
     });
 })();
 
-// Add a ready flag
-let animationsReady = false;
-
-// Modify the init function to set the ready flag
-const originalInit = TowerAnimationsModule.init;
-TowerAnimationsModule.init = function() {
-    // Call the original init
-    originalInit.apply(this, arguments);
+// Immediately executing function to avoid global scope issues
+(function() {
+    // Add a ready flag
+    let animationsReady = false;
     
-    // Set ready flag
-    animationsReady = true;
-    console.log("Tower animations system ready");
+    // Add wave start event listener to ensure animation system is ready for first wave
+    EventSystem.subscribe(GameEvents.WAVE_START, function(data) {
+        // Make sure animations are initialized for the first wave
+        if (!animationsReady) {
+            console.log("Ensuring tower animations are ready for wave");
+            if (TowerAnimationsModule && typeof TowerAnimationsModule.init === 'function') {
+                TowerAnimationsModule.init();
+                animationsReady = true;
+            }
+        }
+    });
     
-    // Ensure the container exists
-    ensureProjectileContainer();
-};
-
-// Add a wave start event listener to ensure container is ready for first wave
-EventSystem.subscribe(GameEvents.WAVE_START, function(data) {
-    // Make sure animations are initialized for the first wave
-    if (!animationsReady) {
-        console.log("Ensuring tower animations are ready for wave");
-        TowerAnimationsModule.init();
-    }
+    // Make sure TowerAnimationsModule is also reinitialized on the first attack
+    EventSystem.subscribe(GameEvents.TOWER_ATTACK, function(data) {
+        if (!animationsReady && TowerAnimationsModule && typeof TowerAnimationsModule.init === 'function') {
+            console.log("First attack detected, initializing animations");
+            TowerAnimationsModule.init();
+            animationsReady = true;
+        }
+    });
     
-    // Make sure container exists
-    if (typeof ensureProjectileContainer === 'function') {
-        ensureProjectileContainer();
-    }
-});
-
-// Initialize immediately if not already done
-if (!animationsReady && typeof TowerAnimationsModule.init === 'function') {
-    setTimeout(TowerAnimationsModule.init, 100);
-}
+    // Initialize immediately if not already done
+    setTimeout(function() {
+        if (!animationsReady && TowerAnimationsModule && typeof TowerAnimationsModule.init === 'function') {
+            TowerAnimationsModule.init();
+            animationsReady = true;
+            console.log("Tower animations system initialized via timeout");
+        }
+    }, 500);
+})();
