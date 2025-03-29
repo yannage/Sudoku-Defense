@@ -357,83 +357,73 @@ const Game = (function() {
      * Update the Sudoku board display
      * This function has been modified to properly handle path cells with numbers
      */
-// Update tower rendering in updateBoard function
-function updateBoard() {
-    console.log("Updating board display");
-    const board = SudokuModule.getBoard();
-    const fixedCells = SudokuModule.getFixedCells();
-    const pathCells = SudokuModule.getPathCells();
-    
-    // Update each cell
-    for (let row = 0; row < 9; row++) {
-        for (let col = 0; col < 9; col++) {
-            const cellElement = boardElement.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-            
-            if (!cellElement) {
-                console.warn(`Cell element not found for row ${row}, col ${col}`);
-                continue;
-            }
-            
-            // Clear previous classes
-            cellElement.classList.remove('fixed', 'path');
-            
-            // Clear existing tower sprite if present
-            const existingTowerSprite = cellElement.querySelector('.tower-sprite');
-            if (existingTowerSprite) {
-                existingTowerSprite.remove();
-            }
-            
-            // Set value
-            const value = board[row][col];
-            cellElement.textContent = value > 0 ? value : '';
-            
-            // Mark fixed cells
-            if (fixedCells[row][col]) {
-                cellElement.classList.add('fixed');
-            }
-            
-            // Mark path cells - a cell can be both a path and have a number
-            if (pathCells.has(`${row},${col}`)) {
-                cellElement.classList.add('path');
-            }
-            
-            // Check for tower
-            const tower = TowersModule.getTowerAt(row, col);
-            
-            if (tower && !pathCells.has(`${row},${col}`)) {
-                // Create tower sprite
-                const towerSprite = document.createElement('div');
-                towerSprite.classList.add('tower-sprite', `tower-${tower.type}`);
+    function updateBoard() {
+        console.log("Updating board display");
+        const board = SudokuModule.getBoard();
+        const fixedCells = SudokuModule.getFixedCells();
+        const pathCells = SudokuModule.getPathCells();
+        
+        // Update each cell
+        for (let row = 0; row < 9; row++) {
+            for (let col = 0; col < 9; col++) {
+                const cellElement = boardElement.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
                 
-                // Add level indicator if tower level > 1
-                if (tower.level > 1) {
-                    const levelIndicator = document.createElement('span');
-                    levelIndicator.className = 'tower-level';
-                    levelIndicator.textContent = tower.level;
-                    towerSprite.appendChild(levelIndicator);
+                if (!cellElement) {
+                    console.warn(`Cell element not found for row ${row}, col ${col}`);
+                    continue;
                 }
                 
-                // Clear cell text and append sprite
-                cellElement.textContent = '';
-                cellElement.appendChild(towerSprite);
+                // Clear previous classes
+                cellElement.classList.remove('fixed', 'path');
+                
+                // Set value
+                const value = board[row][col];
+                cellElement.textContent = value > 0 ? value : '';
+                
+                // Mark fixed cells
+                if (fixedCells[row][col]) {
+                    cellElement.classList.add('fixed');
+                }
+                
+                // Mark path cells - a cell can be both a path and have a number
+                if (pathCells.has(`${row},${col}`)) {
+                    cellElement.classList.add('path');
+                }
+                
+                // Check for tower
+                const tower = TowersModule.getTowerAt(row, col);
+                
+                if (tower && !pathCells.has(`${row},${col}`)) {
+                    // Clear number and show tower emoji
+                    cellElement.textContent = tower.emoji;
+                    
+                    // Add level indicator if tower level > 1
+                    if (tower.level > 1) {
+                        const levelIndicator = document.createElement('span');
+                        levelIndicator.className = 'tower-level';
+                        levelIndicator.textContent = tower.level;
+                        levelIndicator.style.position = 'absolute';
+                        levelIndicator.style.bottom = '2px';
+                        levelIndicator.style.right = '2px';
+                        levelIndicator.style.fontSize = '12px';
+                        levelIndicator.style.fontWeight = 'bold';
+                        levelIndicator.style.color = '#fff';
+                        levelIndicator.style.backgroundColor = '#333';
+                        levelIndicator.style.borderRadius = '50%';
+                        levelIndicator.style.padding = '1px 3px';
+                        
+                        // Remove existing level indicator
+                        const existingIndicator = cellElement.querySelector('.tower-level');
+                        if (existingIndicator) {
+                            existingIndicator.remove();
+                        }
+                        
+                        cellElement.appendChild(levelIndicator);
+                    }
+                }
             }
         }
     }
-}
-
-// Update tower types in TowersModule to remove emoji
-const towerTypes = {
-    1: { icon: 'tower-1', damage: 60, range: 2.5, attackSpeed: 0.7, cost: 30 },
-    2: { icon: 'tower-2', damage: 70, range: 2.5, attackSpeed: 0.7, cost: 30 },
-    3: { icon: 'tower-3', damage: 80, range: 2.5, attackSpeed: 0.7, cost: 30 },
-    4: { icon: 'tower-4', damage: 90, range: 2.5, attackSpeed: 0.7, cost: 35 },
-    5: { icon: 'tower-5', damage: 100, range: 2.5, attackSpeed: 0.7, cost: 35 },
-    6: { icon: 'tower-6', damage: 110, range: 2.5, attackSpeed: 0.7, cost: 35 },
-    7: { icon: 'tower-7', damage: 120, range: 2.5, attackSpeed: 0.7, cost: 40 },
-    8: { icon: 'tower-8', damage: 130, range: 2.5, attackSpeed: 0.7, cost: 40 },
-    9: { icon: 'tower-9', damage: 140, range: 3.0, attackSpeed: 0.7, cost: 40 },
-    'special': { icon: 'tower-special', damage: 80, range: 4.0, attackSpeed: 0.3, cost: 100 }
-};
     
     /**
      * Handle cell click event
