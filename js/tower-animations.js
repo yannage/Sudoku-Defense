@@ -1,7 +1,7 @@
 /**
  * tower-animations.js - Handles visual effects for tower attacks
  * This module adds projectile animations and visual feedback when towers attack
- * FIXED: Now properly handles tower positions to prevent projectiles from wrong locations
+ * FIXED: Improved projectile rendering with proper z-index and positioning
  */
 
 const TowerAnimationsModule = (function() {
@@ -18,10 +18,16 @@ const TowerAnimationsModule = (function() {
      */
     function init() {
         projectiles = [];
+        projectileId = 0;
         
         // Get the board element and its dimensions
         boardElement = document.getElementById('sudoku-board');
         if (boardElement) {
+            // Ensure the board has relative positioning for proper absolute positioning of children
+            if (getComputedStyle(boardElement).position === 'static') {
+                boardElement.style.position = 'relative';
+            }
+            
             boardRect = boardElement.getBoundingClientRect();
             
             // Get cell size from the board dimensions
@@ -45,21 +51,24 @@ const TowerAnimationsModule = (function() {
     function ensureProjectileContainer() {
         if (!boardElement) return;
         
-        // Check if container already exists
-        let projectileContainer = document.getElementById('projectile-container');
-        
-        if (!projectileContainer) {
-            projectileContainer = document.createElement('div');
-            projectileContainer.id = 'projectile-container';
-            projectileContainer.style.position = 'absolute';
-            projectileContainer.style.top = '0';
-            projectileContainer.style.left = '0';
-            projectileContainer.style.width = '100%';
-            projectileContainer.style.height = '100%';
-            projectileContainer.style.pointerEvents = 'none';
-            projectileContainer.style.zIndex = '20';
-            boardElement.appendChild(projectileContainer);
+        // Remove any existing container to start fresh
+        const existingContainer = document.getElementById('projectile-container');
+        if (existingContainer) {
+            existingContainer.remove();
         }
+        
+        // Create new container
+        const projectileContainer = document.createElement('div');
+        projectileContainer.id = 'projectile-container';
+        projectileContainer.style.position = 'absolute';
+        projectileContainer.style.top = '0';
+        projectileContainer.style.left = '0';
+        projectileContainer.style.width = '100%';
+        projectileContainer.style.height = '100%';
+        projectileContainer.style.pointerEvents = 'none';
+        projectileContainer.style.zIndex = '100'; // Higher z-index to ensure visibility
+        projectileContainer.style.overflow = 'visible'; // Allow projectiles to extend outside container
+        boardElement.appendChild(projectileContainer);
     }
     
     /**
@@ -85,20 +94,16 @@ const TowerAnimationsModule = (function() {
      * @param {Object} enemy - The enemy object
      * @returns {Object} Position {x, y} relative to the board
      */
-function calculateEnemyPosition(enemy) {
-    // Enemy positions are now in cell coordinates
-    if (!enemy || typeof enemy.row !== 'number' || typeof enemy.col !== 'number') {
-        console.error("Invalid enemy data:", enemy);
-        return { x: 0, y: 0 };
+    function calculateEnemyPosition(enemy) {
+        // Enemy positions are already calculated relative to the board
+        // Just ensure they're valid
+        if (!enemy || typeof enemy.x !== 'number' || typeof enemy.y !== 'number') {
+            console.error("Invalid enemy data:", enemy);
+            return { x: 0, y: 0 };
+        }
+        
+        return { x: enemy.x, y: enemy.y };
     }
-    
-    // Convert to pixel coordinates, positioning at the center of the cell
-    const x = (enemy.col + 0.5) * cellSize;
-    const y = (enemy.row + 0.5) * cellSize;
-    
-    return { x, y };
-}
-
     
     /**
      * Create a tower attack effect
@@ -150,48 +155,71 @@ function calculateEnemyPosition(enemy) {
      * @param {Object} enemy - The target enemy
      */
     function createProjectile(tower, enemy) {
-    // Get correct positions
-    const towerPos = calculateTowerPosition(tower);
-    const enemyPos = calculateEnemyPosition(enemy);
-    
-    // Create projectile element
-    const projectile = {
-        id: `projectile_${++projectileId}`,
-        startX: towerPos.x,
-        startY: towerPos.y,
-        targetX: enemyPos.x,
-        targetY: enemyPos.y,
-        progress: 0,
-        speed: 0.005, // Speed of projectile animation
-        target: enemy.id
-    };
-    
-    // Validate projectile coordinates
-    if (isNaN(projectile.startX) || isNaN(projectile.startY) || 
-        isNaN(projectile.targetX) || isNaN(projectile.targetY)) {
-        console.error("Invalid projectile coordinates:", projectile);
-        return;
+        // Get correct positions
+        const towerPos = calculateTowerPosition(tower);
+        const enemyPos = calculateEnemyPosition(enemy);
+        
+        // Create projectile object
+        const projectile = {
+            id: `projectile_${++projectileId}`,
+            startX: towerPos.x,
+            startY: towerPos.y,
+            targetX: enemyPos.x,
+            targetY: enemyPos.y,
+            progress: 0,
+            speed: 0.005, // Speed of projectile animation
+            target: enemy.id,
+            type: tower.type // Store tower type for visual customization
+        };
+        
+        // Validate projectile coordinates
+        if (isNaN(projectile.startX) || isNaN(projectile.startY) || 
+            isNaN(projectile.targetX) || isNaN(projectile.targetY)) {
+            console.error("Invalid projectile coordinates:", projectile);
+            return;
+        }
+        
+        // Add to projectiles array
+        projectiles.push(projectile);
+        
+        // Create visual element
+        const projectileElement = document.createElement('div');
+        projectileElement.id = projectile.id;
+        projectileElement.className = 'tower-projectile';
+        
+        // Custom projectile appearance based on tower type
+        let projectileContent = '⚫'; // Default
+        
+        // Customize projectile based on tower type
+        if (tower.type === 'special') {
+            projectileContent = '✨'; // Special towers shoot sparkles
+            projectileElement.classList.add('special-projectile');
+        } else if (typeof tower.type === 'number' || !isNaN(parseInt(tower.type))) {
+            // Number towers
+            const towerNum = parseInt(tower.type);
+            projectileElement.classList.add(`projectile-${towerNum}`);
+            
+            // Different colors for different numbers
+            const colors = ['#ff5252', '#ff9800', '#ffeb3b', '#4caf50', '#2196f3', 
+                            '#9c27b0', '#e91e63', '#795548', '#607d8b'];
+            if (towerNum >= 1 && towerNum <= 9) {
+                projectileElement.style.color = colors[towerNum - 1];
+                projectileElement.style.textShadow = `0 0 5px ${colors[towerNum - 1]}`;
+            }
+        }
+        
+        projectileElement.textContent = projectileContent;
+        projectileElement.style.position = 'absolute';
+        projectileElement.style.transform = `translate(${projectile.startX}px, ${projectile.startY}px)`;
+        projectileElement.style.fontSize = '12px';
+        projectileElement.style.zIndex = '150'; // Higher z-index
+        
+        // Add to projectile container
+        const container = document.getElementById('projectile-container');
+        if (container) {
+            container.appendChild(projectileElement);
+        }
     }
-    
-    // Add to projectiles array
-    projectiles.push(projectile);
-    
-    // Create visual element
-    const projectileElement = document.createElement('div');
-    projectileElement.id = projectile.id;
-    projectileElement.className = 'tower-projectile';
-    projectileElement.textContent = '⚫';
-    projectileElement.style.position = 'absolute';
-    projectileElement.style.transform = `translate(${projectile.startX}px, ${projectile.startY}px)`;
-    projectileElement.style.fontSize = '10px';
-    projectileElement.style.zIndex = '25';
-    
-    // Add to projectile container
-    const container = document.getElementById('projectile-container');
-    if (container) {
-        container.appendChild(projectileElement);
-    }
-}
     
     /**
      * Animation loop for projectiles
@@ -227,6 +255,7 @@ function calculateEnemyPosition(enemy) {
             
             if (projectile.progress >= 1) {
                 // Projectile reached target
+                handleProjectileImpact(projectile);
                 removeProjectile(projectile.id);
                 projectiles.splice(i, 1);
                 continue;
@@ -245,13 +274,51 @@ function calculateEnemyPosition(enemy) {
     }
     
     /**
+     * Handle projectile impact with visual effect
+     * @param {Object} projectile - The projectile that reached its target
+     */
+    function handleProjectileImpact(projectile) {
+        // Create impact element
+        const impactElement = document.createElement('div');
+        impactElement.className = 'projectile-impact';
+        impactElement.style.position = 'absolute';
+        impactElement.style.left = `${projectile.targetX}px`;
+        impactElement.style.top = `${projectile.targetY}px`;
+        impactElement.style.transform = 'translate(-50%, -50%)';
+        impactElement.style.zIndex = '140';
+        impactElement.textContent = '💥';
+        
+        // Add to container
+        const container = document.getElementById('projectile-container');
+        if (container) {
+            container.appendChild(impactElement);
+            
+            // Remove after animation
+            setTimeout(() => {
+                if (impactElement.parentNode) {
+                    impactElement.parentNode.removeChild(impactElement);
+                }
+            }, 300);
+        }
+    }
+    
+    /**
      * Remove a projectile element
      * @param {string} id - Projectile ID to remove
      */
     function removeProjectile(id) {
         const element = document.getElementById(id);
         if (element) {
-            element.remove();
+            // Fade out quickly instead of abrupt removal
+            element.style.opacity = '0';
+            element.style.transition = 'opacity 0.1s';
+            
+            // Remove from DOM after fade
+            setTimeout(() => {
+                if (element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+            }, 100);
         }
     }
     
@@ -318,6 +385,14 @@ function calculateEnemyPosition(enemy) {
             // Clear all projectiles when game is paused
             clearAllProjectiles();
         });
+        
+        // Listen for when the board is updated/regenerated
+        EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function() {
+            // Reinitialize the projectile container
+            setTimeout(() => {
+                ensureProjectileContainer();
+            }, 100);
+        });
     }
     
     // Initialize when DOM is loaded
@@ -359,6 +434,35 @@ window.TowerAnimationsModule = TowerAnimationsModule;
             filter: drop-shadow(0 0 2px #fff);
             pointer-events: none;
             transform-origin: center center;
+            font-size: 14px !important;
+            will-change: transform; /* Performance optimization */
+            position: absolute;
+            z-index: 150;
+        }
+        
+        /* Special projectile effect */
+        .special-projectile {
+            color: #9c27b0;
+            filter: drop-shadow(0 0 5px #9c27b0);
+            animation: rotate-projectile 0.5s linear infinite;
+        }
+        
+        @keyframes rotate-projectile {
+            from { transform: rotate(0deg) translate(var(--x), var(--y)); }
+            to { transform: rotate(360deg) translate(var(--x), var(--y)); }
+        }
+        
+        /* Impact animation */
+        .projectile-impact {
+            animation: impact-effect 0.3s ease-out forwards;
+            font-size: 18px;
+            transform-origin: center center;
+            pointer-events: none;
+        }
+        
+        @keyframes impact-effect {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
         }
     `;
     document.head.appendChild(style);
