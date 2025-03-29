@@ -54,38 +54,40 @@ const EnemiesModule = (function() {
      * @returns {Object} The created enemy
      */
     function createEnemy(type) {
-        const typeData = enemyTypes[type] || enemyTypes[1];
-        
-        // Calculate starting position (first cell in the path)
-        const startCell = path[0];
-        
-        // Use cell coordinates directly instead of pixel positions
-        const enemy = {
-            id: `enemy_${++enemyId}`,
-            type: type,
-            emoji: typeData.emoji,
-            health: typeData.health * (1 + (waveNumber - 1) * 0.2), // 20% more health per wave
-            maxHealth: typeData.health * (1 + (waveNumber - 1) * 0.2),
-            speed: typeData.speed,
-            reward: typeData.reward,
-            points: typeData.points,
-            // Track position in cell coordinates, not pixels
-            currentPathIndex: 0,
-            previousPathIndex: 0,
-            progress: 0, // Progress between cells (0-1)
-            row: startCell[0],
-            col: startCell[1],
-            active: true
-        };
-        
-        // Add to enemies array
-        enemies.push(enemy);
-        
-        // Publish enemy spawn event
-        EventSystem.publish(GameEvents.ENEMY_SPAWN, enemy);
-        
-        return enemy;
-    }
+    const typeData = enemyTypes[type] || enemyTypes[1];
+    
+    // Calculate starting position (first cell in the path)
+    const startCell = path[0];
+    const nextCell = path[1] || startCell;
+    
+    // Use cell coordinates with initial progress
+    const enemy = {
+        id: `enemy_${++enemyId}`,
+        type: type,
+        emoji: typeData.emoji,
+        health: typeData.health * (1 + (waveNumber - 1) * 0.2),
+        maxHealth: typeData.health * (1 + (waveNumber - 1) * 0.2),
+        speed: typeData.speed,
+        reward: typeData.reward,
+        points: typeData.points,
+        // Start with a small progress value to begin moving immediately
+        currentPathIndex: 0,
+        previousPathIndex: 0,
+        progress: 0.01, // Small initial progress to start moving immediately
+        // Calculate interpolated position for smooth start
+        row: startCell[0] + (nextCell[0] - startCell[0]) * 0.01,
+        col: startCell[1] + (nextCell[1] - startCell[1]) * 0.01,
+        active: true
+    };
+    
+    // Add to enemies array
+    enemies.push(enemy);
+    
+    // Publish enemy spawn event
+    EventSystem.publish(GameEvents.ENEMY_SPAWN, enemy);
+    
+    return enemy;
+}
     
     /**
      * Start a wave of enemies
@@ -191,45 +193,50 @@ const EnemiesModule = (function() {
      * @param {Object} enemy - The enemy to move
      * @param {number} deltaTime - Time elapsed since last update
      */
-    function moveEnemy(enemy, deltaTime) {
+function moveEnemy(enemy, deltaTime) {
+    if (enemy.currentPathIndex >= path.length - 1) {
+        // Enemy reached the end of the path
+        enemyReachedEnd(enemy);
+        return;
+    }
+    
+    // Calculate movement speed based on enemy speed and deltaTime
+    // Adjust this multiplier to control overall movement speed
+    const moveSpeed = enemy.speed * 0.8 * deltaTime;
+    
+    // Get current and next cells in path
+    const currentCell = path[enemy.currentPathIndex];
+    const nextCell = path[enemy.currentPathIndex + 1];
+    
+    // Update progress along current path segment
+    enemy.progress += moveSpeed;
+    
+    // Move to next path segment if progress is complete
+    if (enemy.progress >= 1) {
+        enemy.previousPathIndex = enemy.currentPathIndex;
+        enemy.currentPathIndex++;
+        enemy.progress = 0; // Reset progress for the next segment
+        
+        // Check if enemy reached the end
         if (enemy.currentPathIndex >= path.length - 1) {
-            // Enemy reached the end of the path
             enemyReachedEnd(enemy);
             return;
         }
         
-        // Calculate movement speed based on enemy speed and deltaTime
-        const moveSpeed = enemy.speed * deltaTime;
+        // Update references to current and next cells
+        const newCurrentCell = path[enemy.currentPathIndex];
+        const newNextCell = path[enemy.currentPathIndex + 1] || newCurrentCell;
         
-        // Update progress along current path segment
-        enemy.progress += moveSpeed;
-        
-        // Move to next path segment if progress is complete
-        if (enemy.progress >= 1) {
-            enemy.previousPathIndex = enemy.currentPathIndex;
-            enemy.currentPathIndex++;
-            enemy.progress = 0;
-            
-            // Check if enemy reached the end
-            if (enemy.currentPathIndex >= path.length - 1) {
-                enemyReachedEnd(enemy);
-                return;
-            }
-            
-            // Update the enemy's row and col
-            const currentCell = path[enemy.currentPathIndex];
-            enemy.row = currentCell[0];
-            enemy.col = currentCell[1];
-        } else {
-            // Calculate interpolated position between cells
-            const currentCell = path[enemy.currentPathIndex];
-            const prevCell = path[enemy.previousPathIndex];
-            
-            // Linear interpolation between previous and current cells
-            enemy.row = prevCell[0] + (currentCell[0] - prevCell[0]) * enemy.progress;
-            enemy.col = prevCell[1] + (currentCell[1] - prevCell[1]) * enemy.progress;
-        }
+        // Update the enemy's exact position
+        enemy.row = newCurrentCell[0];
+        enemy.col = newCurrentCell[1];
+    } else {
+        // Calculate interpolated position between cells for smoother movement
+        // Linear interpolation between current and next cell
+        enemy.row = currentCell[0] + (nextCell[0] - currentCell[0]) * enemy.progress;
+        enemy.col = currentCell[1] + (nextCell[1] - currentCell[1]) * enemy.progress;
     }
+}
     
     /**
      * Handle an enemy reaching the end of the path

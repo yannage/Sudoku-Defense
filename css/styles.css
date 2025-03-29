@@ -175,7 +175,9 @@ h1 {
     z-index: 10;
     
     /* Smooth movement between cells */
-    transition: left 0.1s linear, top 0.1s linear;
+    transition: left 0.15s linear, top 0.15s linear;
+    transform-origin: center;
+    will-change: transform, left, top;
 }
 
 .enemy-health-bar {
