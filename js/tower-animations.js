@@ -110,42 +110,81 @@ const TowerAnimationsModule = (function() {
      * @param {Object} enemy - The enemy object
      * @returns {Object} Position {x, y} relative to the board
      */
-    function calculateEnemyPosition(enemy) {
-        // Smarter enemy position calculation (from enhancedTowerAnimations)
-        if (!enemy) return { x: 0, y: 0 };
-        
-        // If enemy has valid x,y coordinates, use them directly
-        if (typeof enemy.x === 'number' && typeof enemy.y === 'number') {
-            return { x: enemy.x, y: enemy.y };
-        }
-        
-        // If not, try to get position from path and current progress
-        if (enemy.pathIndex !== undefined && enemy.progress !== undefined) {
-            // Get current path from Sudoku module
-            if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
-                const path = SudokuModule.getPathArray();
-                if (path && path.length > enemy.pathIndex) {
-                    const currentCell = path[enemy.pathIndex];
-                    const nextCell = path[Math.min(enemy.pathIndex + 1, path.length - 1)];
-                    
-                    // Calculate cell centers
-                    const currentX = currentCell[1] * cellSize + cellSize / 2;
-                    const currentY = currentCell[0] * cellSize + cellSize / 2;
-                    const nextX = nextCell[1] * cellSize + cellSize / 2;
-                    const nextY = nextCell[0] * cellSize + cellSize / 2;
-                    
-                    // Interpolate position
-                    const x = currentX + (nextX - currentX) * enemy.progress;
-                    const y = currentY + (nextY - currentY) * enemy.progress;
-                    
-                    return { x, y };
-                }
-            }
-        }
-        
-        console.error("Could not determine enemy position:", enemy);
+function calculateEnemyPosition(enemy) {
+    // First try the direct approach - if enemy has x,y coordinates
+    if (enemy && typeof enemy.x === 'number' && typeof enemy.y === 'number') {
+        return { x: enemy.x, y: enemy.y };
+    }
+    
+    // If we got here, the enemy object doesn't have valid coordinates
+    console.log("Enemy missing coordinates, trying to calculate from path:", enemy);
+    
+    // Make sure we have the necessary properties to calculate position
+    if (!enemy || typeof enemy.pathIndex !== 'number') {
+        console.error("Invalid enemy data for position calculation:", enemy);
         return { x: 0, y: 0 };
     }
+    
+    // Get the path from EnemiesModule directly if possible
+    let path = null;
+    if (window.EnemiesModule && typeof EnemiesModule.path !== 'undefined') {
+        path = EnemiesModule.path;
+    } else if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
+        path = SudokuModule.getPathArray();
+    }
+    
+    // Check if we have a valid path
+    if (!path || !Array.isArray(path) || path.length === 0) {
+        console.error("No valid path available for position calculation");
+        return { x: 0, y: 0 };
+    }
+    
+    // Get cell size - critical for accurate positioning
+    let cellSize = 55; // Default fallback
+    if (window.EnemiesModule && typeof EnemiesModule.getCellSize === 'function') {
+        const enemyCellSize = EnemiesModule.getCellSize();
+        if (enemyCellSize && enemyCellSize > 0) {
+            cellSize = enemyCellSize;
+        }
+    }
+    
+    // Ensure pathIndex is within bounds
+    const pathIndex = Math.min(Math.max(0, enemy.pathIndex), path.length - 1);
+    
+    // Get current and next cells
+    const currentCell = path[pathIndex];
+    const nextCellIndex = Math.min(pathIndex + 1, path.length - 1);
+    const nextCell = path[nextCellIndex];
+    
+    // Calculate position based on current path segment and progress
+    let x, y;
+    
+    if (currentCell && nextCell) {
+        // If we have progress information, use it for interpolation
+        const progress = typeof enemy.progress === 'number' ? enemy.progress : 0;
+        
+        // Calculate cell centers
+        const currentX = currentCell[1] * cellSize + cellSize / 2;
+        const currentY = currentCell[0] * cellSize + cellSize / 2;
+        const nextX = nextCell[1] * cellSize + cellSize / 2;
+        const nextY = nextCell[0] * cellSize + cellSize / 2;
+        
+        // Interpolate between current and next cell
+        x = currentX + (nextX - currentX) * progress;
+        y = currentY + (nextY - currentY) * progress;
+    } else if (currentCell) {
+        // If we only have the current cell, use its center
+        x = currentCell[1] * cellSize + cellSize / 2;
+        y = currentCell[0] * cellSize + cellSize / 2;
+    } else {
+        // Last resort fallback
+        console.error("Could not determine enemy position from path data");
+        return { x: 0, y: 0 };
+    }
+    
+    // Return the calculated position
+    return { x, y };
+}
     
     /**
      * Create a tower attack effect
