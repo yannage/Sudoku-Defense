@@ -209,14 +209,7 @@ const Game = (function() {
      * Render enemies on the board
      * MODIFIED: Enemies now follow grid cells exactly
      */
-   /**
- * Render enemies on the board
- */
-/**
- * Render enemies on the board
- * Updated to handle coordinate scaling issues
- */
-function renderEnemies() {
+    function renderEnemies() {
     // Get all enemies
     const enemies = EnemiesModule.getEnemies();
     
@@ -235,9 +228,6 @@ function renderEnemies() {
         boardElement.appendChild(enemyContainer);
     }
     
-    // Get cell size to normalize coordinates if needed
-    const cellSize = boardElement.clientWidth / 9;
-    
     // Update existing enemy elements and create new ones as needed
     enemies.forEach(enemy => {
         let enemyElement = document.getElementById(enemy.id);
@@ -248,15 +238,24 @@ function renderEnemies() {
             enemyElement.id = enemy.id;
             enemyElement.className = 'enemy';
             enemyElement.textContent = enemy.emoji;
-            enemyContainer.appendChild(enemyElement);
+            
+            // Apply grid cell styling
+            enemyElement.style.position = 'absolute';
+            enemyElement.style.display = 'flex';
+            enemyElement.style.justifyContent = 'center';
+            enemyElement.style.alignItems = 'center';
+            enemyElement.style.width = `${cellSize}px`;
+            enemyElement.style.height = `${cellSize}px`;
+            enemyElement.style.fontSize = `${cellSize * 0.6}px`;
+            enemyElement.style.zIndex = '10';
             
             // Create health bar
             const healthBar = document.createElement('div');
             healthBar.className = 'enemy-health-bar';
             healthBar.style.position = 'absolute';
-            healthBar.style.bottom = '-8px';
-            healthBar.style.left = '0';
-            healthBar.style.width = '100%';
+            healthBar.style.bottom = '4px';
+            healthBar.style.left = '10%';
+            healthBar.style.width = '80%';
             healthBar.style.height = '4px';
             healthBar.style.backgroundColor = '#333';
             
@@ -268,88 +267,34 @@ function renderEnemies() {
             
             healthBar.appendChild(healthFill);
             enemyElement.appendChild(healthBar);
+            
+            // Place at exact position immediately before adding to DOM (prevents flashing)
+            const left = enemy.col * cellSize;
+            const top = enemy.row * cellSize;
+            enemyElement.style.left = `${left}px`;
+            enemyElement.style.top = `${top}px`;
+            
+            // Add to container only after all styles are set
+            enemyContainer.appendChild(enemyElement);
         }
         
-        // IMPORTANT FIX: Calculate correct position from path data
-        try {
-            // Get the path array
-            const path = SudokuModule.getPathArray();
-            
-            if (path && path.length > 0 && typeof enemy.pathIndex === 'number') {
-                // Get current cell in path
-                const currentIndex = Math.min(enemy.pathIndex, path.length - 1);
-                const nextIndex = Math.min(enemy.pathIndex + 1, path.length - 1);
-                
-                const currentCell = path[currentIndex];
-                const nextCell = path[nextIndex];
-                
-                if (currentCell && nextCell) {
-                    // Calculate cell centers in pixels
-                    const currentX = currentCell[1] * cellSize + cellSize / 2;
-                    const currentY = currentCell[0] * cellSize + cellSize / 2;
-                    const nextX = nextCell[1] * cellSize + cellSize / 2;
-                    const nextY = nextCell[0] * cellSize + cellSize / 2;
-                    
-                    // Interpolate position based on progress
-                    const progress = typeof enemy.progress === 'number' ? enemy.progress : 0;
-                    const x = currentX + (nextX - currentX) * progress;
-                    const y = currentY + (nextY - currentY) * progress;
-                    
-                    // Apply position directly using transform
-                    enemyElement.style.transform = `translate(${x}px, ${y}px)`;
-                    
-                    // Update enemy object for tower targeting
-                    enemy.displayX = x;
-                    enemy.displayY = y;
-                }
-            }
-        } catch (err) {
-            console.error("Error positioning enemy:", err);
-            
-            // Fallback: Try to use enemy's stored coordinates if available
-            if (typeof enemy.x === 'number' && typeof enemy.y === 'number') {
-                // Check if coordinates are very large (outside typical range)
-                // This suggests they might be using a different scale
-                const boardWidth = boardElement.clientWidth;
-                const boardHeight = boardElement.clientHeight;
-                
-                // If coordinates are much larger than board dimensions, try to scale them
-                if (enemy.x > boardWidth * 2 || enemy.y > boardHeight * 2) {
-                    // Try to normalize based on board size
-                    const scaleFactor = Math.max(
-                        enemy.x / boardWidth,
-                        enemy.y / boardHeight
-                    );
-                    
-                    if (scaleFactor > 1) {
-                        const scaledX = enemy.x / scaleFactor;
-                        const scaledY = enemy.y / scaleFactor;
-                        
-                        enemyElement.style.transform = `translate(${scaledX}px, ${scaledY}px)`;
-                        
-                        // Update display coordinates for targeting
-                        enemy.displayX = scaledX;
-                        enemy.displayY = scaledY;
-                    } else {
-                        enemyElement.style.transform = `translate(${enemy.x}px, ${enemy.y}px)`;
-                        enemy.displayX = enemy.x;
-                        enemy.displayY = enemy.y;
-                    }
-                } else {
-                    // Coordinates seem reasonable, use them directly
-                    enemyElement.style.transform = `translate(${enemy.x}px, ${enemy.y}px)`;
-                    enemy.displayX = enemy.x;
-                    enemy.displayY = enemy.y;
-                }
-            }
-        }
+        // Calculate position based on grid coordinates (with decimal precision for smooth movement)
+        const left = enemy.col * cellSize;
+        const top = enemy.row * cellSize;
         
-        // Update health bar
-        const healthFill = enemyElement.querySelector('.enemy-health-fill');
-        if (healthFill) {
-            const healthPercent = (enemy.health / enemy.maxHealth) * 100;
-            healthFill.style.width = `${healthPercent}%`;
-        }
+        // Use requestAnimationFrame for smoother updates
+        requestAnimationFrame(() => {
+            // Update enemy position
+            enemyElement.style.left = `${left}px`;
+            enemyElement.style.top = `${top}px`;
+            
+            // Update health bar
+            const healthFill = enemyElement.querySelector('.enemy-health-fill');
+            if (healthFill) {
+                const healthPercent = (enemy.health / enemy.maxHealth) * 100;
+                healthFill.style.width = `${healthPercent}%`;
+            }
+        });
     });
     
     // Remove enemy elements for defeated enemies
