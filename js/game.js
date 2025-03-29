@@ -212,6 +212,10 @@ const Game = (function() {
    /**
  * Render enemies on the board
  */
+/**
+ * Render enemies on the board
+ * Updated to handle coordinate scaling issues
+ */
 function renderEnemies() {
     // Get all enemies
     const enemies = EnemiesModule.getEnemies();
@@ -230,6 +234,9 @@ function renderEnemies() {
         enemyContainer.style.pointerEvents = 'none';
         boardElement.appendChild(enemyContainer);
     }
+    
+    // Get cell size to normalize coordinates if needed
+    const cellSize = boardElement.clientWidth / 9;
     
     // Update existing enemy elements and create new ones as needed
     enemies.forEach(enemy => {
@@ -263,44 +270,86 @@ function renderEnemies() {
             enemyElement.appendChild(healthBar);
         }
         
-        // IMPORTANT FIX: Always use the enemy's x,y coordinates directly for positioning
-        // This should work even for the first wave
-        if (typeof enemy.x === 'number' && typeof enemy.y === 'number') {
-            enemyElement.style.transform = `translate(${enemy.x}px, ${enemy.y}px)`;
-        } else {
-            // Fallback to the previous calculation for backward compatibility
-            // Get current and next path positions for interpolation
-            try {
-                const path = SudokuModule.getPathArray();
-                if (path && path.length > 0 && typeof enemy.pathIndex === 'number') {
-                    const cellSize = boardElement.clientWidth / 9;
+        // IMPORTANT FIX: Calculate correct position from path data
+        try {
+            // Get the path array
+            const path = SudokuModule.getPathArray();
+            
+            if (path && path.length > 0 && typeof enemy.pathIndex === 'number') {
+                // Get current cell in path
+                const currentIndex = Math.min(enemy.pathIndex, path.length - 1);
+                const nextIndex = Math.min(enemy.pathIndex + 1, path.length - 1);
+                
+                const currentCell = path[currentIndex];
+                const nextCell = path[nextIndex];
+                
+                if (currentCell && nextCell) {
+                    // Calculate cell centers in pixels
+                    const currentX = currentCell[1] * cellSize + cellSize / 2;
+                    const currentY = currentCell[0] * cellSize + cellSize / 2;
+                    const nextX = nextCell[1] * cellSize + cellSize / 2;
+                    const nextY = nextCell[0] * cellSize + cellSize / 2;
                     
-                    const currentCell = path[enemy.pathIndex];
-                    const nextCell = path[Math.min(enemy.pathIndex + 1, path.length - 1)];
+                    // Interpolate position based on progress
+                    const progress = typeof enemy.progress === 'number' ? enemy.progress : 0;
+                    const x = currentX + (nextX - currentX) * progress;
+                    const y = currentY + (nextY - currentY) * progress;
                     
-                    const startX = currentCell[1] * cellSize + cellSize / 2;
-                    const startY = currentCell[0] * cellSize + cellSize / 2;
-                    const endX = nextCell[1] * cellSize + cellSize / 2;
-                    const endY = nextCell[0] * cellSize + cellSize / 2;
-                    
-                    const x = startX + (endX - startX) * (enemy.progress || 0);
-                    const y = startY + (endY - startY) * (enemy.progress || 0);
-                    
+                    // Apply position directly using transform
                     enemyElement.style.transform = `translate(${x}px, ${y}px)`;
                     
-                    // Also update the enemy object itself for consistency
-                    enemy.x = x;
-                    enemy.y = y;
+                    // Update enemy object for tower targeting
+                    enemy.displayX = x;
+                    enemy.displayY = y;
                 }
-            } catch (err) {
-                console.error("Error positioning enemy element:", err);
+            }
+        } catch (err) {
+            console.error("Error positioning enemy:", err);
+            
+            // Fallback: Try to use enemy's stored coordinates if available
+            if (typeof enemy.x === 'number' && typeof enemy.y === 'number') {
+                // Check if coordinates are very large (outside typical range)
+                // This suggests they might be using a different scale
+                const boardWidth = boardElement.clientWidth;
+                const boardHeight = boardElement.clientHeight;
+                
+                // If coordinates are much larger than board dimensions, try to scale them
+                if (enemy.x > boardWidth * 2 || enemy.y > boardHeight * 2) {
+                    // Try to normalize based on board size
+                    const scaleFactor = Math.max(
+                        enemy.x / boardWidth,
+                        enemy.y / boardHeight
+                    );
+                    
+                    if (scaleFactor > 1) {
+                        const scaledX = enemy.x / scaleFactor;
+                        const scaledY = enemy.y / scaleFactor;
+                        
+                        enemyElement.style.transform = `translate(${scaledX}px, ${scaledY}px)`;
+                        
+                        // Update display coordinates for targeting
+                        enemy.displayX = scaledX;
+                        enemy.displayY = scaledY;
+                    } else {
+                        enemyElement.style.transform = `translate(${enemy.x}px, ${enemy.y}px)`;
+                        enemy.displayX = enemy.x;
+                        enemy.displayY = enemy.y;
+                    }
+                } else {
+                    // Coordinates seem reasonable, use them directly
+                    enemyElement.style.transform = `translate(${enemy.x}px, ${enemy.y}px)`;
+                    enemy.displayX = enemy.x;
+                    enemy.displayY = enemy.y;
+                }
             }
         }
         
         // Update health bar
         const healthFill = enemyElement.querySelector('.enemy-health-fill');
-        const healthPercent = (enemy.health / enemy.maxHealth) * 100;
-        healthFill.style.width = `${healthPercent}%`;
+        if (healthFill) {
+            const healthPercent = (enemy.health / enemy.maxHealth) * 100;
+            healthFill.style.width = `${healthPercent}%`;
+        }
     });
     
     // Remove enemy elements for defeated enemies
