@@ -70,28 +70,21 @@ const Game = (function() {
     /**
      * Start the game
      */
-// In the start function of Game module
-function start() {
-    if (isRunning) {
-        return;
+    function start() {
+        if (isRunning) {
+            return;
+        }
+        
+        isRunning = true;
+        isPaused = false;
+        lastUpdateTime = performance.now();
+        
+        // Publish game start event
+        EventSystem.publish(GameEvents.GAME_START);
+        
+        // Start game loop
+        requestAnimationFrame(gameLoop);
     }
-    
-    isRunning = true;
-    isPaused = false;
-    lastUpdateTime = performance.now();
-    
-    // Publish game start event
-    EventSystem.publish(GameEvents.GAME_START);
-    
-    // Explicitly initialize tower animations if available
-    if (window.TowerAnimationsModule && typeof TowerAnimationsModule.init === 'function') {
-        console.log("Initializing TowerAnimationsModule from Game.start");
-        TowerAnimationsModule.init();
-    }
-    
-    // Start game loop
-    requestAnimationFrame(gameLoop);
-}
     
     /**
      * Pause the game
@@ -986,33 +979,4 @@ window.Game = Game;
     
     console.log("Tower attack animations integration complete!");
 })();
-})();
-
-(function() {
-    // Ensure the TowerAnimationsModule is loaded after the game starts
-    if (window.Game && window.Game.start) {
-        const originalStart = Game.start;
-        
-        Game.start = function() {
-            // Call the original start method
-            originalStart.apply(this, arguments);
-            
-            // Initialize the tower animations module
-            if (window.TowerAnimationsModule && typeof TowerAnimationsModule.init === 'function') {
-                console.log("Explicitly initializing TowerAnimationsModule after Game.start");
-                setTimeout(() => {
-                    TowerAnimationsModule.init();
-                }, 200); // Delay to ensure board is ready
-            }
-        };
-    }
-    
-    // Make sure the animation system is ready when any wave starts
-    EventSystem.subscribe(GameEvents.WAVE_START, function(data) {
-        if (window.TowerAnimationsModule) {
-            TowerAnimationsModule.ensureProjectileContainer();
-        }
-    });
-    
-    console.log("Tower animation integration with Game module complete");
 })();
