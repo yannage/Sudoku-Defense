@@ -70,21 +70,27 @@ const Game = (function() {
     /**
      * Start the game
      */
-    function start() {
-        if (isRunning) {
-            return;
-        }
-        
-        isRunning = true;
-        isPaused = false;
-        lastUpdateTime = performance.now();
-        
-        // Publish game start event
-        EventSystem.publish(GameEvents.GAME_START);
-        
-        // Start game loop
-        requestAnimationFrame(gameLoop);
+// In the start function of Game module
+function start() {
+    if (isRunning) {
+        return;
     }
+    
+    isRunning = true;
+    isPaused = false;
+    lastUpdateTime = performance.now();
+    
+    // Publish game start event
+    EventSystem.publish(GameEvents.GAME_START);
+    
+    // Initialize tower animations explicitly
+    if (window.TowerAnimationsModule && typeof TowerAnimationsModule.init === 'function') {
+        TowerAnimationsModule.init();
+    }
+    
+    // Start game loop
+    requestAnimationFrame(gameLoop);
+}
     
     /**
      * Pause the game

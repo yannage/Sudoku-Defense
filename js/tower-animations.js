@@ -16,34 +16,29 @@ const TowerAnimationsModule = (function() {
     /**
      * Initialize the animations module
      */
-    function init() {
-        projectiles = [];
-        projectileId = 0;
+// In the init function of TowerAnimationsModule
+function init() {
+    projectiles = [];
+    
+    // Get the board element and its dimensions
+    boardElement = document.getElementById('sudoku-board');
+    if (boardElement) {
+        boardRect = boardElement.getBoundingClientRect();
         
-        // Get the board element and its dimensions
-        boardElement = document.getElementById('sudoku-board');
-        if (boardElement) {
-            // Ensure the board has relative positioning for proper absolute positioning of children
-            if (getComputedStyle(boardElement).position === 'static') {
-                boardElement.style.position = 'relative';
-            }
-            
-            boardRect = boardElement.getBoundingClientRect();
-            
-            // Get cell size from the board dimensions
-            cellSize = boardRect.width / 9;
-            console.log("TowerAnimations initialized with cellSize:", cellSize);
-        }
-        
-        // Create projectile container if it doesn't exist
-        ensureProjectileContainer();
-        
-        // Set up event listeners
-        setupEventListeners();
-        
-        // Start animation loop
-        requestAnimationFrame(animationLoop);
+        // Get cell size from the board dimensions
+        cellSize = boardRect.width / 9;
+        console.log("TowerAnimations initialized with cellSize:", cellSize);
     }
+    
+    // Create projectile container if it doesn't exist
+    ensureProjectileContainer();
+    
+    // Set up event listeners
+    setupEventListeners();
+    
+    // Start animation loop
+    requestAnimationFrame(animationLoop);
+}
     
     /**
      * Ensure the projectile container exists
