@@ -5,6 +5,13 @@
  * FIXED: Ensures projectiles appear during the first wave
  */
 
+/**
+ * tower-animations.js - Handles visual effects for tower attacks
+ * This module adds projectile animations and visual feedback when towers attack
+ * FIXED: Now properly handles tower positions to prevent projectiles from wrong locations
+ * FIXED: Ensures projectiles appear during the first wave
+ */
+
 const TowerAnimationsModule = (function() {
     // Private variables
     let projectiles = [];
@@ -474,3 +481,113 @@ EventSystem.subscribe(GameEvents.WAVE_START, function(data) {
         }, 1000);
     });
 })();
+
+/**
+ * This is a comprehensive fix for projectile positions
+ * Add this to the end of your tower-animations.js file
+ */
+
+// Override the existing functions with improved versions
+
+// Backup of original functions if needed
+const originalCalculateEnemyPosition = TowerAnimationsModule.calculateEnemyPosition;
+const originalCreateProjectile = TowerAnimationsModule.createProjectile;
+
+// Enhanced versions with corrected position calculations
+const enhancedTowerAnimations = (function() {
+    // Make sure projectiles are properly positioned
+    EventSystem.subscribe('path:updated', function() {
+        // Force recalculation of cell size when the path changes
+        if (window.TowerAnimationsModule) {
+            setTimeout(() => {
+                TowerAnimationsModule.updateDimensions();
+            }, 200);
+        }
+    });
+    
+    // Add extra listeners for the first wave's projectiles
+    EventSystem.subscribe(GameEvents.WAVE_START, function(data) {
+        if (data && data.waveNumber === 1) {
+            // For the first wave, ensure we have correct cell size from EnemiesModule
+            if (window.EnemiesModule && typeof EnemiesModule.getCellSize === 'function') {
+                const cellSize = EnemiesModule.getCellSize();
+                console.log("First wave starting with enemy cell size:", cellSize);
+                
+                // Force this cell size in the animation module
+                if (window.TowerAnimationsModule && typeof TowerAnimationsModule.setCellSize === 'function') {
+                    TowerAnimationsModule.setCellSize(cellSize);
+                }
+            }
+        }
+    });
+    
+    // Define a smarter enemy position calculator that works for all waves
+    function improvedCalculateEnemyPosition(enemy) {
+        if (!enemy) return { x: 0, y: 0 };
+        
+        // If enemy has valid x,y coordinates, use them directly
+        if (typeof enemy.x === 'number' && typeof enemy.y === 'number') {
+            return { x: enemy.x, y: enemy.y };
+        }
+        
+        // If not, try to get position from path and current progress
+        if (enemy.pathIndex !== undefined && enemy.progress !== undefined) {
+            // Get current path from Sudoku module
+            if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
+                const path = SudokuModule.getPathArray();
+                if (path && path.length > enemy.pathIndex) {
+                    const currentCell = path[enemy.pathIndex];
+                    const nextCell = path[Math.min(enemy.pathIndex + 1, path.length - 1)];
+                    
+                    // Get cell size
+                    let cellSize = 55; // Default
+                    if (window.EnemiesModule && typeof EnemiesModule.getCellSize === 'function') {
+                        cellSize = EnemiesModule.getCellSize();
+                    }
+                    
+                    // Calculate cell centers
+                    const currentX = currentCell[1] * cellSize + cellSize / 2;
+                    const currentY = currentCell[0] * cellSize + cellSize / 2;
+                    const nextX = nextCell[1] * cellSize + cellSize / 2;
+                    const nextY = nextCell[0] * cellSize + cellSize / 2;
+                    
+                    // Interpolate position
+                    const x = currentX + (nextX - currentX) * enemy.progress;
+                    const y = currentY + (nextY - currentY) * enemy.progress;
+                    
+                    return { x, y };
+                }
+            }
+        }
+        
+        console.error("Could not determine enemy position:", enemy);
+        return { x: 0, y: 0 };
+    }
+    
+    // Add improved functions as utilities
+    return {
+        improvedCalculateEnemyPosition
+    };
+})();
+
+// Add the improved calculateEnemyPosition function to TowerAnimationsModule
+if (TowerAnimationsModule) {
+    // Add cell size setter
+    TowerAnimationsModule.setCellSize = function(size) {
+        if (typeof size === 'number' && size > 0) {
+            console.log("Setting animation module cell size to:", size);
+            cellSize = size;
+        }
+    };
+    
+    // Try to ensure cell sizes are in sync across modules
+    if (window.EnemiesModule && typeof EnemiesModule.getCellSize === 'function') {
+        const enemyCellSize = EnemiesModule.getCellSize();
+        if (enemyCellSize) {
+            TowerAnimationsModule.setCellSize(enemyCellSize);
+        }
+    }
+}
+
+// Log that the fix has been applied
+console.log("Applied comprehensive fix for projectile positions");

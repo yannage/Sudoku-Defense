@@ -398,8 +398,13 @@ function attackEnemy(tower, enemy) {
     const isKilled = EnemiesModule.damageEnemy(enemy.id, damage);
     
     // Create a complete copy of the tower and enemy data to ensure all needed properties are available
-    const towerCopy = { ...tower };
-    const enemyCopy = { ...enemy };
+    // Make sure we capture ALL properties including x and y coordinates
+    const towerCopy = JSON.parse(JSON.stringify(tower));
+    const enemyCopy = JSON.parse(JSON.stringify(enemy));
+    
+    // Log positions for debugging
+    console.log("Attack from tower at:", { row: tower.row, col: tower.col });
+    console.log("Attack to enemy at:", { x: enemy.x, y: enemy.y });
     
     // Publish tower attack event with bonus information
     EventSystem.publish(GameEvents.TOWER_ATTACK, {
