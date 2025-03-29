@@ -150,9 +150,24 @@ h1 {
 
 /* === Tower & Enemy Styling === */
 .tower {
-    font-size: 1.8rem;
-    text-align: center;
+    width: 32px;
+    height: 32px;
+    background-image: url('assets/spritesheet.png');
+    background-size: 96px 96px; /* 3x3 grid of 32px cells */
+    background-repeat: no-repeat;
+    display: inline-block;
 }
+.tower.tower-1 { background-position: 0px 0px; }
+.tower.tower-2 { background-position: -32px 0px; }
+.tower.tower-3 { background-position: -64px 0px; }
+.tower.tower-4 { background-position: 0px -32px; }
+.tower.tower-5 { background-position: -32px -32px; }
+.tower.tower-6 { background-position: -64px -32px; }
+.tower.tower-7 { background-position: 0px -64px; }
+.tower.tower-8 { background-position: -32px -64px; }
+.tower.tower-9 { background-position: -64px -64px; }
+
+
 
 /* Updated Enemy styling to match grid cells */
 .enemy {
