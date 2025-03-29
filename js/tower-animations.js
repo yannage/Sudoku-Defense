@@ -1,9 +1,6 @@
 /**
- * tower-animations.js - Handles visual effects for tower attacks
- * This module adds projectile animations and visual feedback when towers attack
- * FIXED: Now properly handles tower positions to prevent projectiles from wrong locations
- * FIXED: Ensures projectiles appear during the first wave
- * FIXED: Improves projectile positioning calculations
+ * A simplified fix that reverts to the original position calculation but ensures first wave projectiles.
+ * Replace your tower-animations.js with this version.
  */
 
 const TowerAnimationsModule = (function() {
@@ -31,15 +28,6 @@ const TowerAnimationsModule = (function() {
             // Get cell size from the board dimensions
             cellSize = boardRect.width / 9;
             console.log("TowerAnimations initialized with cellSize:", cellSize);
-            
-            // Also try to get cell size from EnemiesModule for consistency
-            if (window.EnemiesModule && typeof EnemiesModule.getCellSize === 'function') {
-                const enemyCellSize = EnemiesModule.getCellSize();
-                if (enemyCellSize && enemyCellSize > 0) {
-                    cellSize = enemyCellSize;
-                    console.log("Using EnemiesModule cellSize instead:", cellSize);
-                }
-            }
         } else {
             console.warn("Board element not found during TowerAnimations init");
             // Try again after a short delay
@@ -66,7 +54,8 @@ const TowerAnimationsModule = (function() {
     function ensureProjectileContainer() {
         if (!boardElement) {
             console.warn("Board element not available, can't create projectile container");
-            return;
+            boardElement = document.getElementById('sudoku-board');
+            if (!boardElement) return;
         }
         
         // Check if container already exists
@@ -110,81 +99,16 @@ const TowerAnimationsModule = (function() {
      * @param {Object} enemy - The enemy object
      * @returns {Object} Position {x, y} relative to the board
      */
-function calculateEnemyPosition(enemy) {
-    // First try the direct approach - if enemy has x,y coordinates
-    if (enemy && typeof enemy.x === 'number' && typeof enemy.y === 'number') {
+    function calculateEnemyPosition(enemy) {
+        // Enemy positions are already calculated relative to the board
+        // Just ensure they're valid
+        if (!enemy || typeof enemy.x !== 'number' || typeof enemy.y !== 'number') {
+            console.error("Invalid enemy data:", enemy);
+            return { x: 0, y: 0 };
+        }
+        
         return { x: enemy.x, y: enemy.y };
     }
-    
-    // If we got here, the enemy object doesn't have valid coordinates
-    console.log("Enemy missing coordinates, trying to calculate from path:", enemy);
-    
-    // Make sure we have the necessary properties to calculate position
-    if (!enemy || typeof enemy.pathIndex !== 'number') {
-        console.error("Invalid enemy data for position calculation:", enemy);
-        return { x: 0, y: 0 };
-    }
-    
-    // Get the path from EnemiesModule directly if possible
-    let path = null;
-    if (window.EnemiesModule && typeof EnemiesModule.path !== 'undefined') {
-        path = EnemiesModule.path;
-    } else if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
-        path = SudokuModule.getPathArray();
-    }
-    
-    // Check if we have a valid path
-    if (!path || !Array.isArray(path) || path.length === 0) {
-        console.error("No valid path available for position calculation");
-        return { x: 0, y: 0 };
-    }
-    
-    // Get cell size - critical for accurate positioning
-    let cellSize = 55; // Default fallback
-    if (window.EnemiesModule && typeof EnemiesModule.getCellSize === 'function') {
-        const enemyCellSize = EnemiesModule.getCellSize();
-        if (enemyCellSize && enemyCellSize > 0) {
-            cellSize = enemyCellSize;
-        }
-    }
-    
-    // Ensure pathIndex is within bounds
-    const pathIndex = Math.min(Math.max(0, enemy.pathIndex), path.length - 1);
-    
-    // Get current and next cells
-    const currentCell = path[pathIndex];
-    const nextCellIndex = Math.min(pathIndex + 1, path.length - 1);
-    const nextCell = path[nextCellIndex];
-    
-    // Calculate position based on current path segment and progress
-    let x, y;
-    
-    if (currentCell && nextCell) {
-        // If we have progress information, use it for interpolation
-        const progress = typeof enemy.progress === 'number' ? enemy.progress : 0;
-        
-        // Calculate cell centers
-        const currentX = currentCell[1] * cellSize + cellSize / 2;
-        const currentY = currentCell[0] * cellSize + cellSize / 2;
-        const nextX = nextCell[1] * cellSize + cellSize / 2;
-        const nextY = nextCell[0] * cellSize + cellSize / 2;
-        
-        // Interpolate between current and next cell
-        x = currentX + (nextX - currentX) * progress;
-        y = currentY + (nextY - currentY) * progress;
-    } else if (currentCell) {
-        // If we only have the current cell, use its center
-        x = currentCell[1] * cellSize + cellSize / 2;
-        y = currentCell[0] * cellSize + cellSize / 2;
-    } else {
-        // Last resort fallback
-        console.error("Could not determine enemy position from path data");
-        return { x: 0, y: 0 };
-    }
-    
-    // Return the calculated position
-    return { x, y };
-}
     
     /**
      * Create a tower attack effect
@@ -254,15 +178,6 @@ function calculateEnemyPosition(enemy) {
         
         // Double check container exists
         ensureProjectileContainer();
-        
-        // Log positions for debugging in first wave
-        if (window.EnemiesModule && EnemiesModule.getWaveNumber && EnemiesModule.getWaveNumber() === 1) {
-            console.log("Creating projectile:", {
-                tower: { row: tower.row, col: tower.col },
-                towerPos: towerPos,
-                enemyPos: enemyPos
-            });
-        }
         
         // Create projectile element
         const projectile = {
@@ -379,25 +294,6 @@ function calculateEnemyPosition(enemy) {
         if (boardElement) {
             boardRect = boardElement.getBoundingClientRect();
             cellSize = boardRect.width / 9;
-            
-            // Also try to get cell size from EnemiesModule for consistency
-            if (window.EnemiesModule && typeof EnemiesModule.getCellSize === 'function') {
-                const enemyCellSize = EnemiesModule.getCellSize();
-                if (enemyCellSize && enemyCellSize > 0) {
-                    cellSize = enemyCellSize;
-                }
-            }
-        }
-    }
-    
-    /**
-     * Set the cell size explicitly
-     * @param {number} size - New cell size
-     */
-    function setCellSize(size) {
-        if (typeof size === 'number' && size > 0) {
-            console.log("Setting animation module cell size to:", size);
-            cellSize = size;
         }
     }
     
@@ -440,41 +336,10 @@ function calculateEnemyPosition(enemy) {
         });
         
         // Listen for wave start to ensure container is ready
-        EventSystem.subscribe(GameEvents.WAVE_START, function(data) {
+        EventSystem.subscribe(GameEvents.WAVE_START, function() {
             // Ensure the container is ready for the wave
+            console.log("Wave start detected, ensuring container exists");
             ensureProjectileContainer();
-            
-            // Special handling for first wave
-            if (data && data.waveNumber === 1) {
-                console.log("First wave starting, ensuring animation system is ready");
-                
-                // For the first wave, ensure we have correct cell size from EnemiesModule
-                if (window.EnemiesModule && typeof EnemiesModule.getCellSize === 'function') {
-                    const enemyCellSize = EnemiesModule.getCellSize();
-                    if (enemyCellSize && enemyCellSize > 0) {
-                        setCellSize(enemyCellSize);
-                        console.log("First wave starting with enemy cell size:", enemyCellSize);
-                    }
-                }
-                
-                // Reinitialize for first wave
-                if (!isInitialized) {
-                    init();
-                }
-                
-                // Double check container
-                setTimeout(() => {
-                    ensureProjectileContainer();
-                }, 200);
-            }
-        });
-        
-        // Listen for path updates to recalculate dimensions
-        EventSystem.subscribe('path:updated', function() {
-            // Force recalculation of cell size when the path changes
-            setTimeout(() => {
-                updateDimensions();
-            }, 200);
         });
         
         // Listen for resize events to update dimensions
@@ -500,8 +365,7 @@ function calculateEnemyPosition(enemy) {
         init,
         updateDimensions,
         clearAllProjectiles,
-        ensureProjectileContainer,
-        setCellSize
+        ensureProjectileContainer
     };
 })();
 
@@ -553,28 +417,24 @@ EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function() {
 
 // Ensure animations are ready when the first wave starts
 EventSystem.subscribe(GameEvents.WAVE_START, function(data) {
-    if (data && data.waveNumber === 1) {
-        console.log("First wave starting, ensuring animation system is ready");
-        if (TowerAnimationsModule) {
-            // Reinitialize for first wave to ensure everything is ready
-            TowerAnimationsModule.init();
-            
-            // Double check the container exists
-            setTimeout(() => {
-                if (TowerAnimationsModule.ensureProjectileContainer) {
-                    TowerAnimationsModule.ensureProjectileContainer();
-                }
-            }, 500); // Add a delay to ensure the board is ready
-        }
+    console.log("Wave starting, ensuring animation system is ready");
+    if (TowerAnimationsModule) {
+        // Reinitialize to ensure everything is ready
+        TowerAnimationsModule.init();
+        
+        // Double check the container exists
+        setTimeout(() => {
+            if (TowerAnimationsModule.ensureProjectileContainer) {
+                TowerAnimationsModule.ensureProjectileContainer();
+            }
+        }, 200);
     }
 });
 
-// Try to ensure cell sizes are in sync across modules
-if (window.EnemiesModule && typeof EnemiesModule.getCellSize === 'function') {
-    const enemyCellSize = EnemiesModule.getCellSize();
-    if (enemyCellSize && TowerAnimationsModule.setCellSize) {
-        TowerAnimationsModule.setCellSize(enemyCellSize);
+// Manually create projectile container on game start
+setTimeout(() => {
+    if (TowerAnimationsModule && TowerAnimationsModule.ensureProjectileContainer) {
+        TowerAnimationsModule.ensureProjectileContainer();
+        console.log("Created projectile container after initial timeout");
     }
-}
-
-console.log("Applied comprehensive fix for tower animations and projectile positions");
+}, 1000);
