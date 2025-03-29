@@ -85,16 +85,20 @@ const TowerAnimationsModule = (function() {
      * @param {Object} enemy - The enemy object
      * @returns {Object} Position {x, y} relative to the board
      */
-    function calculateEnemyPosition(enemy) {
-        // Enemy positions are already calculated relative to the board
-        // Just ensure they're valid
-        if (!enemy || typeof enemy.x !== 'number' || typeof enemy.y !== 'number') {
-            console.error("Invalid enemy data:", enemy);
-            return { x: 0, y: 0 };
-        }
-        
-        return { x: enemy.x, y: enemy.y };
+function calculateEnemyPosition(enemy) {
+    // Enemy positions are now in cell coordinates
+    if (!enemy || typeof enemy.row !== 'number' || typeof enemy.col !== 'number') {
+        console.error("Invalid enemy data:", enemy);
+        return { x: 0, y: 0 };
     }
+    
+    // Convert to pixel coordinates, positioning at the center of the cell
+    const x = (enemy.col + 0.5) * cellSize;
+    const y = (enemy.row + 0.5) * cellSize;
+    
+    return { x, y };
+}
+
     
     /**
      * Create a tower attack effect
@@ -146,48 +150,48 @@ const TowerAnimationsModule = (function() {
      * @param {Object} enemy - The target enemy
      */
     function createProjectile(tower, enemy) {
-        // Get correct positions
-        const towerPos = calculateTowerPosition(tower);
-        const enemyPos = calculateEnemyPosition(enemy);
-        
-        // Create projectile element
-        const projectile = {
-            id: `projectile_${++projectileId}`,
-            startX: towerPos.x,
-            startY: towerPos.y,
-            targetX: enemyPos.x,
-            targetY: enemyPos.y,
-            progress: 0,
-            speed: 0.005, // Speed of projectile animation
-            target: enemy.id
-        };
-        
-        // Validate projectile coordinates
-        if (isNaN(projectile.startX) || isNaN(projectile.startY) || 
-            isNaN(projectile.targetX) || isNaN(projectile.targetY)) {
-            console.error("Invalid projectile coordinates:", projectile);
-            return;
-        }
-        
-        // Add to projectiles array
-        projectiles.push(projectile);
-        
-        // Create visual element
-        const projectileElement = document.createElement('div');
-        projectileElement.id = projectile.id;
-        projectileElement.className = 'tower-projectile';
-        projectileElement.textContent = '⚫';
-        projectileElement.style.position = 'absolute';
-        projectileElement.style.transform = `translate(${projectile.startX}px, ${projectile.startY}px)`;
-        projectileElement.style.fontSize = '10px';
-        projectileElement.style.zIndex = '25';
-        
-        // Add to projectile container
-        const container = document.getElementById('projectile-container');
-        if (container) {
-            container.appendChild(projectileElement);
-        }
+    // Get correct positions
+    const towerPos = calculateTowerPosition(tower);
+    const enemyPos = calculateEnemyPosition(enemy);
+    
+    // Create projectile element
+    const projectile = {
+        id: `projectile_${++projectileId}`,
+        startX: towerPos.x,
+        startY: towerPos.y,
+        targetX: enemyPos.x,
+        targetY: enemyPos.y,
+        progress: 0,
+        speed: 0.005, // Speed of projectile animation
+        target: enemy.id
+    };
+    
+    // Validate projectile coordinates
+    if (isNaN(projectile.startX) || isNaN(projectile.startY) || 
+        isNaN(projectile.targetX) || isNaN(projectile.targetY)) {
+        console.error("Invalid projectile coordinates:", projectile);
+        return;
     }
+    
+    // Add to projectiles array
+    projectiles.push(projectile);
+    
+    // Create visual element
+    const projectileElement = document.createElement('div');
+    projectileElement.id = projectile.id;
+    projectileElement.className = 'tower-projectile';
+    projectileElement.textContent = '⚫';
+    projectileElement.style.position = 'absolute';
+    projectileElement.style.transform = `translate(${projectile.startX}px, ${projectile.startY}px)`;
+    projectileElement.style.fontSize = '10px';
+    projectileElement.style.zIndex = '25';
+    
+    // Add to projectile container
+    const container = document.getElementById('projectile-container');
+    if (container) {
+        container.appendChild(projectileElement);
+    }
+}
     
     /**
      * Animation loop for projectiles

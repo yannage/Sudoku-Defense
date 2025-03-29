@@ -331,27 +331,37 @@ const TowersModule = (function() {
      * @param {Object[]} enemies - Array of enemies
      * @returns {Object|null} The closest enemy or null if no enemy in range
      */
-    function findClosestEnemy(tower, enemies) {
-        let closestEnemy = null;
-        let closestDistance = Infinity;
+function findClosestEnemy(tower, enemies) {
+    let closestEnemy = null;
+    let closestDistance = Infinity;
+    
+    // Get cell size for distance calculations
+    const cellSize = window.EnemiesModule ? EnemiesModule.getCellSize() : 55;
+    
+    for (let i = 0; i < enemies.length; i++) {
+        const enemy = enemies[i];
         
-        for (let i = 0; i < enemies.length; i++) {
-            const enemy = enemies[i];
-            
-            // Calculate distance
-            const dx = enemy.x - tower.x;
-            const dy = enemy.y - tower.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            // Check if enemy is in range and closer than current closest
-            if (distance <= tower.range && distance < closestDistance) {
-                closestEnemy = enemy;
-                closestDistance = distance;
-            }
+        // Convert tower position to cell coordinates for consistent comparison
+        const towerRow = tower.row;
+        const towerCol = tower.col;
+        
+        // Calculate distance in cell units
+        const rowDist = enemy.row - towerRow;
+        const colDist = enemy.col - towerCol;
+        const distance = Math.sqrt(rowDist * rowDist + colDist * colDist);
+        
+        // Convert tower range from pixels to cell units
+        const towerRangeInCells = tower.range / cellSize;
+        
+        // Check if enemy is in range and closer than current closest
+        if (distance <= towerRangeInCells && distance < closestDistance) {
+            closestEnemy = enemy;
+            closestDistance = distance;
         }
-        
-        return closestEnemy;
     }
+    
+    return closestEnemy;
+}
     
     /**
      * Attack an enemy

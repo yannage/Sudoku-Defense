@@ -154,31 +154,55 @@ h1 {
     text-align: center;
 }
 
+/* Updated Enemy styling to match grid cells */
 .enemy {
+    /* Size and positioning */
     position: absolute;
-    transform: translate(-50%, -50%);
-    z-index: 15;
+    width: 100%;
+    height: 100%;
+    transform: none;
+    
+    /* Content alignment */
     display: flex;
     justify-content: center;
     align-items: center;
-    /* Mobile Safari sometimes needs this */
-    -webkit-transform: translate(-50%, -50%);
+    box-sizing: border-box;
+    
+    /* Visual styling */
+    font-size: inherit;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    z-index: 10;
+    
+    /* Smooth movement between cells */
+    transition: left 0.1s linear, top 0.1s linear;
 }
 
 .enemy-health-bar {
     position: absolute;
+    bottom: 4px;
+    left: 10%;
+    width: 80%;
+    height: 4px;
+    background-color: #333;
     border-radius: 2px;
     overflow: hidden;
-    background-color: rgba(0, 0, 0, 0.5);
-    left: 50%;
-    transform: translateX(-50%);
-    -webkit-transform: translateX(-50%);
 }
 
 .enemy-health-fill {
     height: 100%;
     background-color: #ff0000;
     transition: width 0.2s;
+}
+
+/* Animation for enemy damaged state */
+@keyframes enemy-damaged {
+    0% { background-color: rgba(255, 80, 80, 0.5); }
+    100% { background-color: rgba(255, 255, 255, 0.3); }
+}
+
+.enemy-damaged {
+    animation: enemy-damaged 0.3s;
 }
 
 .tower-level {
@@ -305,6 +329,27 @@ button:active {
     background-color: #e68a00;
 }
 
+/* === Projectile Styling === */
+.tower-projectile {
+    color: #000;
+    filter: drop-shadow(0 0 2px #fff);
+    pointer-events: none;
+    transform-origin: center center;
+}
+
+/* Tower attack effect (glow/drop shadow) */
+.tower-attacking {
+    animation: tower-attack-pulse 0.3s ease-in-out;
+    filter: drop-shadow(0 0 5px #ffff00) drop-shadow(0 0 10px #ff9900);
+    z-index: 15;
+}
+
+@keyframes tower-attack-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
 /* === Responsive Styles === */
 @media (max-width: 768px) {
     body {
@@ -383,10 +428,6 @@ button:active {
     animation: pulse 0.3s ease-in-out;
 }
 
-.enemy-damaged {
-    animation: pulse 0.3s ease-in-out;
-}
-
 .new-element {
     animation: fadeIn 0.5s ease-in-out;
 }
@@ -440,8 +481,6 @@ button:active {
 .modal button {
     margin-top: 10px;
 }
-
-
 
 /* === High Score Display === */
 #high-score {
@@ -556,8 +595,24 @@ button:active {
     color: var(--primary-color);
 }
 
+/* === Completion Bonus Styling === */
+/* Tower bonus styling */
+.bonus-damage {
+    border: 2px solid #ff4d4d !important;
+    box-shadow: 0 0 8px #ff4d4d !important;
+}
 
-/* rewards styling */
+.bonus-points {
+    border: 2px solid #4d4dff !important;
+    box-shadow: 0 0 8px #4d4dff !important;
+}
+
+.bonus-currency {
+    border: 2px solid #ffd700 !important;
+    box-shadow: 0 0 8px #ffd700 !important;
+}
+
+/* Bonus modal styling */
 .bonus-choice-modal {
     position: fixed;
     top: 0;
@@ -627,18 +682,44 @@ button:active {
     color: #666;
 }
 
-/* Tower bonus styling */
-.bonus-damage {
-    border: 2px solid #ff4d4d !important;
-    box-shadow: 0 0 8px #ff4d4d !important;
+/* Animation for completed units */
+@keyframes bonus-flash {
+    0% { transform: scale(1); background-color: rgba(255,255,255,0.5); }
+    50% { transform: scale(1.1); background-color: rgba(255,255,255,0.8); }
+    100% { transform: scale(1); background-color: rgba(255,255,255,0); }
 }
 
-.bonus-points {
-    border: 2px solid #4d4dff !important;
-    box-shadow: 0 0 8px #4d4dff !important;
+.bonus-flash {
+    animation: bonus-flash 0.5s ease-in-out;
+    z-index: 30;
+    pointer-events: none;
 }
 
-.bonus-currency {
-    border: 2px solid #ffd700 !important;
-    box-shadow: 0 0 8px #ffd700 !important;
+/* Incorrect marker styling */
+.incorrect-marker {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    font-size: 1.6em !important;
+    color: rgba(255, 0, 0, 0.25) !important;
+    pointer-events: none !important;
+    z-index: 10 !important;
+    text-shadow: none !important;
+}
+
+/* Bonus reward pulse */
+@keyframes bonus-reward-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); filter: brightness(1.5); }
+    100% { transform: scale(1); }
+}
+
+.bonus-reward {
+    animation: bonus-reward-pulse 0.3s ease-in-out;
+    z-index: 25;
 }
