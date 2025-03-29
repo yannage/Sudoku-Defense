@@ -94,17 +94,22 @@ const TowerAnimationsModule = (function() {
      * @param {Object} enemy - The enemy object
      * @returns {Object} Position {x, y} relative to the board
      */
-    function calculateEnemyPosition(enemy) {
-        // First check if the enemy is active
-        if (!enemy || enemy.active === false) {
-            console.log("Skipping inactive enemy:", enemy);
-            return null;
-        }
+function calculateEnemyPosition(enemy) {
+    // First check if the enemy is active
+    if (!enemy || enemy.active === false) {
+        console.log("Skipping inactive enemy:", enemy);
+        return null;
+    }
     
-        // Check if enemy already has x,y coordinates
-        if (typeof enemy.x === 'number' && typeof enemy.y === 'number') {
-            return { x: enemy.x, y: enemy.y };
-        }
+    // NEW CODE: Check for display coordinates first
+    if (enemy.displayX !== undefined && enemy.displayY !== undefined) {
+        return { x: enemy.displayX, y: enemy.displayY };
+    }
+    
+    // Check if enemy already has x,y coordinates
+    if (typeof enemy.x === 'number' && typeof enemy.y === 'number') {
+        return { x: enemy.x, y: enemy.y };
+    }
         
         // If enemy uses row/col/progress format, calculate position
         if (typeof enemy.row === 'number' && typeof enemy.col === 'number') {
