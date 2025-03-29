@@ -203,14 +203,6 @@ function update(deltaTime) {
      * Render game state
      */
     function render() {
-        // Update enemy elements
-        /**
- * Updated render function for Game module
- * Modifies how enemies are rendered to match grid cell size
- */
-
-/**
- * Render enemies on the board
 
 function renderEnemies() {
     // Get all enemies
@@ -649,10 +641,10 @@ function renderEnemies() {
         resume,
         stop,
         reset,
-        updateUI, // Export updateUI for manual refreshes if needed
-        updateBoard // Export updateBoard so it can be called from other modules
+        updateUI,
+        updateBoard
     };
-}();
+})();
 
 // Make module available globally
 window.Game = Game;
