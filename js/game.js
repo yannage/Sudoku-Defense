@@ -475,164 +475,195 @@ if (tower && !pathCells.has(`${row},${col}`)) {
     /**
      * Set up UI event listeners
      */
-    function setupUIEventListeners() {
-        console.log("Setting up UI event listeners");
-        
-        // Tower selection
-        const towerOptions = document.querySelectorAll('.tower-option');
-        
-        towerOptions.forEach(option => {
-            option.addEventListener('click', function() {
-                const towerType = this.dataset.towerType;
-                const cost = TowersModule.getTowerCost(towerType);
-                
-                // Remove selected class from all options
-                towerOptions.forEach(opt => {
-                    opt.classList.remove('selected');
-                });
-                
-                // Add selected class to clicked option
-                this.classList.add('selected');
-                
-                // Select the tower
-                PlayerModule.selectTower(towerType);
-                
-                EventSystem.publish(GameEvents.STATUS_MESSAGE, `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
-            });
-        });
-        
-        // Game controls
-        document.getElementById('start-wave').addEventListener('click', function() {
-            LevelsModule.startWave();
-        });
-        
-        document.getElementById('pause-game').addEventListener('click', function() {
-            if (isPaused) {
-                resume();
-                this.textContent = 'Pause';
-            } else {
-                pause();
-                this.textContent = 'Resume';
-            }
-        });
-        
-        document.getElementById('new-game').addEventListener('click', function() {
-            console.log("New Game button clicked");
-            reset();
-        });
-        
-        // Subscribe to events for UI updates
-        EventSystem.subscribe(GameEvents.PLAYER_UPDATE, function(data) {
-            // Update UI with player data
-            document.getElementById('score-value').textContent = data.score;
-            document.getElementById('lives-value').textContent = data.lives;
-            document.getElementById('currency-value').textContent = data.currency;
-            console.log("Player update event received: Lives=" + data.lives + ", Currency=" + data.currency);
-        });
-        
-        // Add direct listeners for individual stat changes
-        EventSystem.subscribe(GameEvents.CURRENCY_CHANGE, function(newCurrency) {
-            document.getElementById('currency-value').textContent = newCurrency;
-            console.log("Currency change event received: " + newCurrency);
-        });
-        
-        EventSystem.subscribe(GameEvents.LIVES_CHANGE, function(newLives) {
-            document.getElementById('lives-value').textContent = newLives;
-            console.log("Lives change event received: " + newLives);
-        });
-        
-        EventSystem.subscribe(GameEvents.SCORE_CHANGE, function(newScore) {
-            document.getElementById('score-value').textContent = newScore;
-            console.log("Score change event received: " + newScore);
-        });
-        
-        EventSystem.subscribe(GameEvents.UI_UPDATE, function(data) {
-            // Update wave display
-            if (data.waveNumber !== undefined) {
-                document.getElementById('wave-value').textContent = data.waveNumber;
-            }
-            
-            // Update other UI elements if data is provided
-            if (data.currency !== undefined) {
-                document.getElementById('currency-value').textContent = data.currency;
-            }
-            
-            if (data.lives !== undefined) {
-                document.getElementById('lives-value').textContent = data.lives;
-            }
-            
-            if (data.score !== undefined) {
-                document.getElementById('score-value').textContent = data.score;
-            }
-        });
-        
-        EventSystem.subscribe(GameEvents.STATUS_MESSAGE, function(message) {
-            // Update status message
-            document.getElementById('status-message').textContent = message;
-            
-            // Clear message after 5 seconds
-            setTimeout(() => {
-                if (document.getElementById('status-message').textContent === message) {
-                    document.getElementById('status-message').textContent = 'Place towers to defend against enemies!';
-                }
-            }, 5000);
-        });
-        
-        EventSystem.subscribe(GameEvents.GAME_OVER, function(data) {
-            alert(`Game Over! Final Score: ${data.score}`);
-            reset();
-        });
-        
-        EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function(data) {
-            // Update the board when a new puzzle is generated or path changes
-            updateBoard();
-        });
-        
-        EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
-            // Update the board when a tower is placed
-            updateBoard();
-            // Immediately update UI to reflect currency change
-            updateUI();
-        });
-        
-        EventSystem.subscribe(GameEvents.TOWER_REMOVED, function() {
-            // Update the board when a tower is removed
-            updateBoard();
-        });
-        
-        EventSystem.subscribe(GameEvents.TOWER_UPGRADE, function() {
-            // Update the board when a tower is upgraded
-            updateBoard();
-            // Immediately update UI to reflect currency change
-            updateUI();
-        });
-        
-        EventSystem.subscribe(GameEvents.ENEMY_REACHED_END, function() {
-            // Update UI to reflect lives change
-            updateUI();
-        });
-        
-        // Listen for specific path updates
-        EventSystem.subscribe('path:updated', function() {
-            // Update the board to show the new path
-            updateBoard();
-        });
-        
-        // Listen for window resize to adjust cell size
-        window.addEventListener('resize', function() {
-            if (!boardElement) return;
-            
-            const boardWidth = boardElement.clientWidth;
-            cellSize = Math.floor(boardWidth / 9);
-            
-            // Update cell size in other modules
-            EnemiesModule.setCellSize(cellSize);
-            TowersModule.setCellSize(cellSize);
-            
-            // Update board display
-            updateBoard();
-        });
+    
+    /**
+ * Set up UI event listeners
+ */
+function setupUIEventListeners() {
+  console.log("Setting up UI event listeners");
+  
+  // Tower selection
+  const towerOptions = document.querySelectorAll('.tower-option');
+  
+  towerOptions.forEach(option => {
+    option.addEventListener('click', function() {
+      const towerType = this.dataset.towerType;
+      const cost = TowersModule.getTowerCost(towerType);
+      
+      // Remove selected class from all options
+      towerOptions.forEach(opt => {
+        opt.classList.remove('selected');
+      });
+      
+      // Add selected class to clicked option
+      this.classList.add('selected');
+      
+      // Select the tower
+      PlayerModule.selectTower(towerType);
+      
+      EventSystem.publish(GameEvents.STATUS_MESSAGE, `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
+    });
+  });
+  
+  // Game controls
+  document.getElementById('start-wave').addEventListener('click', function() {
+    LevelsModule.startWave();
+  });
+  
+  document.getElementById('pause-game').addEventListener('click', function() {
+    if (isPaused) {
+      resume();
+      this.textContent = 'Pause';
+    } else {
+      pause();
+      this.textContent = 'Resume';
     }
+  });
+  
+  document.getElementById('new-game').addEventListener('click', function() {
+    console.log("New Game button clicked");
+    reset();
+  });
+  
+  // Font selector
+  const fontSelector = document.getElementById('font-selector');
+  if (fontSelector) {
+    // Set initial font based on saved preference or default
+    let currentFont = localStorage.getItem('sudoku_td_font') || 'font-default';
+    document.body.className = currentFont;
+    fontSelector.value = currentFont;
+    
+    fontSelector.addEventListener('change', function() {
+      const selectedFont = this.value;
+      
+      // Remove all font classes from body
+      document.body.classList.remove('font-default', 'font-retro', 'font-elegant', 'font-playful', 'font-modern');
+      
+      // Add selected font class to body
+      document.body.classList.add(selectedFont);
+      
+      // Save preference to localStorage
+      localStorage.setItem('sudoku_td_font', selectedFont);
+      
+      // Update UI to reflect changes
+      updateBoard();
+      
+      EventSystem.publish(GameEvents.STATUS_MESSAGE, `Font style changed to ${selectedFont.replace('font-', '')}`);
+    });
+  }
+  
+  // Subscribe to events for UI updates
+  EventSystem.subscribe(GameEvents.PLAYER_UPDATE, function(data) {
+    // Update UI with player data
+    document.getElementById('score-value').textContent = data.score;
+    document.getElementById('lives-value').textContent = data.lives;
+    document.getElementById('currency-value').textContent = data.currency;
+    console.log("Player update event received: Lives=" + data.lives + ", Currency=" + data.currency);
+  });
+  
+  // Add direct listeners for individual stat changes
+  EventSystem.subscribe(GameEvents.CURRENCY_CHANGE, function(newCurrency) {
+    document.getElementById('currency-value').textContent = newCurrency;
+    console.log("Currency change event received: " + newCurrency);
+  });
+  
+  EventSystem.subscribe(GameEvents.LIVES_CHANGE, function(newLives) {
+    document.getElementById('lives-value').textContent = newLives;
+    console.log("Lives change event received: " + newLives);
+  });
+  
+  EventSystem.subscribe(GameEvents.SCORE_CHANGE, function(newScore) {
+    document.getElementById('score-value').textContent = newScore;
+    console.log("Score change event received: " + newScore);
+  });
+  
+  EventSystem.subscribe(GameEvents.UI_UPDATE, function(data) {
+    // Update wave display
+    if (data.waveNumber !== undefined) {
+      document.getElementById('wave-value').textContent = data.waveNumber;
+    }
+    
+    // Update other UI elements if data is provided
+    if (data.currency !== undefined) {
+      document.getElementById('currency-value').textContent = data.currency;
+    }
+    
+    if (data.lives !== undefined) {
+      document.getElementById('lives-value').textContent = data.lives;
+    }
+    
+    if (data.score !== undefined) {
+      document.getElementById('score-value').textContent = data.score;
+    }
+  });
+  
+  EventSystem.subscribe(GameEvents.STATUS_MESSAGE, function(message) {
+    // Update status message
+    document.getElementById('status-message').textContent = message;
+    
+    // Clear message after 5 seconds
+    setTimeout(() => {
+      if (document.getElementById('status-message').textContent === message) {
+        document.getElementById('status-message').textContent = 'Place towers to defend against enemies!';
+      }
+    }, 5000);
+  });
+  
+  EventSystem.subscribe(GameEvents.GAME_OVER, function(data) {
+    alert(`Game Over! Final Score: ${data.score}`);
+    reset();
+  });
+  
+  EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function(data) {
+    // Update the board when a new puzzle is generated or path changes
+    updateBoard();
+  });
+  
+  EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
+    // Update the board when a tower is placed
+    updateBoard();
+    // Immediately update UI to reflect currency change
+    updateUI();
+  });
+  
+  EventSystem.subscribe(GameEvents.TOWER_REMOVED, function() {
+    // Update the board when a tower is removed
+    updateBoard();
+  });
+  
+  EventSystem.subscribe(GameEvents.TOWER_UPGRADE, function() {
+    // Update the board when a tower is upgraded
+    updateBoard();
+    // Immediately update UI to reflect currency change
+    updateUI();
+  });
+  
+  EventSystem.subscribe(GameEvents.ENEMY_REACHED_END, function() {
+    // Update UI to reflect lives change
+    updateUI();
+  });
+  
+  // Listen for specific path updates
+  EventSystem.subscribe('path:updated', function() {
+    // Update the board to show the new path
+    updateBoard();
+  });
+  
+  // Listen for window resize to adjust cell size
+  window.addEventListener('resize', function() {
+    if (!boardElement) return;
+    
+    const boardWidth = boardElement.clientWidth;
+    cellSize = Math.floor(boardWidth / 9);
+    
+    // Update cell size in other modules
+    EnemiesModule.setCellSize(cellSize);
+    TowersModule.setCellSize(cellSize);
+    
+    // Update board display
+    updateBoard();
+  });
+}
     
     /**
      * Initialize event listeners
