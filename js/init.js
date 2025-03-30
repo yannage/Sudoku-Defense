@@ -332,13 +332,27 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("Game fixes and enhancements applied successfully!");
     }
     
-    // Load our custom modules and apply fixes
-    setTimeout(applyGameFixes, 500);
-    
-    // Force a UI refresh to display high score
-    setTimeout(() => {
-        if (Game && Game.updateUI) {
-            Game.updateUI();
-        }
-    }, 1000);
+    // Load saved font preference function - add this to init.js
+function loadFontPreference() {
+  const savedFont = localStorage.getItem('sudoku_td_font') || 'font-default';
+  document.body.classList.add(savedFont);
+  
+  // Set the dropdown to match if it exists
+  const fontSelector = document.getElementById('font-selector');
+  if (fontSelector) {
+    fontSelector.value = savedFont;
+  }
+}
+// Load our custom modules and apply fixes
+setTimeout(applyGameFixes, 500);
+
+// Load font preference - add this line
+setTimeout(loadFontPreference, 600);
+
+// Force a UI refresh to display high score
+setTimeout(() => {
+  if (Game && Game.updateUI) {
+    Game.updateUI();
+  }
+}, 1000);
 });
