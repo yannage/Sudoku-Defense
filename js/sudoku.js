@@ -379,9 +379,7 @@ const SudokuModule = (function() {
             }
         }
         
-        // Log path information for debugging
-        console.log(`Created non-overlapping path with ${pathCells.size} cells, from (${startRow},0) to (${endRow},8)`);
-        
+       
         // Reset completion tracking when path changes
         completedRows.clear();
         completedColumns.clear();
@@ -589,18 +587,18 @@ const SudokuModule = (function() {
      * @returns {boolean} Whether the move was valid
      */
     function setCellValue(row, col, value) {
-        console.log(`DEBUG - Setting cell (${row},${col}) to value ${value}`);
+      
         
         // Check if the cell is fixed
         if (fixedCells[row][col]) {
-            console.log("DEBUG - Cell is fixed, cannot modify");
+           
             EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on a fixed Sudoku cell!");
             return false;
         }
         
         // Check if the cell is on the enemy path
         if (pathCells.has(`${row},${col}`)) {
-            console.log("DEBUG - Cell is on path, cannot modify");
+       
             EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on the enemy path!");
             return false;
         }
@@ -620,7 +618,7 @@ const SudokuModule = (function() {
         
         // Check if the move is valid
         if (!isValidMove(row, col, value)) {
-            console.log("DEBUG - Move is invalid according to Sudoku rules");
+           
             EventSystem.publish(GameEvents.SUDOKU_CELL_INVALID, { row, col, value });
             
             // Get valid numbers for better user feedback
@@ -637,7 +635,7 @@ const SudokuModule = (function() {
         
         // Set the cell value
         board[row][col] = value;
-        console.log(`DEBUG - Successfully set cell (${row},${col}) to ${value}`);
+       
         
         // Run detailed board analysis for debug
         analyzeBoard();
@@ -650,7 +648,7 @@ const SudokuModule = (function() {
         
         // Check if the Sudoku is complete
         if (isComplete()) {
-            console.log("DEBUG - Sudoku puzzle is COMPLETE! Publishing SUDOKU_COMPLETE event");
+          
             EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
         }
         
@@ -670,7 +668,7 @@ const SudokuModule = (function() {
         
         // Add debug info to show which cells are considered path cells
         let pathCellPositions = Array.from(pathCells).sort().join(', ');
-        console.log(`DEBUG - Path cells: ${pathCellPositions}`);
+      
         
         // Check if any cells are both path cells and have non-zero board values
         let conflictingCells = [];
@@ -683,7 +681,7 @@ const SudokuModule = (function() {
         }
         
         if (conflictingCells.length > 0) {
-            console.log(`DEBUG - Cells that are both path cells and have values: ${conflictingCells.join(', ')}`);
+           
         }
         
         // Lists of which positions need to be filled
@@ -725,9 +723,9 @@ const SudokuModule = (function() {
     `);
         
         if (emptyCellCount <= 5 && emptyCellCount > 0) {
-            console.log(`DEBUG - Nearly complete! Empty positions: ${emptyPositions.join(', ')}`);
+           
         } else if (emptyCellCount > 0) {
-            console.log(`DEBUG - Empty positions (${emptyCellCount}): ${emptyPositions.join(', ')}`);
+           
         }
         
         // Check for row, column, box completion
@@ -779,15 +777,15 @@ const SudokuModule = (function() {
         }
         
         if (incompleteRows.length > 0) {
-            console.log(`DEBUG - Incomplete rows: ${incompleteRows.join('; ')}`);
+           
         }
         
         if (incompleteColumns.length > 0) {
-            console.log(`DEBUG - Incomplete columns: ${incompleteColumns.join('; ')}`);
+           
         }
         
         if (incompleteBoxes.length > 0) {
-            console.log(`DEBUG - Incomplete boxes: ${incompleteBoxes.join('; ')}`);
+           
         }
     }
     
@@ -797,7 +795,7 @@ const SudokuModule = (function() {
      */
     
 function checkUnitCompletion() {
-  console.log("DEBUG: Running checkUnitCompletion");
+  
   
   // Check rows
   for (let row = 0; row < 9; row++) {
@@ -831,21 +829,21 @@ function checkUnitCompletion() {
     // Only consider a row player-completed if player placed at least one tower
     const playerContributed = (filledCellCount > fixedCellCount);
     
-    console.log(`DEBUG: Row ${row}: complete=${isComplete}, playerContributed=${playerContributed}, was_complete=${completedRows.has(row)}`);
+   
     
     if (isComplete && !completedRows.has(row)) {
       // Newly completed row
       completedRows.add(row);
-      console.log(`DEBUG: Row ${row} newly completed`);
+      
       
       // Only trigger bonus if player placed at least one tower
       if (playerContributed) {
-        console.log(`DEBUG: Player contributed to row ${row} completion, triggering bonus`);
+       
         if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
           CompletionBonusModule.onUnitCompleted('row', row);
         }
       } else {
-        console.log(`DEBUG: Row ${row} completed but player didn't contribute (all fixed cells)`);
+        
       }
     } else if (!isComplete && completedRows.has(row)) {
       // No longer complete
@@ -883,14 +881,14 @@ function checkUnitCompletion() {
     
     const playerContributed = (filledCellCount > fixedCellCount);
     
-    console.log(`DEBUG: Column ${col}: complete=${isComplete}, playerContributed=${playerContributed}, was_complete=${completedColumns.has(col)}`);
+  
     
     if (isComplete && !completedColumns.has(col)) {
       completedColumns.add(col);
-      console.log(`DEBUG: Column ${col} newly completed`);
+     
       
       if (playerContributed) {
-        console.log(`DEBUG: Player contributed to column ${col} completion, triggering bonus`);
+       
         if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
           CompletionBonusModule.onUnitCompleted('column', col);
         }
@@ -937,14 +935,14 @@ function checkUnitCompletion() {
       const playerContributed = (filledCellCount > fixedCellCount);
       const gridKey = `${gridRow}-${gridCol}`;
       
-      console.log(`DEBUG: Grid ${gridKey}: complete=${isComplete}, playerContributed=${playerContributed}, was_complete=${completedGrids.has(gridKey)}`);
+    
       
       if (isComplete && !completedGrids.has(gridKey)) {
         completedGrids.add(gridKey);
-        console.log(`DEBUG: Grid ${gridKey} newly completed`);
+       
         
         if (playerContributed) {
-          console.log(`DEBUG: Player contributed to grid ${gridKey} completion, triggering bonus`);
+          
           if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
             CompletionBonusModule.onUnitCompleted('grid', gridKey);
           }
@@ -982,7 +980,7 @@ function isComplete() {
   
   // If there are empty cells, it's not complete
   if (emptyCellCount > 0) {
-    console.log(`DEBUG - Sudoku Completion Check: ${emptyCellCount} empty cells remaining`);
+  
     return false;
   }
   
@@ -1037,14 +1035,11 @@ function isComplete() {
   }
   
   if (invalidRows.length > 0 || invalidColumns.length > 0 || invalidBoxes.length > 0) {
-    console.log(`DEBUG - Sudoku Validation Check: 
-            Invalid rows: ${invalidRows.length > 0 ? invalidRows.join(', ') : 'None'}
-            Invalid columns: ${invalidColumns.length > 0 ? invalidColumns.join(', ') : 'None'}
-            Invalid boxes: ${invalidBoxes.length > 0 ? invalidBoxes.join(', ') : 'None'}`);
+    
     return false;
   }
   
-  console.log("DEBUG - Sudoku Completion Check: COMPLETE! All cells filled correctly");
+  
   return true;
 }
     /**
