@@ -1,493 +1,37 @@
 /**
- * completion-bonus.js - Handles bonus effects for completing Sudoku units
- * This module rewards players for completing rows, columns, and 3x3 grids
- * with their choice of damage, points, or currency bonuses
+ * direct-celebration.js - Direct implementation of celebration features
+ * This script directly adds celebration effects and integrates with the existing code
+ * without relying on a separate module system
  */
 
-const CompletionBonusModule = (function() {
-    // Bonus types and their multipliers
-    const BONUS_TYPES = {
-        DAMAGE: {
-            multiplier: 1.35,  // 35% damage increase
-            icon: '⚔️',
-            description: 'Towers do 35% more damage'
-        },
-        POINTS: {
-            multiplier: 2.0,   // Double points from enemies defeated
-            icon: '🏆',
-            description: 'Double points earned from defeated enemies'
-        },
-        CURRENCY: {
-            multiplier: 1.75,  // 75% more currency
-            icon: '💰',
-            description: '75% more currency from defeated enemies'
-        }
-    };
+(function() {
+    console.log("Initializing direct celebration system");
     
-    // Track active bonuses
-    const rowBonuses = {};     // Format: "row-0": {type: "DAMAGE", expiry: null}
-    const columnBonuses = {};  // Format: "col-3": {type: "POINTS", expiry: null}
-    const gridBonuses = {};    // Format: "grid-1-2": {type: "CURRENCY", expiry: null}
+    // Storage for completed puzzles
+    let completedPuzzles = [];
+    const MAX_SAVED_PUZZLES = 10;
     
-    // Track which units have already had bonuses awarded this game/board
-    const bonusAwarded = {
-        rows: new Set(),      // Tracks rows that have already received a bonus
-        columns: new Set(),   // Tracks columns that have already received a bonus
-        grids: new Set()      // Tracks grids that have already received a bonus
-    };
-    
-
-const completedUnits = {
-  rows: new Set(), // Tracks rows that were already completed
-  columns: new Set(), // Tracks columns that were already completed
-  grids: new Set() // Tracks grids that were already completed
-};
-    
-    /**
-     * Called when a unit (row, column, or grid) is completed
-     * @param {string} unitType - Type of unit ('row', 'column', or 'grid')
-     * @param {number|string} unitIndex - Index of the unit
-     */
-    function onUnitCompleted(unitType, unitIndex) {
-        console.log(`DEBUG: Unit completed: ${unitType} ${unitIndex}`);
-        
-        // Check if this unit has already been awarded a bonus in this game
-        let alreadyAwarded = false;
-        if (unitType === 'row' && bonusAwarded.rows.has(parseInt(unitIndex))) {
-            console.log(`DEBUG: Row ${unitIndex} already received a bonus, skipping`);
-            alreadyAwarded = true;
-        } else if (unitType === 'column' && bonusAwarded.columns.has(parseInt(unitIndex))) {
-            console.log(`DEBUG: Column ${unitIndex} already received a bonus, skipping`);
-            alreadyAwarded = true;
-        } else if (unitType === 'grid' && bonusAwarded.grids.has(unitIndex)) {
-            console.log(`DEBUG: Grid ${unitIndex} already received a bonus, skipping`);
-            alreadyAwarded = true;
+    // Try to load saved puzzles
+    try {
+        const savedPuzzles = localStorage.getItem('sudoku_td_completed_puzzles');
+        if (savedPuzzles) {
+            completedPuzzles = JSON.parse(savedPuzzles);
+            console.log(`Loaded ${completedPuzzles.length} completed puzzles from storage`);
         }
-        
-        if (alreadyAwarded) {
-            // Show a message to let the player know why no bonus is offered
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-                `${capitalizeFirst(unitType)} ${getDisplayIndex(unitType, unitIndex)} already has a bonus applied!`);
-            return;
-        }
-        
-        console.log(`DEBUG: Showing bonus modal for ${unitType} ${unitIndex}`);
-        
-        // Pause the game (optional - remove if you don't want to pause)
-        if (window.Game && typeof Game.pause === 'function') {
-            Game.pause();
-        }
-        
-        // Display the choice modal
-        showBonusChoiceModal(unitType, unitIndex);
+    } catch (error) {
+        console.error('Error loading completed puzzles:', error);
+        completedPuzzles = [];
     }
     
-    /**
-     * Show the bonus choice modal
-     * @param {string} unitType - Type of unit ('row', 'column', or 'grid')
-     * @param {number|string} unitIndex - Index of the unit
-     */
-    function showBonusChoiceModal(unitType, unitIndex) {
-        // Create modal if it doesn't exist
-        let modal = document.getElementById('bonus-choice-modal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'bonus-choice-modal';
-            modal.className = 'bonus-choice-modal';
-            document.body.appendChild(modal);
-        }
+    // Add CSS styles for celebration and trophy room
+    function addStyles() {
+        if (document.getElementById('direct-celebration-styles')) return;
         
-        // Set modal content
-        modal.innerHTML = `
-            <div class="bonus-choice-content">
-                <h3>${capitalizeFirst(unitType)} ${getDisplayIndex(unitType, unitIndex)} Completed!</h3>
-                <p>Choose a bonus effect:</p>
-                <div class="bonus-options">
-                    ${createBonusOptionHTML('DAMAGE', unitType, unitIndex)}
-                    ${createBonusOptionHTML('POINTS', unitType, unitIndex)}
-                    ${createBonusOptionHTML('CURRENCY', unitType, unitIndex)}
-                </div>
-            </div>
-        `;
-        
-        // Add event listeners to the buttons
-        const buttons = modal.querySelectorAll('.bonus-option-button');
-        buttons.forEach(button => {
-            button.addEventListener('click', function() {
-                const bonusType = this.dataset.bonusType;
-                applyBonus(unitType, unitIndex, bonusType);
-                modal.classList.remove('active');
-                
-                // Resume game if it was paused
-                if (window.Game && typeof Game.resume === 'function') {
-                    Game.resume();
-                }
-            });
-        });
-        
-        // Show the modal
-        modal.classList.add('active');
-        
-        // Add CSS if not already in stylesheet
-        addBonusModalStyles();
-    }
-    
-    /**
-     * Create HTML for a bonus option
-     * @param {string} bonusType - Bonus type (DAMAGE, POINTS, CURRENCY)
-     * @param {string} unitType - Type of unit
-     * @param {number|string} unitIndex - Index of the unit
-     * @returns {string} HTML for the bonus option
-     */
-    function createBonusOptionHTML(bonusType, unitType, unitIndex) {
-        const bonus = BONUS_TYPES[bonusType];
-        return `
-            <div class="bonus-option">
-                <button class="bonus-option-button" data-bonus-type="${bonusType}">
-                    <span class="bonus-icon">${bonus.icon}</span>
-                    <span class="bonus-name">${bonusType}</span>
-                </button>
-                <p class="bonus-description">${bonus.description}</p>
-            </div>
-        `;
-    }
-    
-    /**
-     * Apply the chosen bonus to the unit
-     * @param {string} unitType - Type of unit ('row', 'column', or 'grid')
-     * @param {number|string} unitIndex - Index of the unit
-     * @param {string} bonusType - Type of bonus (DAMAGE, POINTS, CURRENCY)
-     */
-    function applyBonus(unitType, unitIndex, bonusType) {
-        console.log(`DEBUG: Applying ${bonusType} bonus to ${unitType} ${unitIndex}`);
-        
-        const bonusKey = `${unitType}-${unitIndex}`;
-        const bonusData = {
-            type: bonusType,
-            expiry: null // Permanent until row is broken
-        };
-        
-        // Store the bonus choice and mark as awarded
-        if (unitType === 'row') {
-            rowBonuses[bonusKey] = bonusData;
-            bonusAwarded.rows.add(parseInt(unitIndex)); // Make sure we store as number
-            console.log(`DEBUG: Marked row ${unitIndex} as awarded, set has ${Array.from(bonusAwarded.rows).join(',')}`);
-        } else if (unitType === 'column') {
-            columnBonuses[bonusKey] = bonusData;
-            bonusAwarded.columns.add(parseInt(unitIndex)); // Make sure we store as number
-            console.log(`DEBUG: Marked column ${unitIndex} as awarded, set has ${Array.from(bonusAwarded.columns).join(',')}`);
-        } else if (unitType === 'grid') {
-            gridBonuses[bonusKey] = bonusData;
-            bonusAwarded.grids.add(unitIndex); // Grid index might be a string like "0-1"
-            console.log(`DEBUG: Marked grid ${unitIndex} as awarded, set has ${Array.from(bonusAwarded.grids).join(',')}`);
-        }
-        
-        // Apply visual effect to the completed unit
-        applyVisualEffect(unitType, unitIndex, bonusType);
-        
-        // Show confirmation message
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-            `${capitalizeFirst(unitType)} ${getDisplayIndex(unitType, unitIndex)} bonus: ${BONUS_TYPES[bonusType].description}`);
-    }
-    
-    /**
-     * Apply visual effect to cells in a completed unit
-     * @param {string} unitType - Type of unit ('row', 'column', or 'grid')
-     * @param {number|string} unitIndex - Index of the unit
-     * @param {string} bonusType - Type of bonus (DAMAGE, POINTS, CURRENCY)
-     */
-    function applyVisualEffect(unitType, unitIndex, bonusType) {
-        // Get the color for this bonus type
-        const color = getBonusColor(bonusType);
-        
-        // Apply to all cells in the unit
-        if (unitType === 'row') {
-            const row = parseInt(unitIndex);
-            for (let col = 0; col < 9; col++) {
-                const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-                if (cell) {
-                    applyBonusStyles(cell, bonusType, color);
-                }
-            }
-        } else if (unitType === 'column') {
-            const col = parseInt(unitIndex);
-            for (let row = 0; row < 9; row++) {
-                const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-                if (cell) {
-                    applyBonusStyles(cell, bonusType, color);
-                }
-            }
-        } else if (unitType === 'grid') {
-            const [gridRow, gridCol] = unitIndex.split('-').map(Number);
-            for (let r = 0; r < 3; r++) {
-                for (let c = 0; c < 3; c++) {
-                    const row = gridRow * 3 + r;
-                    const col = gridCol * 3 + c;
-                    const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-                    if (cell) {
-                        applyBonusStyles(cell, bonusType, color);
-                    }
-                }
-            }
-        }
-        
-        // Add animation effect
-        animateCompletedUnit(unitType, unitIndex, bonusType);
-    }
-    
-    /**
-     * Apply bonus styles to a cell
-     * @param {HTMLElement} cell - The cell element
-     * @param {string} bonusType - Type of bonus (DAMAGE, POINTS, CURRENCY)
-     * @param {string} color - CSS color for the bonus
-     */
-    function applyBonusStyles(cell, bonusType, color) {
-        // Clear previous bonus styles
-        cell.classList.remove('bonus-damage', 'bonus-points', 'bonus-currency');
-        
-        // Add appropriate class
-        cell.classList.add(`bonus-${bonusType.toLowerCase()}`);
-        
-        // Apply styles directly for immediate effect
-        cell.style.boxShadow = `0 0 8px ${color}`;
-        cell.style.border = `2px solid ${color}`;
-    }
-    
-    /**
-     * Animate a completed unit
-     * @param {string} unitType - Type of unit ('row', 'column', or 'grid')
-     * @param {number|string} unitIndex - Index of the unit
-     * @param {string} bonusType - Type of bonus (DAMAGE, POINTS, CURRENCY)
-     */
-    function animateCompletedUnit(unitType, unitIndex, bonusType) {
-        // Get cells in the unit
-        const cells = [];
-        
-        if (unitType === 'row') {
-            const row = parseInt(unitIndex);
-            for (let col = 0; col < 9; col++) {
-                const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-                if (cell) cells.push(cell);
-            }
-        } else if (unitType === 'column') {
-            const col = parseInt(unitIndex);
-            for (let row = 0; row < 9; row++) {
-                const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-                if (cell) cells.push(cell);
-            }
-        } else if (unitType === 'grid') {
-            const [gridRow, gridCol] = unitIndex.split('-').map(Number);
-            for (let r = 0; r < 3; r++) {
-                for (let c = 0; c < 3; c++) {
-                    const row = gridRow * 3 + r;
-                    const col = gridCol * 3 + c;
-                    const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-                    if (cell) cells.push(cell);
-                }
-            }
-        }
-        
-        // Add flash animation to each cell with delay
-        cells.forEach((cell, i) => {
-            setTimeout(() => {
-                cell.classList.add('bonus-flash');
-                setTimeout(() => {
-                    cell.classList.remove('bonus-flash');
-                }, 500);
-            }, i * 50);
-        });
-    }
-    
-    /**
-     * Remove visual effects from cells in a unit
-     * @param {string} unitType - Type of unit ('row', 'column', or 'grid')
-     * @param {number|string} unitIndex - Index of the unit
-     */
-    function removeVisualEffect(unitType, unitIndex) {
-        // Remove styles from all cells in the unit
-        if (unitType === 'row') {
-            const row = parseInt(unitIndex);
-            for (let col = 0; col < 9; col++) {
-                const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-                if (cell) {
-                    removeBonusStyles(cell);
-                }
-            }
-        } else if (unitType === 'column') {
-            const col = parseInt(unitIndex);
-            for (let row = 0; row < 9; row++) {
-                const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-                if (cell) {
-                    removeBonusStyles(cell);
-                }
-            }
-        } else if (unitType === 'grid') {
-            const [gridRow, gridCol] = unitIndex.split('-').map(Number);
-            for (let r = 0; r < 3; r++) {
-                for (let c = 0; c < 3; c++) {
-                    const row = gridRow * 3 + r;
-                    const col = gridCol * 3 + c;
-                    const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-                    if (cell) {
-                        removeBonusStyles(cell);
-                    }
-                }
-            }
-        }
-    }
-    
-    /**
-     * Remove bonus styles from a cell
-     * @param {HTMLElement} cell - The cell element
-     */
-    function removeBonusStyles(cell) {
-        cell.classList.remove('bonus-damage', 'bonus-points', 'bonus-currency');
-        cell.style.boxShadow = '';
-        cell.style.border = '';
-    }
-    
-    /**
-     * Get color for a bonus type
-     * @param {string} bonusType - Type of bonus (DAMAGE, POINTS, CURRENCY)
-     * @returns {string} CSS color
-     */
-    function getBonusColor(bonusType) {
-        switch (bonusType) {
-            case 'DAMAGE': return '#ff4d4d'; // Red for damage
-            case 'POINTS': return '#4d4dff'; // Blue for points
-            case 'CURRENCY': return '#ffd700'; // Gold for currency
-            default: return '#ffffff';
-        }
-    }
-    
-    /**
-     * Apply effects to tower attacks based on active bonuses
-     * @param {Object} tower - The tower making the attack
-     * @param {Object} enemy - The enemy being attacked
-     * @param {number} basePoints - Base points for defeating the enemy
-     * @param {number} baseCurrency - Base currency for defeating the enemy
-     * @returns {Object} Modified damage, points, and currency values
-     */
-    function applyEffects(tower, enemy, basePoints, baseCurrency) {
-        let damageMult = 1.0;
-        let pointsMult = 1.0;
-        let currencyMult = 1.0;
-        
-        // Check row bonuses
-        const rowKey = `row-${tower.row}`;
-        if (rowBonuses[rowKey]) {
-            const bonusType = rowBonuses[rowKey].type;
-            if (bonusType === 'DAMAGE') damageMult *= BONUS_TYPES.DAMAGE.multiplier;
-            if (bonusType === 'POINTS') pointsMult *= BONUS_TYPES.POINTS.multiplier;
-            if (bonusType === 'CURRENCY') currencyMult *= BONUS_TYPES.CURRENCY.multiplier;
-        }
-        
-        // Check column bonuses
-        const colKey = `column-${tower.col}`;
-        if (columnBonuses[colKey]) {
-            const bonusType = columnBonuses[colKey].type;
-            if (bonusType === 'DAMAGE') damageMult *= BONUS_TYPES.DAMAGE.multiplier;
-            if (bonusType === 'POINTS') pointsMult *= BONUS_TYPES.POINTS.multiplier;
-            if (bonusType === 'CURRENCY') currencyMult *= BONUS_TYPES.CURRENCY.multiplier;
-        }
-        
-        // Check grid bonuses
-        const gridRow = Math.floor(tower.row / 3);
-        const gridCol = Math.floor(tower.col / 3);
-        const gridKey = `grid-${gridRow}-${gridCol}`;
-        if (gridBonuses[gridKey]) {
-            const bonusType = gridBonuses[gridKey].type;
-            if (bonusType === 'DAMAGE') damageMult *= BONUS_TYPES.DAMAGE.multiplier;
-            if (bonusType === 'POINTS') pointsMult *= BONUS_TYPES.POINTS.multiplier;
-            if (bonusType === 'CURRENCY') currencyMult *= BONUS_TYPES.CURRENCY.multiplier;
-        }
-        
-        return {
-            damage: Math.floor(tower.damage * damageMult),
-            points: Math.floor(basePoints * pointsMult),
-            currency: Math.floor(baseCurrency * currencyMult)
-        };
-    }
-    
-    /**
-     * Check if a unit is still complete
-     * @param {string} unitType - Type of unit ('row', 'column', or 'grid')
-     * @param {number|string} unitIndex - Index of the unit
-     * @returns {boolean} Whether the unit is still complete
-     */
-    function checkUnitCompletion(unitType, unitIndex) {
-        // We'll rely on SudokuModule to determine if a unit is complete
-        if (!window.SudokuModule || typeof SudokuModule.getCompletionStatus !== 'function') {
-            return false;
-        }
-        
-        const completionStatus = SudokuModule.getCompletionStatus();
-        const bonusKey = `${unitType}-${unitIndex}`;
-        
-        let isComplete = false;
-        
-        if (unitType === 'row') {
-            isComplete = completionStatus.rows.includes(parseInt(unitIndex));
-            
-            if (!isComplete && rowBonuses[bonusKey]) {
-                delete rowBonuses[bonusKey];
-                removeVisualEffect(unitType, unitIndex);
-            }
-        } else if (unitType === 'column') {
-            isComplete = completionStatus.columns.includes(parseInt(unitIndex));
-            
-            if (!isComplete && columnBonuses[bonusKey]) {
-                delete columnBonuses[bonusKey];
-                removeVisualEffect(unitType, unitIndex);
-            }
-        } else if (unitType === 'grid') {
-            isComplete = completionStatus.grids.includes(unitIndex);
-            
-            if (!isComplete && gridBonuses[bonusKey]) {
-                delete gridBonuses[bonusKey];
-                removeVisualEffect(unitType, unitIndex);
-            }
-        }
-        
-        return isComplete;
-    }
-    
-    /**
-     * Check all active bonuses to see if units are still complete
-     */
-    function checkBoardCompletions() {
-        // Check all rows, columns, and grids
-        for (const key in rowBonuses) {
-            const rowIndex = key.split('-')[1];
-            checkUnitCompletion('row', rowIndex);
-        }
-        
-        for (const key in columnBonuses) {
-            const colIndex = key.split('-')[1];
-            checkUnitCompletion('column', colIndex);
-        }
-        
-        for (const key in gridBonuses) {
-            const gridIndex = key.split('-')[1];
-            checkUnitCompletion('grid', gridIndex);
-        }
-    }
-    
-    /**
-     * Add styles for the bonus modal to the document
-     */
-    function addBonusModalStyles() {
-        // Check if styles are already added
-        if (document.getElementById('bonus-modal-styles')) {
-            return;
-        }
-        
-        // Create style element
         const style = document.createElement('style');
-        style.id = 'bonus-modal-styles';
+        style.id = 'direct-celebration-styles';
         style.textContent = `
-            /* Modal styling */
-            .bonus-choice-modal {
+            /* Celebration Container */
+            #celebration-container {
                 position: fixed;
                 top: 0;
                 left: 0;
@@ -500,172 +44,691 @@ const completedUnits = {
                 z-index: 1000;
                 opacity: 0;
                 pointer-events: none;
-                transition: opacity 0.3s;
+                transition: opacity 0.5s;
             }
             
-            .bonus-choice-modal.active {
+            #celebration-container.active {
                 opacity: 1;
-                pointer-events: all;
+                pointer-events: auto;
             }
             
-            .bonus-choice-content {
+            /* Celebration Content */
+            .celebration-content {
                 background-color: white;
-                padding: 25px;
-                border-radius: 8px;
-                max-width: 500px;
-                width: 90%;
+                padding: 30px;
+                border-radius: 10px;
                 text-align: center;
-            }
-            
-            .bonus-options {
-                display: flex;
-                justify-content: space-around;
-                margin-top: 20px;
-            }
-            
-            .bonus-option {
-                flex: 1;
-                margin: 0 10px;
+                max-width: 90%;
+                width: 500px;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
+                transform: translateY(30px);
+                opacity: 0;
+                transition: transform 0.5s, opacity 0.5s;
+                position: relative;
+                overflow: hidden;
             }
             
-            .bonus-option-button {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding: 15px;
-                background-color: #f5f5f5;
-                border: 2px solid #ddd;
-                border-radius: 8px;
-                cursor: pointer;
-                transition: all 0.2s;
+            .celebration-content.active {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            
+            .celebration-title {
+                font-size: 1.8rem;
+                margin-bottom: 20px;
+                color: #4CAF50;
+            }
+            
+            .celebration-stats {
+                margin-bottom: 20px;
+                line-height: 1.6;
+            }
+            
+            .celebration-puzzle {
+                display: grid;
+                grid-template-columns: repeat(9, 1fr);
+                gap: 1px;
+                background-color: #333;
+                margin-bottom: 20px;
+                max-width: 300px;
                 width: 100%;
+                aspect-ratio: 1;
             }
             
-            .bonus-option-button:hover {
-                transform: translateY(-3px);
+            .celebration-cell {
+                background-color: white;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: 14px;
+                position: relative;
+            }
+            
+            .celebration-cell.fixed {
+                background-color: #f0f0f0;
+            }
+            
+            .celebration-cell.path {
+                background-color: #ffebcc;
+            }
+            
+            .celebration-footer {
+                display: flex;
+                gap: 10px;
+            }
+            
+            .celebration-button {
+                padding: 10px 15px;
+                border: none;
+                border-radius: 5px;
+                background-color: #4CAF50;
+                color: white;
+                cursor: pointer;
+                font-weight: bold;
+                transition: background-color 0.2s;
+            }
+            
+            .celebration-button:hover {
+                background-color: #3e8e41;
+            }
+            
+            .celebration-button.secondary {
+                background-color: #2196F3;
+            }
+            
+            .celebration-button.secondary:hover {
+                background-color: #0b7dda;
+            }
+            
+            /* Confetti */
+            .confetti {
+                position: absolute;
+                width: 10px;
+                height: 10px;
+                background-color: #f00;
+                opacity: 0.8;
+                z-index: 1001;
+                animation: fall 3s linear forwards;
+            }
+            
+            @keyframes fall {
+                0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+                100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+            }
+            
+            /* Trophy Room */
+            #trophy-room {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.5s;
+            }
+            
+            #trophy-room.active {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            
+            .trophy-content {
+                background-color: white;
+                padding: 30px;
+                border-radius: 10px;
+                text-align: center;
+                max-width: 90%;
+                width: 800px;
+                max-height: 90vh;
+                overflow-y: auto;
+                transform: translateY(30px);
+                opacity: 0;
+                transition: transform 0.5s, opacity 0.5s;
+            }
+            
+            .trophy-content.active {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            
+            .trophy-title {
+                font-size: 2rem;
+                margin-bottom: 20px;
+                color: #ffc107;
+            }
+            
+            .trophy-gallery {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .trophy-item {
+                border: 2px solid #4CAF50;
+                border-radius: 8px;
+                padding: 10px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                transition: transform 0.2s;
+                background-color: #f9f9f9;
+            }
+            
+            .trophy-item:hover {
+                transform: translateY(-5px);
                 box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             }
             
-            .bonus-icon {
-                font-size: 24px;
-                margin-bottom: 8px;
+            .trophy-puzzle {
+                display: grid;
+                grid-template-columns: repeat(9, 1fr);
+                gap: 1px;
+                background-color: #333;
+                margin-bottom: 10px;
+                width: 100%;
+                aspect-ratio: 1;
             }
             
-            .bonus-name {
-                font-weight: bold;
-            }
-            
-            .bonus-description {
-                font-size: 12px;
-                margin-top: 8px;
+            .trophy-info {
+                font-size: 0.8rem;
                 color: #666;
+                margin-top: 5px;
             }
             
-            /* Tower bonus styling */
-            .bonus-damage {
-                border: 2px solid #ff4d4d !important;
-                box-shadow: 0 0 8px #ff4d4d !important;
+            .trophy-date {
+                font-weight: bold;
+                color: #333;
             }
             
-            .bonus-points {
-                border: 2px solid #4d4dff !important;
-                box-shadow: 0 0 8px #4d4dff !important;
+            .trophy-empty {
+                grid-column: 1 / -1;
+                text-align: center;
+                padding: 40px;
+                color: #666;
+                font-style: italic;
             }
             
-            .bonus-currency {
-                border: 2px solid #ffd700 !important;
-                box-shadow: 0 0 8px #ffd700 !important;
+            .close-button {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                color: #666;
+                cursor: pointer;
+                transition: color 0.2s;
             }
             
-            /* Animation for completed units */
-            @keyframes bonus-flash {
-                0% { transform: scale(1); background-color: rgba(255,255,255,0.5); }
-                50% { transform: scale(1.1); background-color: rgba(255,255,255,0.8); }
-                100% { transform: scale(1); background-color: rgba(255,255,255,0); }
-            }
-            
-            .bonus-flash {
-                animation: bonus-flash 0.5s ease-in-out;
-                z-index: 30;
-                pointer-events: none;
+            .close-button:hover {
+                color: #333;
             }
         `;
         
         document.head.appendChild(style);
     }
     
-    // Helper functions for display
-    function capitalizeFirst(str) {
-        return str.charAt(0).toUpperCase() + str.slice(1);
+    // Save the current puzzle as a trophy
+    function savePuzzleAsTrophy() {
+        try {
+            // Get current game state with safety checks
+            let currentBoard = Array(9).fill().map(() => Array(9).fill(0));
+            let fixedCells = Array(9).fill().map(() => Array(9).fill(false));
+            let pathCells = [];
+            let level = 1;
+            let score = 0;
+            
+            // Get board data safely
+            if (window.SudokuModule) {
+                if (typeof SudokuModule.getBoard === 'function') {
+                    const board = SudokuModule.getBoard();
+                    if (board && board.length === 9) {
+                        currentBoard = JSON.parse(JSON.stringify(board));
+                    }
+                }
+                
+                if (typeof SudokuModule.getFixedCells === 'function') {
+                    const fixed = SudokuModule.getFixedCells();
+                    if (fixed && fixed.length === 9) {
+                        fixedCells = JSON.parse(JSON.stringify(fixed));
+                    }
+                }
+                
+                if (typeof SudokuModule.getPathCells === 'function') {
+                    pathCells = Array.from(SudokuModule.getPathCells() || []);
+                }
+            }
+            
+            // Get level and score safely
+            if (window.LevelsModule && typeof LevelsModule.getCurrentLevel === 'function') {
+                level = LevelsModule.getCurrentLevel();
+            }
+            
+            if (window.PlayerModule && typeof PlayerModule.getState === 'function') {
+                const playerState = PlayerModule.getState();
+                if (playerState && typeof playerState.score !== 'undefined') {
+                    score = playerState.score;
+                }
+            }
+            
+            // Create trophy object
+            const trophy = {
+                date: new Date().toISOString(),
+                level: level,
+                score: score,
+                board: currentBoard,
+                fixedCells: fixedCells,
+                pathCells: pathCells
+            };
+            
+            // Add to start of array
+            completedPuzzles.unshift(trophy);
+            
+            // Keep array at max size
+            if (completedPuzzles.length > MAX_SAVED_PUZZLES) {
+                completedPuzzles = completedPuzzles.slice(0, MAX_SAVED_PUZZLES);
+            }
+            
+            // Save to local storage
+            localStorage.setItem('sudoku_td_completed_puzzles', JSON.stringify(completedPuzzles));
+            
+            console.log("Puzzle saved as trophy:", trophy);
+            return trophy;
+        } catch (error) {
+            console.error("Error saving puzzle as trophy:", error);
+            return {
+                date: new Date().toISOString(),
+                level: 1,
+                score: 0,
+                board: Array(9).fill().map(() => Array(9).fill(0)),
+                fixedCells: Array(9).fill().map(() => Array(9).fill(false)),
+                pathCells: []
+            };
+        }
     }
     
-    function getDisplayIndex(unitType, unitIndex) {
-        if (unitType === 'grid') {
-            const [row, col] = unitIndex.split('-').map(Number);
-            return `${row+1},${col+1}`;
+    // Create confetti effect
+    function createConfetti(container) {
+        const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', 
+                       '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', 
+                       '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
+        
+        // Create 100 confetti pieces
+        for (let i = 0; i < 100; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            
+            // Random properties
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const left = Math.random() * 100 + '%';
+            const width = Math.random() * 10 + 5 + 'px';
+            const height = Math.random() * 10 + 5 + 'px';
+            const delay = Math.random() * 2 + 's';
+            
+            // Apply styles
+            confetti.style.backgroundColor = color;
+            confetti.style.left = left;
+            confetti.style.width = width;
+            confetti.style.height = height;
+            confetti.style.animationDelay = delay;
+            
+            // Add to container
+            container.appendChild(confetti);
+            
+            // Remove after animation completes
+            setTimeout(() => {
+                if (confetti.parentNode) {
+                    confetti.parentNode.removeChild(confetti);
+                }
+            }, 5000);
         }
-        return parseInt(unitIndex) + 1;
+    }
+    
+    // Render a puzzle for display
+    function renderPuzzleGrid(container, board, fixedCells, pathCells) {
+        // Clear container
+        container.innerHTML = '';
+        
+        // Convert path cells to Set if it's an array
+        const pathCellsSet = new Set();
+        if (Array.isArray(pathCells)) {
+            pathCells.forEach(cell => pathCellsSet.add(cell));
+        } else if (typeof pathCells === 'object' && pathCells !== null) {
+            // If it's already a Set or similar object with a has method
+            if (typeof pathCells.has === 'function') {
+                pathCellsSet = pathCells;
+            }
+        }
+        
+        // Create cells
+        for (let row = 0; row < 9; row++) {
+            for (let col = 0; col < 9; col++) {
+                const cell = document.createElement('div');
+                cell.className = 'celebration-cell';
+                
+                // Add fixed class if needed
+                if (fixedCells && fixedCells[row] && fixedCells[row][col]) {
+                    cell.classList.add('fixed');
+                }
+                
+                // Add path class if needed
+                if (pathCellsSet.has(`${row},${col}`)) {
+                    cell.classList.add('path');
+                }
+                
+                // Set cell value
+                if (board && board[row] && typeof board[row][col] !== 'undefined') {
+                    const value = board[row][col];
+                    if (value > 0) {
+                        cell.textContent = value;
+                    }
+                }
+                
+                container.appendChild(cell);
+            }
+        }
+    }
+    
+    // Show celebration screen
+    function showCelebration() {
+        console.log("Showing celebration screen");
+        
+        // Save current puzzle
+        const trophy = savePuzzleAsTrophy();
+        
+        // Create container if it doesn't exist
+        let container = document.getElementById('celebration-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'celebration-container';
+            document.body.appendChild(container);
+        }
+        
+        // Create content
+        container.innerHTML = `
+            <div class="celebration-content">
+                <button class="close-button">×</button>
+                <h2 class="celebration-title">🎉 Sudoku Complete! 🎉</h2>
+                <div class="celebration-stats">
+                    <p>Level ${trophy.level} Completed</p>
+                    <p>Current Score: ${trophy.score}</p>
+                    <p>Puzzle added to your Trophy Room!</p>
+                </div>
+                <div class="celebration-puzzle" id="celebration-puzzle"></div>
+                <div class="celebration-footer">
+                    <button class="celebration-button" id="continue-button">Continue to Next Level</button>
+                    <button class="celebration-button secondary" id="view-trophies-button">View Trophy Room</button>
+                </div>
+            </div>
+        `;
+        
+        // Show container
+        container.classList.add('active');
+        
+        // Create confetti
+        createConfetti(container);
+        
+        // Add small delay for animation
+        setTimeout(() => {
+            const content = container.querySelector('.celebration-content');
+            if (content) content.classList.add('active');
+            
+            // Render puzzle
+            const puzzleGrid = document.getElementById('celebration-puzzle');
+            if (puzzleGrid) {
+                renderPuzzleGrid(puzzleGrid, trophy.board, trophy.fixedCells, trophy.pathCells);
+            }
+        }, 50);
+        
+        // Add event listeners
+        const closeButton = container.querySelector('.close-button');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                closeCelebration();
+            });
+        }
+        
+        const continueButton = document.getElementById('continue-button');
+        if (continueButton) {
+            continueButton.addEventListener('click', () => {
+                closeCelebration();
+                // Resume game if needed
+                if (window.Game && typeof Game.resume === 'function') {
+                    Game.resume();
+                }
+            });
+        }
+        
+        const viewTrophiesButton = document.getElementById('view-trophies-button');
+        if (viewTrophiesButton) {
+            viewTrophiesButton.addEventListener('click', () => {
+                closeCelebration();
+                showTrophyRoom();
+            });
+        }
+        
+        // Pause game while showing celebration
+        if (window.Game && typeof Game.pause === 'function') {
+            Game.pause();
+        }
+    }
+    
+    // Close celebration screen
+    function closeCelebration() {
+        const container = document.getElementById('celebration-container');
+        if (container) {
+            const content = container.querySelector('.celebration-content');
+            if (content) content.classList.remove('active');
+            
+            setTimeout(() => {
+                container.classList.remove('active');
+            }, 300);
+        }
+    }
+    
+    // Show trophy room
+    function showTrophyRoom() {
+        console.log("Showing trophy room");
+        
+        // Create container if it doesn't exist
+        let container = document.getElementById('trophy-room');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'trophy-room';
+            document.body.appendChild(container);
+        }
+        
+        // Create content
+        let content = `
+            <div class="trophy-content">
+                <button class="close-button">×</button>
+                <h2 class="trophy-title">🏆 Your Sudoku Trophies 🏆</h2>
+                <div class="trophy-gallery">
+        `;
+        
+        if (completedPuzzles.length === 0) {
+            content += `
+                <div class="trophy-empty">
+                    <p>You haven't completed any Sudoku puzzles yet!</p>
+                    <p>Completed puzzles will appear here as trophies.</p>
+                </div>
+            `;
+        } else {
+            completedPuzzles.forEach((trophy, index) => {
+                const date = new Date(trophy.date);
+                const formattedDate = date.toLocaleDateString();
+                
+                content += `
+                    <div class="trophy-item">
+                        <div class="trophy-puzzle" id="trophy-puzzle-${index}"></div>
+                        <div class="trophy-info">
+                            <div class="trophy-date">${formattedDate}</div>
+                            <div>Level ${trophy.level}</div>
+                            <div>Score: ${trophy.score}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        content += `
+                </div>
+                <button class="celebration-button" id="close-trophy-room">Close</button>
+            </div>
+        `;
+        
+        container.innerHTML = content;
+        
+        // Show container
+        container.classList.add('active');
+        
+        // Add small delay for animation
+        setTimeout(() => {
+            const trophyContent = container.querySelector('.trophy-content');
+            if (trophyContent) trophyContent.classList.add('active');
+            
+            // Render trophy puzzles
+            completedPuzzles.forEach((trophy, index) => {
+                const puzzleGrid = document.getElementById(`trophy-puzzle-${index}`);
+                if (puzzleGrid) {
+                    renderPuzzleGrid(puzzleGrid, trophy.board, trophy.fixedCells, trophy.pathCells);
+                }
+            });
+        }, 50);
+        
+        // Add event listeners
+        const closeButton = container.querySelector('.close-button');
+        if (closeButton) {
+            closeButton.addEventListener('click', closeTrophyRoom);
+        }
+        
+        const closeButtonBottom = document.getElementById('close-trophy-room');
+        if (closeButtonBottom) {
+            closeButtonBottom.addEventListener('click', closeTrophyRoom);
+        }
+        
+        // Pause game
+        if (window.Game && typeof Game.pause === 'function') {
+            Game.pause();
+        }
+    }
+    
+    // Close trophy room
+    function closeTrophyRoom() {
+        const container = document.getElementById('trophy-room');
+        if (container) {
+            const content = container.querySelector('.trophy-content');
+            if (content) content.classList.remove('active');
+            
+            setTimeout(() => {
+                container.classList.remove('active');
+            }, 300);
+        }
+        
+        // Resume game
+        if (window.Game && typeof Game.resume === 'function') {
+            Game.resume();
+        }
+    }
+    
+    // Add UI buttons
+    function addButtons() {
+        const gameControls = document.getElementById('game-controls');
+        if (!gameControls) {
+            console.error("Game controls not found");
+            return;
+        }
+        
+        // Create trophy room button
+        const trophyButton = document.createElement('button');
+        trophyButton.id = 'trophy-room-button';
+        trophyButton.textContent = '🏆 Trophies';
+        trophyButton.onclick = showTrophyRoom;
+        
+        // Create test button
+        const testButton = document.createElement('button');
+        testButton.id = 'test-celebration-button';
+        testButton.textContent = '🎉 Test';
+        testButton.style.backgroundColor = '#ff9800';
+        testButton.onclick = showCelebration;
+        
+        // Add buttons
+        const newGameButton = document.getElementById('new-game');
+        if (newGameButton) {
+            gameControls.insertBefore(trophyButton, newGameButton);
+            gameControls.insertBefore(testButton, newGameButton);
+        } else {
+            gameControls.appendChild(trophyButton);
+            gameControls.appendChild(testButton);
+        }
+    }
+    
+    // Hook into game events
+    function hookEvents() {
+        console.log("Hooking into game events");
+        
+        // Hook into Sudoku complete event
+        if (window.EventSystem) {
+            EventSystem.subscribe('sudoku:complete', function() {
+                console.log("SUDOKU_COMPLETE event received");
+                setTimeout(showCelebration, 300);
+            });
+        }
+        
+        // Hook into LevelsModule
+        if (window.LevelsModule && typeof LevelsModule.nextLevel === 'function') {
+            console.log("Hooking into LevelsModule.nextLevel");
+            const originalNextLevel = LevelsModule.nextLevel;
+            
+            LevelsModule.nextLevel = function() {
+                console.log("LevelsModule.nextLevel called");
+                
+                // Show celebration before advancing level
+                showCelebration();
+                
+                // Delay level advancement
+                setTimeout(() => {
+                    originalNextLevel.apply(this, arguments);
+                }, 500);
+            };
+        }
     }
     
     // Initialize
     function init() {
-        // Add modal styles
-        addBonusModalStyles();
+        console.log("Initializing direct celebration system");
         
-        // Set up event listeners
-        EventSystem.subscribe(GameEvents.GAME_INIT, function() {
-            console.log("DEBUG: Game initialized, clearing all bonuses and awarded tracking");
-            // Clear all bonuses when game is initialized
-            Object.keys(rowBonuses).forEach(key => delete rowBonuses[key]);
-            Object.keys(columnBonuses).forEach(key => delete columnBonuses[key]);
-            Object.keys(gridBonuses).forEach(key => delete gridBonuses[key]);
-            
-            // Clear awarded tracking when starting a new game
-            bonusAwarded.rows.clear();
-            bonusAwarded.columns.clear();
-            bonusAwarded.grids.clear();
-        });
+        // Add styles
+        addStyles();
         
-        // Also clear awarded tracking when a new Sudoku board is generated
-        EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function() {
-            console.log("DEBUG: New Sudoku board generated, clearing awarded tracking");
-            // Clear bonus awarded tracking for new board
-            bonusAwarded.rows.clear();
-            bonusAwarded.columns.clear();
-            bonusAwarded.grids.clear();
-        });
-        
-        // Listen for board changes to check completions
-        EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
-            console.log(`DEBUG: Tower placed at row ${tower.row}, col ${tower.col}, checking completions`);
-            checkBoardCompletions();
-        });
-        
-        EventSystem.subscribe(GameEvents.TOWER_REMOVED, function() {
-            checkBoardCompletions();
-        });
+        // Add buttons after DOM is loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                addButtons();
+                hookEvents();
+            });
+        } else {
+            addButtons();
+            hookEvents();
+        }
     }
     
-    // Initialize the module
-    init();
-    
-    // Public API
-    return {
-        onUnitCompleted,
-        applyEffects,
-        checkBoardCompletions,
-        getBonuses: function() {
-            return {
-                rows: { ...rowBonuses },
-                columns: { ...columnBonuses },
-                grids: { ...gridBonuses }
-            };
-        }
+    // Make functions globally available
+    window.DirectCelebration = {
+        showCelebration: showCelebration,
+        showTrophyRoom: showTrophyRoom,
+        savePuzzleAsTrophy: savePuzzleAsTrophy
     };
+    
+    // Initialize
+    init();
 })();
-
-// Make module available globally
-window.CompletionBonusModule = CompletionBonusModule
