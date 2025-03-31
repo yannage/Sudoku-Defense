@@ -8,7 +8,7 @@ const PlayerModule = (function() {
     let state = {
         lives: 3,
         score: 0,
-        currency: 150,
+        currency: 1500,
         selectedTower: null
     };
     
