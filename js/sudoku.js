@@ -1,4 +1,3 @@
-
 /**
  * sudoku.js - Handles Sudoku puzzle generation and validation
  * This module generates Sudoku puzzles and provides validation functions
@@ -658,153 +657,67 @@ const SudokuModule = (function() {
     }
     
     /**
-     * Analyze the current board state and provide detailed debug info
+     * Analyze the current board state and provide essential debug info
      */
     function analyzeBoard() {
-    // Calculate board statistics
-    let totalCells = 81;
-    let pathCellCount = pathCells.size;
-    let fixedCellCount = 0;
-    let filledCellCount = 0;
-    let emptyCellCount = 0;
-    
-    // Count cell types
-    for (let row = 0; row < 9; row++) {
-        for (let col = 0; col < 9; col++) {
-            // Count fixed cells
-            if (fixedCells[row][col]) {
-                fixedCellCount++;
-            }
-            
-            // If it's a path cell, don't count it in the filling metrics
-            if (pathCells.has(`${row},${col}`)) {
-                continue;
-            }
-            
-            // Count filled vs empty non-path cells
-            if (board[row][col] > 0) {
-                filledCellCount++;
-            } else {
-                emptyCellCount++;
+        // Calculate board statistics
+        let totalCells = 81;
+        let pathCellCount = pathCells.size;
+        let fixedCellCount = 0;
+        let filledCellCount = 0;
+        let emptyCellCount = 0;
+        
+        // Count cell types
+        for (let row = 0; row < 9; row++) {
+            for (let col = 0; col < 9; col++) {
+                // Count fixed cells
+                if (fixedCells[row][col]) {
+                    fixedCellCount++;
+                }
+                
+                // If it's a path cell, don't count it in the filling metrics
+                if (pathCells.has(`${row},${col}`)) {
+                    continue;
+                }
+                
+                // Count filled vs empty non-path cells
+                if (board[row][col] > 0) {
+                    filledCellCount++;
+                } else {
+                    emptyCellCount++;
+                }
             }
         }
+        
+        // Calculate the required cells to fill for completion
+        const requiredToFill = totalCells - pathCellCount;
+        const percentComplete = Math.round((filledCellCount + fixedCellCount) / requiredToFill * 100);
+        
+        console.log(`DEBUG - Board Analysis:
+            Total cells: ${totalCells}
+            Path cells: ${pathCellCount}
+            Fixed cells: ${fixedCellCount}
+            Filled non-fixed, non-path cells: ${filledCellCount}
+            Empty cells that need towers: ${emptyCellCount}
+            Completion: ${percentComplete}% (${filledCellCount + fixedCellCount}/${requiredToFill})
+        `);
     }
-    
-    // Calculate the required cells to fill for completion
-    const requiredToFill = totalCells - pathCellCount;
-    const percentComplete = Math.round((filledCellCount + fixedCellCount) / requiredToFill * 100);
-    
-    console.log(`DEBUG - Board Analysis:
-        Total cells: ${totalCells}
-        Path cells: ${pathCellCount}
-        Fixed cells: ${fixedCellCount}
-        Filled non-fixed, non-path cells: ${filledCellCount}
-        Empty cells that need towers: ${emptyCellCount}
-        Completion: ${percentComplete}% (${filledCellCount + fixedCellCount}/${requiredToFill})
-    `);
-}
     
     /**
      * Check for completed units (rows, columns, 3x3 grids)
-     * Triggers completion bonus events for newly completed units
+     * Simplified version that focuses on triggering unit completion events 
      */
-    
-function checkUnitCompletion() {
-  console.log("DEBUG: Running simplified checkUnitCompletion");
-  
-  // Check rows
-  for (let row = 0; row < 9; row++) {
-    let nonPathCellCount = 0;
-    let filledCellCount = 0;
-    let fixedCellCount = 0;
-    let isComplete = true;
-    
-    for (let col = 0; col < 9; col++) {
-      if (!pathCells.has(`${row},${col}`)) {
-        nonPathCellCount++;
-        
-        if (fixedCells[row][col]) {
-          fixedCellCount++;
-        }
-        
-        if (board[row][col] > 0) {
-          filledCellCount++;
-        } else {
-          isComplete = false;
-        }
-      }
-    }
-    
-    // Row is complete if all available cells are filled
-    isComplete = isComplete && (filledCellCount === nonPathCellCount) && (nonPathCellCount > 0);
-    
-    // Only consider a row player-completed if player placed at least one tower
-    const playerContributed = (filledCellCount > fixedCellCount);
-    
-    if (isComplete && !completedRows.has(row)) {
-      // Newly completed row
-      completedRows.add(row);
+    function checkUnitCompletion() {
+      console.log("DEBUG: Running simplified checkUnitCompletion");
       
-      // Only trigger bonus if player placed at least one tower
-      if (playerContributed && window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
-        CompletionBonusModule.onUnitCompleted('row', row);
-      }
-    } else if (!isComplete && completedRows.has(row)) {
-      // No longer complete
-      completedRows.delete(row);
-    }
-  }
-  
-  // Check columns (similar logic, simplified)
-  for (let col = 0; col < 9; col++) {
-    let nonPathCellCount = 0;
-    let filledCellCount = 0;
-    let fixedCellCount = 0;
-    let isComplete = true;
-    
-    for (let row = 0; row < 9; row++) {
-      if (!pathCells.has(`${row},${col}`)) {
-        nonPathCellCount++;
+      // Check rows
+      for (let row = 0; row < 9; row++) {
+        let nonPathCellCount = 0;
+        let filledCellCount = 0;
+        let fixedCellCount = 0;
+        let isComplete = true;
         
-        if (fixedCells[row][col]) {
-          fixedCellCount++;
-        }
-        
-        if (board[row][col] > 0) {
-          filledCellCount++;
-        } else {
-          isComplete = false;
-        }
-      }
-    }
-    
-    isComplete = isComplete && (filledCellCount === nonPathCellCount) && (nonPathCellCount > 0);
-    const playerContributed = (filledCellCount > fixedCellCount);
-    
-    if (isComplete && !completedColumns.has(col)) {
-      completedColumns.add(col);
-      
-      if (playerContributed && window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
-        CompletionBonusModule.onUnitCompleted('column', col);
-      }
-    } else if (!isComplete && completedColumns.has(col)) {
-      completedColumns.delete(col);
-    }
-  }
-  
-  // Check 3x3 grids (similar logic, simplified)
-  for (let gridRow = 0; gridRow < 3; gridRow++) {
-    for (let gridCol = 0; gridCol < 3; gridCol++) {
-      let nonPathCellCount = 0;
-      let filledCellCount = 0;
-      let fixedCellCount = 0;
-      let isComplete = true;
-      
-      for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-          const row = gridRow * 3 + i;
-          const col = gridCol * 3 + j;
-          
+        for (let col = 0; col < 9; col++) {
           if (!pathCells.has(`${row},${col}`)) {
             nonPathCellCount++;
             
@@ -819,65 +732,147 @@ function checkUnitCompletion() {
             }
           }
         }
+        
+        // Row is complete if all available cells are filled
+        isComplete = isComplete && (filledCellCount === nonPathCellCount) && (nonPathCellCount > 0);
+        
+        // Only consider a row player-completed if player placed at least one tower
+        const playerContributed = (filledCellCount > fixedCellCount);
+        
+        if (isComplete && !completedRows.has(row)) {
+          // Newly completed row
+          completedRows.add(row);
+          
+          // Only trigger bonus if player placed at least one tower
+          if (playerContributed && window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
+            CompletionBonusModule.onUnitCompleted('row', row);
+          }
+        } else if (!isComplete && completedRows.has(row)) {
+          // No longer complete
+          completedRows.delete(row);
+        }
       }
       
-      isComplete = isComplete && (filledCellCount === nonPathCellCount) && (nonPathCellCount > 0);
-      const playerContributed = (filledCellCount > fixedCellCount);
-      const gridKey = `${gridRow}-${gridCol}`;
-      
-      if (isComplete && !completedGrids.has(gridKey)) {
-        completedGrids.add(gridKey);
+      // Check columns (similar logic, simplified)
+      for (let col = 0; col < 9; col++) {
+        let nonPathCellCount = 0;
+        let filledCellCount = 0;
+        let fixedCellCount = 0;
+        let isComplete = true;
         
-        if (playerContributed && window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
-          CompletionBonusModule.onUnitCompleted('grid', gridKey);
+        for (let row = 0; row < 9; row++) {
+          if (!pathCells.has(`${row},${col}`)) {
+            nonPathCellCount++;
+            
+            if (fixedCells[row][col]) {
+              fixedCellCount++;
+            }
+            
+            if (board[row][col] > 0) {
+              filledCellCount++;
+            } else {
+              isComplete = false;
+            }
+          }
         }
-      } else if (!isComplete && completedGrids.has(gridKey)) {
-        completedGrids.delete(gridKey);
+        
+        isComplete = isComplete && (filledCellCount === nonPathCellCount) && (nonPathCellCount > 0);
+        const playerContributed = (filledCellCount > fixedCellCount);
+        
+        if (isComplete && !completedColumns.has(col)) {
+          completedColumns.add(col);
+          
+          if (playerContributed && window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
+            CompletionBonusModule.onUnitCompleted('column', col);
+          }
+        } else if (!isComplete && completedColumns.has(col)) {
+          completedColumns.delete(col);
+        }
+      }
+      
+      // Check 3x3 grids (similar logic, simplified)
+      for (let gridRow = 0; gridRow < 3; gridRow++) {
+        for (let gridCol = 0; gridCol < 3; gridCol++) {
+          let nonPathCellCount = 0;
+          let filledCellCount = 0;
+          let fixedCellCount = 0;
+          let isComplete = true;
+          
+          for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+              const row = gridRow * 3 + i;
+              const col = gridCol * 3 + j;
+              
+              if (!pathCells.has(`${row},${col}`)) {
+                nonPathCellCount++;
+                
+                if (fixedCells[row][col]) {
+                  fixedCellCount++;
+                }
+                
+                if (board[row][col] > 0) {
+                  filledCellCount++;
+                } else {
+                  isComplete = false;
+                }
+              }
+            }
+          }
+          
+          isComplete = isComplete && (filledCellCount === nonPathCellCount) && (nonPathCellCount > 0);
+          const playerContributed = (filledCellCount > fixedCellCount);
+          const gridKey = `${gridRow}-${gridCol}`;
+          
+          if (isComplete && !completedGrids.has(gridKey)) {
+            completedGrids.add(gridKey);
+            
+            if (playerContributed && window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
+              CompletionBonusModule.onUnitCompleted('grid', gridKey);
+            } else if (!isComplete && completedGrids.has(gridKey)) {
+            completedGrids.delete(gridKey);
+          }
+        }
+      }
+      
+      // Check if entire puzzle is complete
+      if (this.isComplete()) {
+        console.log("DEBUG - Puzzle is complete! Publishing SUDOKU_COMPLETE event");
+        EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
       }
     }
-  }
-  
-  // Check if entire puzzle is complete
-  if (this.isComplete()) {
-    console.log("DEBUG - Puzzle is complete! Publishing SUDOKU_COMPLETE event");
-    EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
-  }
-}
     
     /**
-     * Check if the Sudoku is complete and correct
+     * Check if the Sudoku is complete
+     * Simplified version that only checks if all non-path cells are filled
      * @returns {boolean} Whether the Sudoku is complete
      */
-    /**
- * Check if the Sudoku is complete and correct
- * @returns {boolean} Whether the Sudoku is complete
- */
-function isComplete() {
-  // Track empty cells
-  let emptyCellCount = 0;
-  
-  // Get the board and path cells
-  const board = this.getBoard();
-  const pathCells = this.getPathCells();
-  
-  // Check if all non-path cells are filled
-  for (let row = 0; row < 9; row++) {
-    for (let col = 0; col < 9; col++) {
-      if (board[row][col] === 0 && !pathCells.has(`${row},${col}`)) {
-        emptyCellCount++;
+    function isComplete() {
+      // Track empty cells
+      let emptyCellCount = 0;
+      
+      // Get the board and path cells
+      const board = this.getBoard();
+      const pathCells = this.getPathCells();
+      
+      // Check if all non-path cells are filled
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (board[row][col] === 0 && !pathCells.has(`${row},${col}`)) {
+            emptyCellCount++;
+          }
+        }
       }
+      
+      // If there are empty cells, it's not complete
+      if (emptyCellCount > 0) {
+        console.log(`DEBUG - Sudoku Completion Check: ${emptyCellCount} empty cells remaining`);
+        return false;
+      }
+      
+      console.log("DEBUG - Sudoku Completion Check: COMPLETE! All non-path cells filled");
+      return true;
     }
-  }
-  
-  // If there are empty cells, it's not complete
-  if (emptyCellCount > 0) {
-    console.log(`DEBUG - Sudoku Completion Check: ${emptyCellCount} empty cells remaining`);
-    return false;
-  }
-  
-  console.log("DEBUG - Sudoku Completion Check: COMPLETE! All non-path cells filled");
-  return true;
-}
+    
     /**
      * Get the current board state
      * @returns {number[][]} Current board state
@@ -972,7 +967,8 @@ function isComplete() {
         getPossibleValues,
         generateEnemyPath,
         checkUnitCompletion,
-        getCompletionStatus
+        getCompletionStatus,
+        isComplete
     };
 })();
 
