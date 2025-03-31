@@ -819,6 +819,7 @@ const SudokuModule = (function() {
             }
           }
           
+          
           isComplete = isComplete && (filledCellCount === nonPathCellCount) && (nonPathCellCount > 0);
           const playerContributed = (filledCellCount > fixedCellCount);
           const gridKey = `${gridRow}-${gridCol}`;
@@ -828,9 +829,21 @@ const SudokuModule = (function() {
             
             if (playerContributed && window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
               CompletionBonusModule.onUnitCompleted('grid', gridKey);
-            } else if (!isComplete && completedGrids.has(gridKey)) {
+            }
+
+                } else if (!isComplete && completedGrids.has(gridKey)) {
             completedGrids.delete(gridKey);
           }
+        }
+      }
+      
+      // Check if entire puzzle is complete
+      if (this.isComplete()) {
+        console.log("DEBUG - Puzzle is complete! Publishing SUDOKU_COMPLETE event");
+        EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
+      }
+    }
+    
         }
       }
       
