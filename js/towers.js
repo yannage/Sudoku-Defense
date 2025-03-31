@@ -279,51 +279,14 @@ const TowersModule = (function() {
      * @returns {Object|null} The target enemy or null if no target found
      */
     function findTarget(tower, enemies) {
-        // Special tower attacks any enemy in range
-        if (tower.type === 'special') {
-            return findClosestEnemy(tower, enemies);
-        }
-        
-        // Parse tower number
-        const towerNumber = parseInt(tower.type);
-        if (isNaN(towerNumber)) {
-            return null;
-        }
-        
-        // Calculate the range of enemy numbers this tower can attack
-        // A tower can attack its own number and up to 2 higher numbers
-        const minTargetNumber = towerNumber;
-        const maxTargetNumber = towerNumber + 2;
-        
-        // Filter enemies by eligible type numbers
-        const matchingEnemies = enemies.filter(enemy => {
-            // Convert enemy type to a number
-            let enemyType = enemy.type;
-            
-            // If it's a string (like emoji "1️⃣"), convert to number
-            if (typeof enemyType === 'string') {
-                // Try to extract the first digit
-                const match = enemyType.match(/\d+/);
-                if (match) {
-                    enemyType = parseInt(match[0]);
-                } else if (enemyType === 'boss') {
-                    // Special case for boss - all towers can attack the boss
-                    return true;
-                } else {
-                    // If we can't parse a number, try direct parseInt
-                    enemyType = parseInt(enemyType);
-                }
-            }
-            
-            // Check if the enemy number is within the tower's target range
-            return !isNaN(enemyType) && 
-                   enemyType >= minTargetNumber && 
-                   enemyType <= maxTargetNumber;
-        });
-        
-        // Find the closest eligible enemy
-        return findClosestEnemy(tower, matchingEnemies);
+    // Special tower attacks any enemy in range
+    if (tower.type === 'special') {
+        return findClosestEnemy(tower, enemies);
     }
+    
+    // For number towers, simply return the closest enemy
+    return findClosestEnemy(tower, enemies);
+}
     
     /**
      * Find the closest enemy within range
