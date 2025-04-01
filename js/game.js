@@ -12,42 +12,53 @@ const Game = (function() {
      * Initialize the game
      */
     function init() {
-        if (isInitialized) {
-            return;
-        }
-        
-        console.log("Game initialization started");
-        
-        // Get the board element
-        boardElement = document.getElementById('sudoku-board');
-        
-        // Calculate cell size based on board size
-        const boardWidth = boardElement.clientWidth;
-        cellSize = Math.floor(boardWidth / 9);
-        
-        // Initialize other modules with game settings
-        const gameSettings = {
-            cellSize: cellSize
-        };
-        
-        // Publish initialization event
-        EventSystem.publish(GameEvents.GAME_INIT, gameSettings);
-        
-        // Set up the Sudoku board
-        setupBoard();
-        
-        // Set up UI event listeners
-        setupUIEventListeners();
-        
-        // Make sure UI is updated with initial values
-        updateUI();
-        
-        // Start the game loop
-        isInitialized = true;
-        start();
-        
-        console.log("Game initialization completed");
+    if (isInitialized) {
+        return;
     }
+    
+    console.log("Game initialization started");
+    
+    // Get the board element
+    boardElement = document.getElementById('sudoku-board');
+    
+    // Calculate cell size based on board size
+    const boardWidth = boardElement.clientWidth;
+    cellSize = Math.floor(boardWidth / 9);
+    
+    // Initialize game settings
+    const gameSettings = {
+        cellSize: cellSize
+    };
+    
+    // Initialize BoardManager first
+    if (window.BoardManager && typeof BoardManager.init === 'function') {
+        BoardManager.init(gameSettings);
+    } else {
+        // Fall back to SudokuModule if BoardManager isn't available
+        EventSystem.publish(GameEvents.GAME_INIT, gameSettings);
+    }
+    
+    // Initialize other modules
+    PlayerModule.init(gameSettings);
+    EnemiesModule.init(gameSettings);
+    TowersModule.init(gameSettings);
+    
+    // Set up the Sudoku board
+    setupBoard();
+    
+    // Set up UI event listeners
+    setupUIEventListeners();
+    
+    // Make sure UI is updated with initial values
+    updateUI();
+    
+    // Start the game loop
+    isInitialized = true;
+    start();
+    
+    console.log("Game initialization completed");
+}
+
     
     /**
      * Update UI elements with current game state
@@ -358,101 +369,109 @@ const Game = (function() {
      * This function has been modified to properly handle path cells with numbers
      */
     function updateBoard() {
-        console.log("Updating board display");
-        const board = SudokuModule.getBoard();
-        const fixedCells = SudokuModule.getFixedCells();
-        const pathCells = SudokuModule.getPathCells();
-        
-        // Update each cell
-        for (let row = 0; row < 9; row++) {
-            for (let col = 0; col < 9; col++) {
-                const cellElement = boardElement.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+    console.log("Updating board display");
+    
+    // Get board state from BoardManager (or fallback to SudokuModule)
+    const board = window.BoardManager ? BoardManager.getBoard() : SudokuModule.getBoard();
+    const fixedCells = window.BoardManager ? BoardManager.getFixedCells() : SudokuModule.getFixedCells();
+    const pathCells = window.BoardManager ? BoardManager.getPathCells() : SudokuModule.getPathCells();
+    
+    // Update each cell
+    for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+            const cellElement = boardElement.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+            
+            if (!cellElement) {
+                console.warn(`Cell element not found for row ${row}, col ${col}`);
+                continue;
+            }
+            
+            // Clear previous classes
+            cellElement.classList.remove('fixed', 'path');
+            
+            // Set value
+            const value = board[row][col];
+            cellElement.textContent = value > 0 ? value : '';
+            
+            // Mark fixed cells
+            if (fixedCells[row][col]) {
+                cellElement.classList.add('fixed');
+            }
+            
+            // Mark path cells - a cell can be both a path and have a number
+            if (pathCells.has(`${row},${col}`)) {
+                cellElement.classList.add('path');
+            }
+            
+            // Check for tower
+            const tower = TowersModule.getTowerAt(row, col);
+            
+            if (tower && !pathCells.has(`${row},${col}`)) {
+                // Clear existing content
+                cellElement.textContent = '';
                 
-                if (!cellElement) {
-                    console.warn(`Cell element not found for row ${row}, col ${col}`);
-                    continue;
+                // Create tower sprite element
+                const towerSprite = document.createElement('div');
+                towerSprite.classList.add('tower');
+                
+                if (tower.type === 'special') {
+                    towerSprite.classList.add('tower-special');
+                } else {
+                    towerSprite.classList.add(`tower-${tower.type}`);
                 }
                 
-                // Clear previous classes
-                cellElement.classList.remove('fixed', 'path');
-                
-                // Set value
-                const value = board[row][col];
-                cellElement.textContent = value > 0 ? value : '';
-                
-                // Mark fixed cells
-                if (fixedCells[row][col]) {
-                    cellElement.classList.add('fixed');
+                // Add level indicator if tower level > 1
+                if (tower.level > 1) {
+                    const levelIndicator = document.createElement('span');
+                    levelIndicator.className = 'tower-level';
+                    levelIndicator.textContent = tower.level;
+                    towerSprite.appendChild(levelIndicator);
                 }
                 
-                // Mark path cells - a cell can be both a path and have a number
-                if (pathCells.has(`${row},${col}`)) {
-                    cellElement.classList.add('path');
-                }
-                
-                // Check for tower
-                const tower = TowersModule.getTowerAt(row, col);
-                
-if (tower && !pathCells.has(`${row},${col}`)) {
-    // Clear existing content
-    cellElement.textContent = '';
-
-    // Create tower sprite element
-    const towerSprite = document.createElement('div');
-    towerSprite.classList.add('tower');
-
-    if (tower.type === 'special') {
-        towerSprite.classList.add('tower-special');
-    } else {
-        towerSprite.classList.add(`tower-${tower.type}`);
-    }
-
-    // Add level indicator if tower level > 1
-    if (tower.level > 1) {
-        const levelIndicator = document.createElement('span');
-        levelIndicator.className = 'tower-level';
-        levelIndicator.textContent = tower.level;
-        towerSprite.appendChild(levelIndicator);
-    }
-
-    // Append sprite to cell
-    cellElement.appendChild(towerSprite);
-}
-
+                // Append sprite to cell
+                cellElement.appendChild(towerSprite);
             }
         }
     }
     
+    // Fix any discrepancies between board state and towers
+    if (window.BoardManager && typeof BoardManager.fixBoardDiscrepancies === 'function') {
+        setTimeout(() => {
+            BoardManager.fixBoardDiscrepancies();
+        }, 50);
+    }
+}
+
     /**
      * Handle cell click event
      * @param {number} row - Row index
      * @param {number} col - Column index
      */
     function handleCellClick(row, col) {
-        const selectedTower = PlayerModule.getSelectedTower();
-        
-        if (!selectedTower) {
-            // No tower selected, show info about existing tower
-            const tower = TowersModule.getTowerAt(row, col);
-            
-            if (tower) {
-                showTowerInfo(tower);
-            }
-            
-            return;
-        }
-        
-        // Attempt to place the selected tower
-        const newTower = TowersModule.createTower(selectedTower, row, col);
-        
-        // If tower was successfully placed, update the UI immediately
-        if (newTower) {
-            updateUI();
-        }
-        
-        // Update the board
-        updateBoard();
+  const selectedTower = PlayerModule.getSelectedTower();
+  
+  if (!selectedTower) {
+    // No tower selected, show info about existing tower
+    const tower = TowersModule.getTowerAt(row, col);
+    
+    if (tower) {
+      showTowerInfo(tower);
     }
+    
+    return;
+  }
+  
+  // Attempt to place the selected tower
+  const newTower = TowersModule.createTower(selectedTower, row, col);
+  
+  // If tower was successfully placed, update the UI immediately
+  if (newTower) {
+    updateUI();
+  }
+  
+  // Update the board
+  updateBoard();
+}
     
     /**
      * Show tower information
@@ -480,7 +499,20 @@ if (tower && !pathCells.has(`${row},${col}`)) {
  * Set up UI event listeners
  */
 function setupUIEventListeners() {
-  console.log("Setting up UI event listeners");
+    console.log("Setting up UI event listeners");
+    
+    // Listen for board events from BoardManager
+    if (window.BoardManager) {
+  EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function(data) {
+    // Update the board when a new puzzle is generated or path changes
+    updateBoard();
+  });
+  
+  // If SudokuModule events are still being used elsewhere, forward them
+  EventSystem.subscribe('board:updated', function(data) {
+    updateBoard();
+  });
+}
   
   // Tower selection
   const towerOptions = document.querySelectorAll('.tower-option');
