@@ -634,17 +634,12 @@ function exportPath() {
 }
 
 function isTowerIncorrect(row, col, value) {
-    // First check if it violates Sudoku rules
-    if (!isValidMove(row, col, value)) {
-        return true;
-    }
-    
-    // Then check if it doesn't match the solution
-    if (solution[row][col] !== value) {
-        return true;
-    }
-    
-    return false;
+  // Check if it matches the solution
+  if (solution[row][col] !== value) {
+    return true;
+  }
+  
+  return false; // Tower is correct if it matches the solution
 }
 
 

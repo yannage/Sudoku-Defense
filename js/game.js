@@ -539,8 +539,25 @@ function setupUIEventListeners() {
   
   // Game controls
   document.getElementById('start-wave').addEventListener('click', function() {
-    LevelsModule.startWave();
-  });
+  console.log("Start Wave button clicked!");
+  
+  // Check if path data is available
+  const boardManager = window.BoardManager || window.SudokuModule;
+  if (boardManager && typeof boardManager.getPathArray === 'function') {
+    const path = boardManager.getPathArray();
+    console.log("Current path data:", path);
+    console.log("Path length:", path ? path.length : 0);
+  } else {
+    console.error("No path provider available!");
+  }
+  
+  // Check if EnemiesModule and LevelsModule are available
+  console.log("EnemiesModule available:", !!window.EnemiesModule);
+  console.log("LevelsModule available:", !!window.LevelsModule);
+  
+  // Call LevelsModule.startWave() to start the wave
+  LevelsModule.startWave();
+});
   
   document.getElementById('pause-game').addEventListener('click', function() {
     if (isPaused) {

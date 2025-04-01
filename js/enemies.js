@@ -66,11 +66,24 @@ const EnemiesModule = (function() {
      * @returns {Object} The created enemy
      */
     function createEnemy(type) {
+    console.log(`Creating enemy of type ${type}`);
+    
     const typeData = enemyTypes[type] || enemyTypes[1];
+    
+    // Verify path is available and valid
+    if (!path || path.length < 2) {
+        console.error("Cannot create enemy: path is invalid!", path);
+        return null;
+    }
     
     // Calculate starting position (first cell in the path)
     const startCell = path[0];
     const nextCell = path[1] || startCell;
+    
+    if (!Array.isArray(startCell) || startCell.length !== 2) {
+        console.error("Invalid start cell in path:", startCell);
+        return null;
+    }
     
     // Use cell coordinates with initial progress
     const enemy = {
@@ -92,6 +105,8 @@ const EnemiesModule = (function() {
         active: true
     };
     
+    console.log(`Enemy created at position: (${enemy.row}, ${enemy.col})`);
+    
     // Add to enemies array
     enemies.push(enemy);
     
@@ -100,31 +115,76 @@ const EnemiesModule = (function() {
     
     return enemy;
 }
-    
+
     /**
      * Start a wave of enemies
      */
     function startWave() {
+  console.log("EnemiesModule.startWave called");
+  
   if (isWaveActive) {
     EventSystem.publish(GameEvents.STATUS_MESSAGE, "Wave already in progress!");
     return;
   }
   
   // Get the latest path from BoardManager or SudokuModule
-  if (window.BoardManager && typeof BoardManager.getPathArray === 'function') {
-    path = BoardManager.getPathArray();
-    console.log("EnemiesModule.startWave using path from BoardManager:", path);
-  } else if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
-    path = SudokuModule.getPathArray();
-    console.log("EnemiesModule.startWave using path from SudokuModule:", path);
-  }
-  
   if (!path || path.length === 0) {
-    console.error("Cannot start wave: No path defined!");
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot start wave: No path defined!");
-    return;
+    const boardManager = window.BoardManager || window.SudokuModule;
+    if (boardManager && typeof boardManager.getPathArray === 'function') {
+      path = boardManager.getPathArray();
+      console.log("EnemiesModule: Updated path from BoardManager:", path);
+    } else if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
+      path = SudokuModule.getPathArray();
+      console.log("EnemiesModule: Updated path from SudokuModule:", path);
+    }
   }
   
+  // CRITICAL: Verify we have a valid path
+  if (!path || !Array.isArray(path) || path.length === 0) {
+    console.error("Cannot start wave: No valid path defined!");
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot start wave: Path not properly defined!");
+    
+    // Try emergency path generation
+    if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
+      console.log("Attempting emergency path generation...");
+      path = BoardManager.generateEnemyPath();
+      
+      if (!path || path.length === 0) {
+        console.error("Emergency path generation failed!");
+        return;
+      } else {
+        console.log("Emergency path generated successfully:", path);
+      }
+    } else {
+      return;
+    }
+  }
+  
+  // Verify path format - each element should be [row, col]
+  let validFormat = true;
+  for (let i = 0; i < path.length; i++) {
+    if (!Array.isArray(path[i]) || path[i].length !== 2) {
+      console.error(`Invalid path element at index ${i}:`, path[i]);
+      validFormat = false;
+      break;
+    }
+  }
+  
+  if (!validFormat) {
+    console.error("Path format is invalid, attempting to fix...");
+    // Try to fix the path format
+    if (typeof path[0] === 'string') {
+      // Format might be "row,col" strings
+      path = path.map(pos => pos.split(',').map(Number));
+      console.log("Fixed path:", path);
+    } else {
+      console.error("Cannot fix path format!");
+      EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot start wave: Invalid path format!");
+      return;
+    }
+  }
+  
+  console.log("Starting wave with path:", path);
   isWaveActive = true;
   
   // Calculate number of enemies based on wave number
@@ -169,6 +229,7 @@ const EnemiesModule = (function() {
       enemyType = Math.ceil(Math.random() * availableTypes);
     }
     
+    console.log(`Spawning enemy #${enemiesSpawned+1}, type: ${enemyType}`);
     createEnemy(enemyType);
     enemiesSpawned++;
   }, 1000 / Math.sqrt(waveNumber)); // Spawn faster in higher waves
@@ -526,3 +587,29 @@ function moveEnemy(enemy, deltaTime) {
 
 // Make module available globally
 window.EnemiesModule = EnemiesModule;
+
+window.debugEnemyPath = function() {
+  console.log("========= ENEMY PATH DEBUG =========");
+  console.log("EnemiesModule.path:", EnemiesModule.path);
+  
+  const boardManager = window.BoardManager || window.SudokuModule;
+  if (boardManager && typeof boardManager.getPathArray === 'function') {
+    console.log("BoardManager.getPathArray():", boardManager.getPathArray());
+  }
+  
+  if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
+    console.log("SudokuModule.getPathArray():", SudokuModule.getPathArray());
+  }
+  
+  if (EnemiesModule.path && EnemiesModule.path.length > 0) {
+    console.log("Path elements format check:");
+    for (let i = 0; i < Math.min(EnemiesModule.path.length, 5); i++) {
+      console.log(`Element ${i}:`, EnemiesModule.path[i],
+        "Is Array:", Array.isArray(EnemiesModule.path[i]));
+    }
+    return true;
+  } else {
+    console.log("No path available or empty path!");
+    return false;
+  }
+};

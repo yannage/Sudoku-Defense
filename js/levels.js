@@ -56,34 +56,38 @@ const LevelsModule = (function() {
      * Start a wave
      */
     function startWave() {
-  if (EnemiesModule.isWaveInProgress()) {
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Wave already in progress!");
-    return;
-  }
-  
-  // Get the current path from BoardManager or SudokuModule
-  const boardManager = window.BoardManager || window.SudokuModule;
-  if (boardManager && typeof boardManager.getPathArray === 'function') {
-    const currentPath = boardManager.getPathArray();
-    EventSystem.publish('path:updated', currentPath);
-  }
-  
-  // Start the wave in the enemies module
-  EnemiesModule.startWave();
-}
+    console.log("LevelsModule.startWave called");
     
-    // REMOVED: Code that generated a new path when starting a wave
+    if (EnemiesModule.isWaveInProgress()) {
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Wave already in progress!");
+        return;
+    }
     
-    // Make sure the Enemies module is aware of the current path
-    if (typeof SudokuModule.getPathArray === 'function') {
-        const currentPath = SudokuModule.getPathArray();
-        EventSystem.publish('path:updated', currentPath);
+    // Get the current path from BoardManager or SudokuModule
+    const boardManager = window.BoardManager || window.SudokuModule;
+    let currentPath = null;
+    
+    if (boardManager && typeof boardManager.getPathArray === 'function') {
+        currentPath = boardManager.getPathArray();
+        console.log("Path from BoardManager:", currentPath);
+        
+        // IMPORTANT: Explicitly ensure EnemiesModule has the current path
+        if (window.EnemiesModule && Array.isArray(currentPath) && currentPath.length > 0) {
+            console.log("Explicitly setting path in EnemiesModule");
+            EnemiesModule.path = currentPath;
+            
+            // Also publish a path update event
+            EventSystem.publish('path:updated', currentPath);
+        }
+    } else {
+        console.error("Cannot get path data - no path provider available");
     }
     
     // Start the wave in the enemies module
+    console.log("Starting wave via EnemiesModule.startWave()");
     EnemiesModule.startWave();
 }
-    
+
     /**
      * Get the current settings based on level and difficulty
      * @returns {Object} Current game settings
