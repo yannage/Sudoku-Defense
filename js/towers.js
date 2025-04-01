@@ -47,160 +47,169 @@ const TowersModule = (function() {
      * @param {number} col - Column index on the grid
      * @returns {Object|null} The created tower or null if creation failed
      */
-    function createTower(type, row, col) {
-        console.log("TowersModule.createTower called with type:", type, "row:", row, "col:", col);
-        
-        const typeData = towerTypes[type];
-        
-        if (!typeData) {
-            console.error("Invalid tower type:", type);
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Invalid tower type!");
-            return null;
-        }
-        
-        // Check if player has enough currency
-        const playerState = PlayerModule.getState();
-        if (playerState.currency < typeData.cost) {
-            console.log("Not enough currency to build tower");
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, `Not enough currency to build this tower! Need ${typeData.cost}`);
-            return null;
-        }
-        
-        // Check if the cell is fixed or on a path
-        const fixedCells = SudokuModule.getFixedCells();
-        const pathCells = SudokuModule.getPathCells();
-        
-        if (fixedCells && fixedCells[row] && fixedCells[row][col]) {
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on a fixed Sudoku cell!");
-            return null;
-        }
-        
-        if (pathCells && pathCells.has && pathCells.has(`${row},${col}`)) {
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on the enemy path!");
-            return null;
-        }
-        
-        // Check if there's already a tower at this position
-        if (getTowerAt(row, col)) {
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, "There's already a tower in this cell!");
-            return null;
-        }
-        
-        // For number towers, check if the placement is correct according to the solution
-        let isCorrect = true;
-        const numberValue = parseInt(type);
-        
-        if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9 && type !== 'special') {
-            // Get the solution
-            const solution = SudokuModule.getSolution();
-            
-            // Check if the placement matches the solution
-            if (solution && solution[row] && solution[row][col] !== numberValue) {
-                isCorrect = false;
-                EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-                    `Warning: This tower doesn't match the solution. It will be removed after the wave with 50% refund.`);
-            }
-        }
-        
-        // Calculate tower position
-        const x = col * cellSize + cellSize / 2;
-        const y = row * cellSize + cellSize / 2;
-        
-        const tower = {
-            id: `tower_${++towerId}`,
-            type: type,
-            emoji: typeData.emoji,
-            damage: typeData.damage,
-            range: typeData.range * cellSize,
-            attackSpeed: typeData.attackSpeed,
-            attackCooldown: 0,
-            level: 1,
-            row: row,
-            col: col,
-            x: x,
-            y: y,
-            target: null,
-            isCorrect: isCorrect  // Add isCorrect property to tower
-        };
-        
-        // Spend currency
-        PlayerModule.spendCurrency(typeData.cost);
-        
-        // Add to towers array
-        towers.push(tower);
-        
-        // For number towers, set the board value
-        if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9) {
-            // Set the cell value in the Sudoku board
-            // Instead of directly setting: SudokuModule.getBoard()[row][col] = numberValue;
-            // Use the proper method that will trigger completion checks
-            if (SudokuModule && typeof SudokuModule.setCellValue === 'function') {
-                SudokuModule.setCellValue(row, col, numberValue);
-            } else {
-                // Fallback to direct setting if setCellValue is not available
-                SudokuModule.getBoard()[row][col] = numberValue;
-            }
-            
-            // If incorrect, track it
-            if (!isCorrect) {
-                incorrectTowers.add(tower.id);
-            }
-        }
-        
-        // Publish tower placed event
-        EventSystem.publish(GameEvents.TOWER_PLACED, tower);
-        
-        // Explicitly check unit completions even if setCellValue() wasn't called
-        // This ensures completion bonuses are triggered
-        if (window.SudokuModule && typeof SudokuModule.checkUnitCompletion === 'function') {
-            console.log("Explicitly checking unit completions after tower placement");
-            SudokuModule.checkUnitCompletion();
-        }
-        
-        return tower;
+    /**
+ * Update for the TowersModule to allow strategic placement of towers
+ * that violate Sudoku rules.
+ */
+
+/**
+ * Create a new tower
+ * @param {number|string} type - Tower type
+ * @param {number} row - Row index on the grid
+ * @param {number} col - Column index on the grid
+ * @returns {Object|null} The created tower or null if creation failed
+ */
+function createTower(type, row, col) {
+  console.log("TowersModule.createTower called with type:", type, "row:", row, "col:", col);
+  
+  const typeData = towerTypes[type];
+  
+  if (!typeData) {
+    console.error("Invalid tower type:", type);
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Invalid tower type!");
+    return null;
+  }
+  
+  // Check if player has enough currency
+  const playerState = PlayerModule.getState();
+  if (playerState.currency < typeData.cost) {
+    console.log("Not enough currency to build tower");
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, `Not enough currency to build this tower! Need ${typeData.cost}`);
+    return null;
+  }
+  
+  // Check if the cell is fixed or on a path
+  const boardManager = window.BoardManager || window.SudokuModule;
+  const fixedCells = boardManager.getFixedCells();
+  const pathCells = boardManager.getPathCells();
+  
+  if (fixedCells && fixedCells[row] && fixedCells[row][col]) {
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on a fixed Sudoku cell!");
+    return null;
+  }
+  
+  if (pathCells && pathCells.has && pathCells.has(`${row},${col}`)) {
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on the enemy path!");
+    return null;
+  }
+  
+  // Check if there's already a tower at this position
+  if (getTowerAt(row, col)) {
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, "There's already a tower in this cell!");
+    return null;
+  }
+  
+  // Determine if the tower is "correct" according to Sudoku rules AND solution
+  let isCorrect = true;
+  const numberValue = parseInt(type);
+  
+  if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9 && type !== 'special') {
+    // Check if placement is valid according to Sudoku rules
+    let validByRules = true;
+    if (boardManager && typeof boardManager.isValidMove === 'function') {
+      validByRules = boardManager.isValidMove(row, col, numberValue);
     }
     
+    // Check if placement matches the solution
+    let matchesSolution = true;
+    const solution = boardManager.getSolution();
+    if (solution && solution[row] && solution[row][col] !== numberValue) {
+      matchesSolution = false;
+    }
+    
+    // Tower is correct only if it's both valid by rules and matches solution
+    isCorrect = validByRules && matchesSolution;
+    
+    // Show warning if tower is incorrect
+    if (!isCorrect) {
+      const reason = !validByRules ?
+        "violates Sudoku rules" :
+        "doesn't match the solution";
+      
+      EventSystem.publish(GameEvents.STATUS_MESSAGE,
+        `Warning: This tower ${reason}. It will be removed after the wave with 50% refund.`);
+    }
+  }
+  
+  // Calculate tower position
+  const x = col * cellSize + cellSize / 2;
+  const y = row * cellSize + cellSize / 2;
+  
+  const tower = {
+    id: `tower_${++towerId}`,
+    type: type,
+    emoji: typeData.emoji,
+    damage: typeData.damage,
+    range: typeData.range * cellSize,
+    attackSpeed: typeData.attackSpeed,
+    attackCooldown: 0,
+    level: 1,
+    row: row,
+    col: col,
+    x: x,
+    y: y,
+    target: null,
+    isCorrect: isCorrect
+  };
+  
+  // Spend currency
+  PlayerModule.spendCurrency(typeData.cost);
+  
+  // Add to towers array
+  towers.push(tower);
+  
+  // For number towers, set the board value in the Sudoku board
+  if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9) {
+    // Use BoardManager to update the board (or fallback to SudokuModule)
+    if (boardManager && typeof boardManager.setCellValue === 'function') {
+      boardManager.setCellValue(row, col, numberValue);
+    } else {
+      // Fallback to direct setting if setCellValue is not available
+      boardManager.getBoard()[row][col] = numberValue;
+    }
+    
+    // If incorrect, track it
+    if (!isCorrect) {
+      incorrectTowers.add(tower.id);
+    }
+  }
+  
+  // Publish tower placed event
+  EventSystem.publish(GameEvents.TOWER_PLACED, tower);
+  
+  return tower;
+}
     /**
      * Remove a tower
      * @param {string} towerId - ID of the tower to remove
      * @returns {boolean} Whether the tower was removed
      */
     function removeTower(towerId) {
-        const tower = towers.find(t => t.id === towerId);
-        
-        if (!tower) {
-            return false;
-        }
-        
-        // Remove from towers array
-        towers = towers.filter(t => t.id !== towerId);
-        
-        // Remove number from Sudoku grid
-        // Use setCellValue to clear the cell and trigger completion checks
-        if (SudokuModule && typeof SudokuModule.setCellValue === 'function') {
-            SudokuModule.setCellValue(tower.row, tower.col, 0);
-        } else {
-            // Fallback to direct setting
-            SudokuModule.getBoard()[tower.row][tower.col] = 0;
-        }
-        
-        // Remove from incorrect towers set if it's there
-        if (incorrectTowers.has(tower.id)) {
-            incorrectTowers.delete(tower.id);
-        }
-        
-        // Publish tower removed event
-        EventSystem.publish(GameEvents.TOWER_REMOVED, tower);
-        
-        // Explicitly check unit completions
-        if (window.SudokuModule && typeof SudokuModule.checkUnitCompletion === 'function') {
-            console.log("Explicitly checking unit completions after tower removal");
-            SudokuModule.checkUnitCompletion();
-        }
-        
-        return true;
-    }
-    
+  const tower = towers.find(t => t.id === towerId);
+  
+  if (!tower) {
+    return false;
+  }
+  
+  // Remove from towers array
+  towers = towers.filter(t => t.id !== towerId);
+  
+  // Remove number from Sudoku grid
+  const boardManager = window.BoardManager || window.SudokuModule;
+  if (boardManager && typeof boardManager.setCellValue === 'function') {
+    boardManager.setCellValue(tower.row, tower.col, 0);
+  }
+  
+  // Remove from incorrect towers set if it's there
+  if (incorrectTowers.has(tower.id)) {
+    incorrectTowers.delete(tower.id);
+  }
+  
+  // Publish tower removed event
+  EventSystem.publish(GameEvents.TOWER_REMOVED, tower);
+  
+  return true;
+}
     /**
      * Upgrade a tower
      * @param {string} towerId - ID of the tower to upgrade
@@ -370,66 +379,56 @@ function findClosestEnemy(tower, enemies) {
      * Remove incorrect towers after a wave
      */
     function removeIncorrectTowers() {
-        if (incorrectTowers.size === 0) return;
-        
-        let refundAmount = 0;
-        const towersToRemove = [];
-        
-        // Identify towers to remove and calculate refund
-        towers.forEach(tower => {
-            if (incorrectTowers.has(tower.id)) {
-                towersToRemove.push(tower);
-                
-                // Calculate 50% refund
-                const towerData = towerTypes[tower.type];
-                if (towerData) {
-                    const baseRefund = Math.floor(towerData.cost * 0.5);
-                    const upgradeRefund = Math.floor(baseRefund * (tower.level - 1) * 0.75);
-                    refundAmount += baseRefund + upgradeRefund;
-                }
-            }
-        });
-        
-        // Process refund
-        if (refundAmount > 0) {
-            PlayerModule.addCurrency(refundAmount);
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-                `${towersToRemove.length} incorrect towers removed. Refunded ${refundAmount} currency.`);
-        }
-        
-        // Remove towers
-        towersToRemove.forEach(tower => {
-            // Clear cell value
-            if (SudokuModule && typeof SudokuModule.setCellValue === 'function') {
-                SudokuModule.setCellValue(tower.row, tower.col, 0);
-            } else {
-                const board = SudokuModule.getBoard();
-                if (board && board[tower.row] && board[tower.row][tower.col]) {
-                    board[tower.row][tower.col] = 0;
-                }
-            }
-            
-            // Remove tower from array
-            towers = towers.filter(t => t.id !== tower.id);
-            
-            // Publish tower removed event
-            EventSystem.publish(GameEvents.TOWER_REMOVED, tower);
-        });
-        
-        // Clear tracking set
-        incorrectTowers.clear();
-        
-        // Update board display
-        if (Game.updateBoard) {
-            Game.updateBoard();
-        }
-        
-        // Check unit completions again after removing towers
-        if (window.SudokuModule && typeof SudokuModule.checkUnitCompletion === 'function') {
-            SudokuModule.checkUnitCompletion();
-        }
+  if (incorrectTowers.size === 0) return;
+  
+  let refundAmount = 0;
+  const towersToRemove = [];
+  
+  // Identify towers to remove and calculate refund
+  towers.forEach(tower => {
+    if (incorrectTowers.has(tower.id)) {
+      towersToRemove.push(tower);
+      
+      // Calculate 50% refund
+      const towerData = towerTypes[tower.type];
+      if (towerData) {
+        const baseRefund = Math.floor(towerData.cost * 0.5);
+        const upgradeRefund = Math.floor(baseRefund * (tower.level - 1) * 0.75);
+        refundAmount += baseRefund + upgradeRefund;
+      }
+    }
+  });
+  
+  // Process refund
+  if (refundAmount > 0) {
+    PlayerModule.addCurrency(refundAmount);
+    EventSystem.publish(GameEvents.STATUS_MESSAGE,
+      `${towersToRemove.length} incorrect towers removed. Refunded ${refundAmount} currency.`);
+  }
+  
+  // Remove towers
+  towersToRemove.forEach(tower => {
+    // Clear cell value using BoardManager
+    const boardManager = window.BoardManager || window.SudokuModule;
+    if (boardManager && typeof boardManager.setCellValue === 'function') {
+      boardManager.setCellValue(tower.row, tower.col, 0);
     }
     
+    // Remove tower from array
+    towers = towers.filter(t => t.id !== tower.id);
+    
+    // Publish tower removed event
+    EventSystem.publish(GameEvents.TOWER_REMOVED, tower);
+  });
+  
+  // Clear tracking set
+  incorrectTowers.clear();
+  
+  // Update board display
+  if (Game.updateBoard) {
+    Game.updateBoard();
+  }
+}
     /**
      * Get all towers
      * @returns {Object[]} Array of towers
@@ -486,22 +485,32 @@ function findClosestEnemy(tower, enemies) {
      * Initialize event listeners
      */
     function initEventListeners() {
-        // Listen for game initialization
-        EventSystem.subscribe(GameEvents.GAME_INIT, function(options) {
-            init(options);
-        });
-        
-        // Listen for new game
-        EventSystem.subscribe(GameEvents.GAME_START, function() {
-            init();
-        });
-        
-        // Listen for wave completion to remove incorrect towers
-        EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
-            removeIncorrectTowers();
-        });
-    }
-    
+  // Listen for game initialization
+  EventSystem.subscribe(GameEvents.GAME_INIT, function(options) {
+    init(options);
+  });
+  
+  // Listen for new game
+  EventSystem.subscribe(GameEvents.GAME_START, function() {
+    init();
+  });
+  
+  // Listen for wave completion to remove incorrect towers
+  EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
+    removeIncorrectTowers();
+  });
+  
+  // Listen for BoardManager initialization
+  if (window.BoardManager) {
+    EventSystem.subscribe('boardmanager:initialized', function() {
+      console.log("TowersModule: BoardManager initialized, synchronizing state");
+      // Fix any discrepancies between towers and board
+      if (typeof BoardManager.fixBoardDiscrepancies === 'function') {
+        BoardManager.fixBoardDiscrepancies();
+      }
+    });
+  }
+}
     // Initialize event listeners
     initEventListeners();
     
