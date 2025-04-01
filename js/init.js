@@ -2,8 +2,6 @@
  * init.js - Script to load and initialize game modules in the correct order
  * This file should be included last in the HTML
  */
- 
- //yes
 
 // Wait for all modules to be loaded
 document.addEventListener('DOMContentLoaded', function() {
