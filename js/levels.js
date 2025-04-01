@@ -40,22 +40,37 @@ const LevelsModule = (function() {
      * @param {Object} options - Initialization options
      */
     function init(options = {}) {
-        currentLevel = options.level || 1;
-        currentWave = options.wave || 1;
-        difficulty = options.difficulty || 'medium';
-        
-        // Set difficulty in Sudoku module
+    currentLevel = options.level || 1;
+    currentWave = options.wave || 1;
+    difficulty = options.difficulty || 'medium';
+    
+    // Set difficulty in BoardManager (or fallback to SudokuModule)
+    if (window.BoardManager && typeof BoardManager.setDifficulty === 'function') {
+        BoardManager.setDifficulty(difficulty);
+    } else if (window.SudokuModule && typeof SudokuModule.setDifficulty === 'function') {
         SudokuModule.setDifficulty(difficulty);
     }
-    
+}
+
     /**
      * Start a wave
      */
     function startWave() {
-    if (EnemiesModule.isWaveInProgress()) {
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Wave already in progress!");
-        return;
-    }
+  if (EnemiesModule.isWaveInProgress()) {
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Wave already in progress!");
+    return;
+  }
+  
+  // Get the current path from BoardManager or SudokuModule
+  const boardManager = window.BoardManager || window.SudokuModule;
+  if (boardManager && typeof boardManager.getPathArray === 'function') {
+    const currentPath = boardManager.getPathArray();
+    EventSystem.publish('path:updated', currentPath);
+  }
+  
+  // Start the wave in the enemies module
+  EnemiesModule.startWave();
+}
     
     // REMOVED: Code that generated a new path when starting a wave
     
@@ -123,73 +138,85 @@ const LevelsModule = (function() {
      * Advance to the next level
      */
     function nextLevel() {
-        currentLevel++;
-        currentWave = 1;
-        
-        // Sync wave number with EnemiesModule
-        if (window.EnemiesModule && typeof EnemiesModule.setWaveNumber === 'function') {
-            EnemiesModule.setWaveNumber(currentWave);
-        }
-        
-        // Generate a new Sudoku puzzle
-        SudokuModule.generatePuzzle();
-        
-        EventSystem.publish(GameEvents.UI_UPDATE, {
-            level: currentLevel,
-            wave: currentWave
-        });
-        
-        // Save the current score to make sure we have the most up-to-date value
-        SaveSystem.saveScore();
-        
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, `Advanced to Level ${currentLevel}! Sudoku puzzle complete!`);
-    }
-    
+  currentLevel++;
+  currentWave = 1;
+  
+  // Sync wave number with EnemiesModule
+  if (window.EnemiesModule && typeof EnemiesModule.setWaveNumber === 'function') {
+    EnemiesModule.setWaveNumber(currentWave);
+  }
+  
+  // Generate a new Sudoku puzzle using BoardManager (or fallback to SudokuModule)
+  if (window.BoardManager && typeof BoardManager.generatePuzzle === 'function') {
+    BoardManager.generatePuzzle();
+  } else if (window.SudokuModule && typeof SudokuModule.generatePuzzle === 'function') {
+    SudokuModule.generatePuzzle();
+  }
+  
+  EventSystem.publish(GameEvents.UI_UPDATE, {
+    level: currentLevel,
+    wave: currentWave
+  });
+  
+  // Save the current score to make sure we have the most up-to-date value
+  if (window.SaveSystem && typeof SaveSystem.saveScore === 'function') {
+    SaveSystem.saveScore();
+  }
+  
+  EventSystem.publish(GameEvents.STATUS_MESSAGE, `Advanced to Level ${currentLevel}! Sudoku puzzle complete!`);
+}
     /**
      * Initialize event listeners
      */
     function initEventListeners() {
-        // Listen for game initialization
-        EventSystem.subscribe(GameEvents.GAME_INIT, function(options) {
-            init(options);
-        });
-        
-        // Listen for wave completion
-        EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
-            // Increment the wave number
-            currentWave++;
-            
-            // Sync wave number with EnemiesModule
-            if (window.EnemiesModule && typeof EnemiesModule.setWaveNumber === 'function') {
-                EnemiesModule.setWaveNumber(currentWave);
-            }
-            
-            // Update UI
-            EventSystem.publish(GameEvents.UI_UPDATE, {
-                wave: currentWave
-            });
-            
-            // Show a message about the changing path
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-                `Wave ${currentWave} approaching! The enemies will find a new path!`);
-        });
-        
-        // Listen for Sudoku completion to advance to next level
-        EventSystem.subscribe(GameEvents.SUDOKU_COMPLETE, function() {
-            // Bonus for completing the Sudoku
-            const levelBonus = 150 * currentLevel;
-            PlayerModule.addCurrency(levelBonus);
-            PlayerModule.addScore(levelBonus * 3);
-            
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-                `Sudoku puzzle complete! Level ${currentLevel} completed! Bonus: ${levelBonus} currency and ${levelBonus * 3} points!`);
-            
-            // Wait a bit before advancing to next level
-            setTimeout(() => {
-                nextLevel();
-            }, 3000);
-        });
+  // Listen for game initialization
+  EventSystem.subscribe(GameEvents.GAME_INIT, function(options) {
+    init(options);
+  });
+  
+  // Listen for wave completion
+  EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
+    // Increment the wave number
+    currentWave++;
+    
+    // Sync wave number with EnemiesModule
+    if (window.EnemiesModule && typeof EnemiesModule.setWaveNumber === 'function') {
+      EnemiesModule.setWaveNumber(currentWave);
     }
+    
+    // Update UI
+    EventSystem.publish(GameEvents.UI_UPDATE, {
+      wave: currentWave
+    });
+    
+    // Show a message about the changing path
+    EventSystem.publish(GameEvents.STATUS_MESSAGE,
+      `Wave ${currentWave} approaching! The enemies will find a new path!`);
+    
+    // Generate a new path for the next wave
+    if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
+      setTimeout(() => {
+        BoardManager.generateEnemyPath();
+      }, 200);
+    }
+  });
+  
+  // Listen for Sudoku completion to advance to next level
+  EventSystem.subscribe(GameEvents.SUDOKU_COMPLETE, function() {
+    // Bonus for completing the Sudoku
+    const levelBonus = 150 * currentLevel;
+    PlayerModule.addCurrency(levelBonus);
+    PlayerModule.addScore(levelBonus * 3);
+    
+    EventSystem.publish(GameEvents.STATUS_MESSAGE,
+      `Sudoku puzzle complete! Level ${currentLevel} completed! Bonus: ${levelBonus} currency and ${levelBonus * 3} points!`);
+    
+    // Wait a bit before advancing to next level
+    setTimeout(() => {
+      nextLevel();
+    }, 3000);
+  });
+}
     
     // Initialize event listeners
     initEventListeners();

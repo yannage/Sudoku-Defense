@@ -79,52 +79,65 @@ const StatsScreen = (function() {
     
     // Get current game statistics
     function getGameStats() {
-        const stats = {
-            currentLevel: 1,
-            currentWave: 1,
-            currentScore: 0,
-            highScore: 0,
-            difficulty: 'medium',
-            towersPlaced: 0,
-            enemiesDefeated: 0
-        };
-        
-        // Get data from SaveSystem
-        if (window.SaveSystem) {
-            const savedState = SaveSystem.getLastSavedState();
-            stats.highScore = savedState.highScore || 0;
-            stats.currentScore = savedState.currentScore || 0;
-            stats.lastLevel = savedState.lastLevel || 1;
-            stats.lastWave = savedState.lastWave || 1;
-            stats.difficulty = savedState.difficulty || 'medium';
-        }
-        
-        // Get current data from modules if available
-        if (window.LevelsModule) {
-            stats.currentLevel = LevelsModule.getCurrentLevel();
-            stats.currentWave = LevelsModule.getCurrentWave();
-            stats.difficulty = LevelsModule.getDifficulty();
-        }
-        
-        if (window.PlayerModule) {
-            const playerState = PlayerModule.getState();
-            stats.currentScore = playerState.score;
-            stats.currency = playerState.currency;
-            stats.lives = playerState.lives;
-        }
-        
-        // Count towers and enemies
-        if (window.TowersModule) {
-            stats.towersPlaced = TowersModule.getTowers().length;
-        }
-        
-        // For enemies defeated, we need to track this separately
-        // This is just a placeholder - you would need to implement tracking
-        stats.enemiesDefeated = window.gameStats?.enemiesDefeated || 0;
-        
-        return stats;
-    }
+  const stats = {
+    currentLevel: 1,
+    currentWave: 1,
+    currentScore: 0,
+    highScore: 0,
+    difficulty: 'medium',
+    towersPlaced: 0,
+    enemiesDefeated: 0
+  };
+  
+  // Get data from SaveSystem
+  if (window.SaveSystem) {
+    const savedState = SaveSystem.getLastSavedState();
+    stats.highScore = savedState.highScore || 0;
+    stats.currentScore = savedState.currentScore || 0;
+    stats.lastLevel = savedState.lastLevel || 1;
+    stats.lastWave = savedState.lastWave || 1;
+    stats.difficulty = savedState.difficulty || 'medium';
+  }
+  
+  // Get current data from modules if available
+  if (window.LevelsModule) {
+    stats.currentLevel = LevelsModule.getCurrentLevel();
+    stats.currentWave = LevelsModule.getCurrentWave();
+    stats.difficulty = LevelsModule.getDifficulty();
+  }
+  
+  if (window.PlayerModule) {
+    const playerState = PlayerModule.getState();
+    stats.currentScore = playerState.score;
+    stats.currency = playerState.currency;
+    stats.lives = playerState.lives;
+  }
+  
+  // Count towers and enemies
+  if (window.TowersModule) {
+    stats.towersPlaced = TowersModule.getTowers().length;
+  }
+  
+  // Add Sudoku completion stats
+  const boardManager = window.BoardManager || window.SudokuModule;
+  if (boardManager && typeof boardManager.getCompletionStatus === 'function') {
+    const completionStatus = boardManager.getCompletionStatus();
+    stats.completedRows = completionStatus.rows.length;
+    stats.completedColumns = completionStatus.columns.length;
+    stats.completedGrids = completionStatus.grids.length;
     
+    // Calculate overall completion percentage
+    const totalUnits = 9 + 9 + 9; // rows + columns + grids
+    const completedUnits = stats.completedRows + stats.completedColumns + stats.completedGrids;
+    stats.completionPercentage = Math.round((completedUnits / totalUnits) * 100);
+  }
+  
+  // For enemies defeated, we need to track this separately
+  // This is just a placeholder - you would need to implement tracking
+  stats.enemiesDefeated = window.gameStats?.enemiesDefeated || 0;
+  
+  return stats;
+}
     // Track game statistics
     function setupStatTracking() {
         // Initialize global tracking object if it doesn't exist

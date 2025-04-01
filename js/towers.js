@@ -99,35 +99,24 @@ function createTower(type, row, col) {
     return null;
   }
   
-  // Determine if the tower is "correct" according to Sudoku rules AND solution
+  // Determine if the tower is "correct" according to Sudoku rules ONLY
+  // THE CRITICAL FIX: Don't check against solution
   let isCorrect = true;
   const numberValue = parseInt(type);
   
   if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9 && type !== 'special') {
     // Check if placement is valid according to Sudoku rules
-    let validByRules = true;
     if (boardManager && typeof boardManager.isValidMove === 'function') {
-      validByRules = boardManager.isValidMove(row, col, numberValue);
+      isCorrect = boardManager.isValidMove(row, col, numberValue);
+    } else {
+      // Fallback if isValidMove isn't available: manually check Sudoku rules
+      isCorrect = manuallyCheckSudokuRules(row, col, numberValue);
     }
     
-    // Check if placement matches the solution
-    let matchesSolution = true;
-    const solution = boardManager.getSolution();
-    if (solution && solution[row] && solution[row][col] !== numberValue) {
-      matchesSolution = false;
-    }
-    
-    // Tower is correct only if it's both valid by rules and matches solution
-    isCorrect = validByRules && matchesSolution;
-    
-    // Show warning if tower is incorrect
+    // Show warning if tower violates Sudoku rules
     if (!isCorrect) {
-      const reason = !validByRules ?
-        "violates Sudoku rules" :
-        "doesn't match the solution";
-      
       EventSystem.publish(GameEvents.STATUS_MESSAGE,
-        `Warning: This tower ${reason}. It will be removed after the wave with 50% refund.`);
+        `Warning: This tower violates Sudoku rules. It will be removed after the wave with 50% refund.`);
     }
   }
   
@@ -165,7 +154,10 @@ function createTower(type, row, col) {
       boardManager.setCellValue(row, col, numberValue);
     } else {
       // Fallback to direct setting if setCellValue is not available
-      boardManager.getBoard()[row][col] = numberValue;
+      const boardData = boardManager.getBoard();
+      if (boardData && boardData[row]) {
+        boardData[row][col] = numberValue;
+      }
     }
     
     // If incorrect, track it
@@ -179,6 +171,41 @@ function createTower(type, row, col) {
   
   return tower;
 }
+
+function manuallyCheckSudokuRules(row, col, value) {
+  const boardManager = window.BoardManager || window.SudokuModule;
+  const boardData = boardManager.getBoard();
+  
+  // Check row
+  for (let i = 0; i < 9; i++) {
+    if (i !== col && boardData[row][i] === value) {
+      return false;
+    }
+  }
+  
+  // Check column
+  for (let i = 0; i < 9; i++) {
+    if (i !== row && boardData[i][col] === value) {
+      return false;
+    }
+  }
+  
+  // Check 3x3 box
+  let boxRow = Math.floor(row / 3) * 3;
+  let boxCol = Math.floor(col / 3) * 3;
+  
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      if ((boxRow + i !== row || boxCol + j !== col) &&
+        boardData[boxRow + i][boxCol + j] === value) {
+        return false;
+      }
+    }
+  }
+  
+  return true;
+}
+
     /**
      * Remove a tower
      * @param {string} towerId - ID of the tower to remove

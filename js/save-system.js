@@ -48,37 +48,46 @@ const SaveSystem = (function() {
      * Updates both current score and high score if needed
      */
     function saveScore() {
-        if (!window.PlayerModule) {
-            console.error("PlayerModule not available for saving score");
-            return;
-        }
-        
-        const currentScore = PlayerModule.getState().score;
-        const highScore = getHighScore();
-        
-        // Save current score
-        saveData(STORAGE_KEYS.CURRENT_SCORE, currentScore);
-        
-        // Update high score if current score is higher
-        if (currentScore > highScore) {
-            saveData(STORAGE_KEYS.HIGH_SCORE, currentScore);
-            console.log(`New high score saved: ${currentScore}`);
-            
-            // Show notification for new high score
-            showSaveNotification(`New high score: ${currentScore}!`);
-        } else {
-            // Show regular save notification
-            showSaveNotification('Game progress saved');
-        }
-        
-        // Save level and wave info
-        if (window.LevelsModule) {
-            saveData(STORAGE_KEYS.LAST_LEVEL, LevelsModule.getCurrentLevel());
-            saveData(STORAGE_KEYS.LAST_WAVE, LevelsModule.getCurrentWave());
-            saveData(STORAGE_KEYS.DIFFICULTY, LevelsModule.getDifficulty());
-        }
+    if (!window.PlayerModule) {
+        console.error("PlayerModule not available for saving score");
+        return;
     }
     
+    const currentScore = PlayerModule.getState().score;
+    const highScore = getHighScore();
+    
+    // Save current score
+    saveData(STORAGE_KEYS.CURRENT_SCORE, currentScore);
+    
+    // Update high score if current score is higher
+    if (currentScore > highScore) {
+        saveData(STORAGE_KEYS.HIGH_SCORE, currentScore);
+        console.log(`New high score saved: ${currentScore}`);
+        
+        // Show notification for new high score
+        showSaveNotification(`New high score: ${currentScore}!`);
+    } else {
+        // Show regular save notification
+        showSaveNotification('Game progress saved');
+    }
+    
+    // Save level and wave info
+    // Use BoardManager or fall back to LevelsModule
+    let currentLevel = 1;
+    let currentWave = 1;
+    let difficulty = 'medium';
+    
+    if (window.LevelsModule) {
+        currentLevel = LevelsModule.getCurrentLevel();
+        currentWave = LevelsModule.getCurrentWave();
+        difficulty = LevelsModule.getDifficulty();
+    }
+    
+    saveData(STORAGE_KEYS.LAST_LEVEL, currentLevel);
+    saveData(STORAGE_KEYS.LAST_WAVE, currentWave);
+    saveData(STORAGE_KEYS.DIFFICULTY, difficulty);
+}
+
     /**
      * Get high score
      * @returns {number} High score
@@ -182,37 +191,36 @@ const SaveSystem = (function() {
      * Initialize event listeners for automatic saving
      */
     function initEventListeners() {
-        // Save on score change
-        EventSystem.subscribe(GameEvents.SCORE_CHANGE, function(newScore) {
-            saveData(STORAGE_KEYS.CURRENT_SCORE, newScore);
-            
-            // Update high score if needed
-            const highScore = getHighScore();
-            if (newScore > highScore) {
-                saveData(STORAGE_KEYS.HIGH_SCORE, newScore);
-                showSaveNotification(`New high score: ${newScore}!`);
-            }
-        });
-        
-        // Save on wave completion
-        EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
-            saveScore();
-        });
-        
-        // Save on game over
-        EventSystem.subscribe(GameEvents.GAME_OVER, function() {
-            saveScore();
-        });
-        
-        // Save when window is closed
-        window.addEventListener('beforeunload', function() {
-            saveScore();
-        });
-        
-        // Also save periodically (every 30 seconds)
-        setInterval(saveScore, 30000);
-    }
+  // Save on score change
+  EventSystem.subscribe(GameEvents.SCORE_CHANGE, function(newScore) {
+    saveData(STORAGE_KEYS.CURRENT_SCORE, newScore);
     
+    // Update high score if needed
+    const highScore = getHighScore();
+    if (newScore > highScore) {
+      saveData(STORAGE_KEYS.HIGH_SCORE, newScore);
+      showSaveNotification(`New high score: ${newScore}!`);
+    }
+  });
+  
+  // Save on wave completion
+  EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
+    saveScore();
+  });
+  
+  // Save on game over
+  EventSystem.subscribe(GameEvents.GAME_OVER, function() {
+    saveScore();
+  });
+  
+  // Save when window is closed
+  window.addEventListener('beforeunload', function() {
+    saveScore();
+  });
+  
+  // Also save periodically (every 30 seconds)
+  setInterval(saveScore, 30000);
+}
     /**
      * Check if local storage is available
      * @returns {boolean} Whether localStorage is available
