@@ -549,7 +549,7 @@ setTimeout(addDebugSolutionButton, 1000);
 
 
 
-  
+
 }
   
   // Tower selection
@@ -1071,6 +1071,127 @@ function applyIncorrectTowerIndicators() {
     } else {
         console.log("All towers match their solution values!");
     }
+}
+
+/**
+ * Last resort function to handle the tower indicators using direct DOM insertions
+ * This can be used if the other approaches aren't working
+ */
+function emergencyFixTowerIndicators() {
+    // Get the board and solution
+    const boardElement = document.getElementById('sudoku-board');
+    const solution = window.BoardManager && typeof BoardManager.getSolution === 'function'
+        ? BoardManager.getSolution() : null;
+        
+    // If we don't have what we need, abort
+    if (!boardElement || !solution || !window.TowersModule || !window.TowersModule.getTowers) {
+        console.error("Missing required elements for emergency fix");
+        return;
+    }
+    
+    // Get all towers
+    const towers = TowersModule.getTowers();
+    
+    // First remove any existing indicators
+    const existingMarkers = document.querySelectorAll('.incorrect-marker');
+    existingMarkers.forEach(marker => marker.remove());
+    
+    document.querySelectorAll('.sudoku-cell').forEach(cell => {
+        cell.classList.remove('incorrect-tower');
+    });
+    
+    // Create a style element if it doesn't exist
+    if (!document.getElementById('emergency-indicator-style')) {
+        const style = document.createElement('style');
+        style.id = 'emergency-indicator-style';
+        style.textContent = `
+            .emergency-incorrect {
+                background-color: rgba(255, 0, 0, 0.3) !important;
+                box-shadow: inset 0 0 0 2px #ff0000 !important;
+                position: relative;
+            }
+            
+            .emergency-x-mark {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: 24px;
+                color: rgba(255, 0, 0, 0.5);
+                z-index: 100;
+                pointer-events: none;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Apply indicators using direct DOM manipulation
+    towers.forEach(tower => {
+        // Skip special towers or ones without a numeric type
+        const towerValue = parseInt(tower.type);
+        if (isNaN(towerValue) || tower.type === 'special') return;
+        
+        // Get the solution value
+        if (solution[tower.row] && solution[tower.col]) {
+            const solutionValue = solution[tower.row][tower.col];
+            
+            // Check if tower is incorrect
+            if (towerValue !== solutionValue) {
+                console.log(`Tower at (${tower.row},${tower.col}) is incorrect: ${towerValue} ≠ ${solutionValue}`);
+                
+                // Try to find the cell in a few different ways
+                let cell = null;
+                
+                // Method 1: Using data attributes
+                cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+                
+                // Method 2: Using position in grid
+                if (!cell && boardElement.children.length >= 81) {
+                    const index = tower.row * 9 + tower.col;
+                    if (index < boardElement.children.length) {
+                        cell = boardElement.children[index];
+                    }
+                }
+                
+                // Method 3: Look for the tower's value in content
+                if (!cell) {
+                    const cells = boardElement.querySelectorAll('.sudoku-cell');
+                    cells.forEach(c => {
+                        // Check if this cell contains our tower value
+                        if (c.textContent.trim() === towerValue.toString()) {
+                            // Try to determine if this is our cell by checking nearby content
+                            const cellRect = c.getBoundingClientRect();
+                            const rowIndex = Math.floor((cellRect.top - boardElement.getBoundingClientRect().top) / (boardElement.clientHeight / 9));
+                            const colIndex = Math.floor((cellRect.left - boardElement.getBoundingClientRect().left) / (boardElement.clientWidth / 9));
+                            
+                            if (rowIndex === tower.row && colIndex === tower.col) {
+                                cell = c;
+                            }
+                        }
+                    });
+                }
+                
+                // Apply direct styling if we found the cell
+                if (cell) {
+                    cell.classList.add('emergency-incorrect');
+                    
+                    // Add X mark
+                    const xMark = document.createElement('div');
+                    xMark.className = 'emergency-x-mark';
+                    xMark.textContent = '❌';
+                    cell.appendChild(xMark);
+                    
+                    console.log(`Applied emergency indicator to cell at (${tower.row},${tower.col})`);
+                } else {
+                    console.error(`Could not find cell for tower at (${tower.row},${tower.col})`);
+                }
+            }
+        }
+    });
 }
 
 // Integrate Tower Animation Module with Game Module
