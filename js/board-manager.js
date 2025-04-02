@@ -448,16 +448,25 @@ const BoardManager = (function() {
         return cells;
     }
     
-    /**
-     * Generate a random valid Sudoku puzzle
-     */
-    function generatePuzzle() {
-        console.log("BoardManager: Generating new Sudoku puzzle...");
-        
-        // Reset completion tracking
-        completedRows.clear();
-        completedColumns.clear();
-        completedGrids.clear();
+    
+/**
+ * Generate a random valid Sudoku puzzle
+ * Modified to ensure the puzzle is solvable even with path cells
+ */
+function generatePuzzle() {
+    console.log("BoardManager: Generating new Sudoku puzzle...");
+    
+    // Reset completion tracking
+    completedRows.clear();
+    completedColumns.clear();
+    completedGrids.clear();
+    
+    let attempts = 0;
+    let validPuzzleFound = false;
+    
+    while (!validPuzzleFound && attempts < 10) {
+        attempts++;
+        console.log(`BoardManager: Puzzle generation attempt ${attempts}`);
         
         // Generate the enemy path first
         const pathArray = generateEnemyPath();
@@ -471,41 +480,163 @@ const BoardManager = (function() {
         // Create a puzzle from the solution
         const { puzzle, fixed } = createPuzzleFromSolution(solution, pathCells, cellsToReveal);
         
-        // Set the board and fixed cells
-        board = puzzle;
-        fixedCells = fixed;
+        // TEST THE PUZZLE: Check if every block can still have all numbers 1-9
+        validPuzzleFound = testPuzzleValidity(puzzle, pathCells);
         
-        // Count fixed cells for debugging
-        let fixedCount = 0;
-        for (let row = 0; row < 9; row++) {
-            for (let col = 0; col < 9; col++) {
-                if (fixedCells[row][col]) fixedCount++;
+        if (validPuzzleFound) {
+            // Set the board and fixed cells
+            board = puzzle;
+            fixedCells = fixed;
+            
+            console.log("BoardManager: Valid solvable puzzle generated!");
+        } else {
+            console.log("BoardManager: Generated puzzle is not solvable with current path, retrying...");
+            // Clear path cells for the next attempt
+            pathCells.clear();
+        }
+    }
+    
+    if (!validPuzzleFound) {
+        console.error("BoardManager: Failed to generate a valid puzzle after multiple attempts");
+        // Emergency fallback - generate a very simple puzzle with minimal path
+        emergencyPuzzleGeneration();
+    }
+    
+    // Count fixed cells for debugging
+    let fixedCount = 0;
+    for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+            if (fixedCells[row][col]) fixedCount++;
+        }
+    }
+    console.log(`BoardManager: Generated puzzle with ${fixedCount} fixed cells`);
+    
+    // Notify other modules that the board has been updated
+    EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
+        board: getBoard(),
+        solution: getSolution(),
+        fixedCells: getFixedCells(),
+        pathCells: getPathArray()
+    });
+    
+    // Remove all towers when a new puzzle is generated
+    setTimeout(() => {
+        if (window.TowersModule && typeof TowersModule.init === 'function') {
+            TowersModule.init();
+        }
+        // Force a board update to ensure correct display
+        if (window.Game && typeof Game.updateBoard === 'function') {
+            Game.updateBoard();
+        }
+    }, 100);
+    
+    return board;
+}
+
+/**
+ * Test if a puzzle is still solvable with the given path cells
+ * @param {number[][]} puzzle - The puzzle to test
+ * @param {Set<string>} pathCells - Set of path cells coordinates
+ * @returns {boolean} Whether the puzzle is still solvable
+ */
+function testPuzzleValidity(puzzle, pathCells) {
+    // Check each 3x3 block to make sure all numbers 1-9 can be placed
+    for (let blockRow = 0; blockRow < 3; blockRow++) {
+        for (let blockCol = 0; blockCol < 3; blockCol++) {
+            // For each block, check if all numbers 1-9 can be placed
+            for (let num = 1; num <= 9; num++) {
+                let canPlaceNumber = false;
+                
+                // Check all cells in this 3x3 block
+                blockLoop: for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        const row = blockRow * 3 + i;
+                        const col = blockCol * 3 + j;
+                        
+                        // Skip path cells and already filled cells
+                        if (pathCells.has(`${row},${col}`) || puzzle[row][col] !== 0) {
+                            continue;
+                        }
+                        
+                        // Check if this number can be placed in this cell
+                        if (isValidMoveForTest(puzzle, row, col, num)) {
+                            canPlaceNumber = true;
+                            break blockLoop; // We found a valid position, no need to check further
+                        }
+                    }
+                }
+                
+                // If we can't place this number in this block, the puzzle is invalid
+                if (!canPlaceNumber) {
+                    console.log(`BoardManager: Cannot place ${num} in block ${blockRow},${blockCol}`);
+                    return false;
+                }
             }
         }
-        console.log(`BoardManager: Generated puzzle with ${fixedCount} fixed cells`);
-        
-        // Notify other modules that the board has been updated
-        EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
-            board: getBoard(),
-            solution: getSolution(),
-            fixedCells: getFixedCells(),
-            pathCells: pathArray
-        });
-        
-        // Remove all towers when a new puzzle is generated
-        // Integrated from aggressive-tower-reset-fix.js
-        setTimeout(() => {
-            if (window.TowersModule && typeof TowersModule.init === 'function') {
-                TowersModule.init();
-            }
-            // Force a board update to ensure correct display
-            if (window.Game && typeof Game.updateBoard === 'function') {
-                Game.updateBoard();
-            }
-        }, 100);
-        
-        return board;
     }
+    
+    return true;
+}
+
+/**
+ * Check if a move is valid for our testing purpose
+ * Similar to isValidMove but takes a puzzle as parameter
+ */
+function isValidMoveForTest(puzzle, row, col, value) {
+    // Check row
+    for (let i = 0; i < 9; i++) {
+        if (i !== col && puzzle[row][i] === value) {
+            return false;
+        }
+    }
+    
+    // Check column
+    for (let i = 0; i < 9; i++) {
+        if (i !== row && puzzle[i][col] === value) {
+            return false;
+        }
+    }
+    
+    // Check 3x3 box
+    let boxRow = Math.floor(row / 3) * 3;
+    let boxCol = Math.floor(col / 3) * 3;
+    
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            if ((boxRow + i !== row || boxCol + j !== col) && 
+                puzzle[boxRow + i][boxCol + j] === value) {
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
+
+/**
+ * Emergency puzzle generation with a minimal path
+ * Used as a fallback when normal generation fails
+ */
+function emergencyPuzzleGeneration() {
+    console.log("BoardManager: Using emergency puzzle generation");
+    
+    // Generate a complete solution
+    solution = generateCompleteSolution();
+    
+    // Create a very simple path along the edge
+    pathCells.clear();
+    for (let i = 0; i < 9; i++) {
+        pathCells.add(`0,${i}`); // Top row
+    }
+    
+    // Create very easy puzzle with many revealed cells
+    let cellsToReveal = 45; // Show many cells
+    const { puzzle, fixed } = createPuzzleFromSolution(solution, pathCells, cellsToReveal);
+    
+    // Set the board and fixed cells
+    board = puzzle;
+    fixedCells = fixed;
+}
     
     /**
      * Check if a move is valid according to Sudoku rules
