@@ -453,6 +453,10 @@ const BoardManager = (function() {
  * Generate a random valid Sudoku puzzle
  * Modified to ensure the puzzle is solvable even with path cells
  */
+/**
+ * Generate a random valid Sudoku puzzle
+ * Modified to ensure the puzzle is solvable even with path cells
+ */
 function generatePuzzle() {
     console.log("BoardManager: Generating new Sudoku puzzle...");
     
@@ -540,18 +544,24 @@ function generatePuzzle() {
  * @returns {boolean} Whether the puzzle is still solvable
  */
 function testPuzzleValidity(puzzle, pathCells) {
-    // Check each 3x3 block to make sure all numbers 1-9 can be placed
+    // Check each 3x3 block to make sure all numbers 1-9 can be placed somewhere
     for (let blockRow = 0; blockRow < 3; blockRow++) {
         for (let blockCol = 0; blockCol < 3; blockCol++) {
             // For each block, check if all numbers 1-9 can be placed
             for (let num = 1; num <= 9; num++) {
                 let canPlaceNumber = false;
                 
-                // Check all cells in this 3x3 block
+                // Check if the number is already present in the block in a fixed cell
                 blockLoop: for (let i = 0; i < 3; i++) {
                     for (let j = 0; j < 3; j++) {
                         const row = blockRow * 3 + i;
                         const col = blockCol * 3 + j;
+                        
+                        // If number is already placed in a fixed cell, it's satisfied
+                        if (puzzle[row][col] === num && fixedCells[row][col]) {
+                            canPlaceNumber = true;
+                            break blockLoop;
+                        }
                         
                         // Skip path cells and already filled cells
                         if (pathCells.has(`${row},${col}`) || puzzle[row][col] !== 0) {
@@ -569,6 +579,21 @@ function testPuzzleValidity(puzzle, pathCells) {
                 // If we can't place this number in this block, the puzzle is invalid
                 if (!canPlaceNumber) {
                     console.log(`BoardManager: Cannot place ${num} in block ${blockRow},${blockCol}`);
+                    
+                    // Debug which cells are available in this block
+                    let availableCells = [];
+                    for (let i = 0; i < 3; i++) {
+                        for (let j = 0; j < 3; j++) {
+                            const row = blockRow * 3 + i;
+                            const col = blockCol * 3 + j;
+                            
+                            if (!pathCells.has(`${row},${col}`) && puzzle[row][col] === 0) {
+                                availableCells.push(`(${row},${col})`);
+                            }
+                        }
+                    }
+                    
+                    console.log(`Available cells in this block: ${availableCells.join(', ')}`);
                     return false;
                 }
             }
@@ -623,7 +648,7 @@ function emergencyPuzzleGeneration() {
     // Generate a complete solution
     solution = generateCompleteSolution();
     
-    // Create a very simple path along the edge
+    // Create a very simple path along the top edge
     pathCells.clear();
     for (let i = 0; i < 9; i++) {
         pathCells.add(`0,${i}`); // Top row

@@ -929,42 +929,72 @@ window.Game = Game;
     }
     
     // Create a function to apply incorrect tower indicators
-    function applyIncorrectTowerIndicators() {
-        const boardElement = document.getElementById('sudoku-board');
-        if (!boardElement) return;
-        
-        // First, clear all indicators
-        const allCells = boardElement.querySelectorAll('.sudoku-cell');
-        allCells.forEach(cell => {
-            cell.classList.remove('incorrect-tower');
-            const xMark = cell.querySelector('.incorrect-marker');
-            if (xMark) xMark.remove();
-        });
-        
-        // Get all towers
-        if (!window.TowersModule || typeof window.TowersModule.getTowers !== 'function') return;
-        
-        const towers = window.TowersModule.getTowers();
-        
-        // Apply indicators to incorrect towers
-        towers.forEach(tower => {
-            if (tower.isCorrect === false) {
-                const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
-                if (cell) {
-                    // Apply incorrect tower class
-                    cell.classList.add('incorrect-tower');
+   /**
+ * Apply visual indicators to towers that don't match the solution
+ */
+function applyIncorrectTowerIndicators() {
+    const boardElement = document.getElementById('sudoku-board');
+    if (!boardElement) return;
+    
+    // First, clear all indicators
+    const allCells = boardElement.querySelectorAll('.sudoku-cell');
+    allCells.forEach(cell => {
+        cell.classList.remove('incorrect-tower');
+        const xMark = cell.querySelector('.incorrect-marker');
+        if (xMark) xMark.remove();
+    });
+    
+    // Get all towers
+    if (!window.TowersModule || typeof window.TowersModule.getTowers !== 'function') return;
+    
+    const towers = window.TowersModule.getTowers();
+    
+    // Apply indicators to towers that don't match the solution
+    towers.forEach(tower => {
+        // Check if tower doesn't match the solution value
+        // This is the critical change - now we check matchesSolution rather than just isCorrect
+        if (tower.matchesSolution === false) {
+            const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+            if (cell) {
+                // Apply incorrect tower class for red background
+                cell.classList.add('incorrect-tower');
+                
+                // Add semi-transparent X mark
+                if (!cell.querySelector('.incorrect-marker')) {
+                    const xMark = document.createElement('div');
+                    xMark.className = 'incorrect-marker';
+                    xMark.textContent = '❌';
+                    cell.appendChild(xMark);
                     
-                    // Add semi-transparent X mark
-                    if (!cell.querySelector('.incorrect-marker')) {
-                        const xMark = document.createElement('div');
-                        xMark.className = 'incorrect-marker';
-                        xMark.textContent = '❌';
-                        cell.appendChild(xMark);
+                    // Add tooltip showing correct value if available
+                    if (tower.solutionValue) {
+                        cell.title = `Correct value: ${tower.solutionValue}`;
                     }
                 }
             }
-        });
-    }
+        }
+    });
+    
+    // Also apply indicators to towers that violate Sudoku rules
+    // (This preserves the existing behavior while adding the solution-checking)
+    towers.forEach(tower => {
+        if (tower.isCorrect === false) {
+            const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+            if (cell && !cell.classList.contains('incorrect-tower')) {
+                // Apply incorrect tower class
+                cell.classList.add('incorrect-tower');
+                
+                // Add semi-transparent X mark if not already added
+                if (!cell.querySelector('.incorrect-marker')) {
+                    const xMark = document.createElement('div');
+                    xMark.className = 'incorrect-marker';
+                    xMark.textContent = '❌';
+                    cell.appendChild(xMark);
+                }
+            }
+        }
+    });
+}
     
     // Hook into tower placement event
     EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {

@@ -59,21 +59,15 @@ const TowersModule = (function() {
  * @param {number} col - Column index on the grid
  * @returns {Object|null} The created tower or null if creation failed
  */
+/**
+ * Create a new tower
+ * @param {number|string} type - Tower type
+ * @param {number} row - Row index on the grid
+ * @param {number} col - Column index on the grid
+ * @returns {Object|null} The created tower or null if creation failed
+ */
 function createTower(type, row, col) {
   console.log("TowersModule.createTower called with type:", type, "row:", row, "col:", col);
-  
-  // Add debug logging here to check solution value
-  if (window.BoardManager && typeof BoardManager.getSolution === 'function') {
-    const solution = BoardManager.getSolution();
-    if (solution && solution[row] && solution[row][col]) {
-      console.log("TOWER DEBUG - Solution value at this position:", solution[row][col]);
-      if (parseInt(type) !== solution[row][col]) {
-        console.log("TOWER DEBUG - MISMATCH: Tower value does not match solution!");
-      } else {
-        console.log("TOWER DEBUG - MATCH: Tower value matches solution.");
-      }
-    }
-  }
   
   const typeData = towerTypes[type];
   
@@ -112,10 +106,31 @@ function createTower(type, row, col) {
     return null;
   }
   
-  // Determine if the tower is "correct" according to Sudoku rules ONLY
-  // THE CRITICAL FIX: Don't check against solution
-  let isCorrect = true;
+  // Determine if the tower matches the solution
+  let matchesSolution = false;
   const numberValue = parseInt(type);
+  let solutionValue = null;
+  
+  if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9 && type !== 'special') {
+    // Get the solution
+    if (boardManager && typeof boardManager.getSolution === 'function') {
+      const solution = boardManager.getSolution();
+      if (solution && solution[row] && solution[row][col]) {
+        solutionValue = solution[row][col];
+        matchesSolution = (numberValue === solutionValue);
+        
+        console.log(`TOWER DEBUG - Solution value at this position: ${solutionValue}`);
+        if (!matchesSolution) {
+          console.log("TOWER DEBUG - MISMATCH: Tower value does not match solution!");
+        } else {
+          console.log("TOWER DEBUG - MATCH: Tower value matches solution.");
+        }
+      }
+    }
+  }
+  
+  // Determine if the tower is "correct" according to Sudoku rules
+  let isCorrect = true;
   
   if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9 && type !== 'special') {
     // Check if placement is valid according to Sudoku rules
@@ -151,7 +166,9 @@ function createTower(type, row, col) {
     x: x,
     y: y,
     target: null,
-    isCorrect: isCorrect
+    isCorrect: isCorrect,
+    matchesSolution: matchesSolution,
+    solutionValue: solutionValue  // Store the correct value for reference
   };
   
   // Spend currency
@@ -175,6 +192,12 @@ function createTower(type, row, col) {
     
     // If incorrect, track it
     if (!isCorrect) {
+      incorrectTowers.add(tower.id);
+    }
+    
+    // If it doesn't match the solution, add to the incorrect towers list
+    // This is critical for showing the red coloring
+    if (!matchesSolution) {
       incorrectTowers.add(tower.id);
     }
   }
