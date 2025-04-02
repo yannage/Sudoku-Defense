@@ -627,22 +627,6 @@ function setCellValue(row, col, value) {
     return true;
   }
   
-  // For valid moves, normal flow continues
-  board[row][col] = value;
-  
-  // Publish event
-  EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
-  
-  // Check for unit completions (rows, columns, grids)
-  checkUnitCompletion();
-  
-  // Check if the Sudoku is complete
-  if (isComplete()) {
-    EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
-  }
-  
-  return true;
-}
   
   // For valid moves, normal flow continues
   board[row][col] = value;
