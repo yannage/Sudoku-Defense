@@ -126,13 +126,11 @@ function createTower(type, row, col) {
         solutionValue = solution[row][col];
         matchesSolution = (numberValue === solutionValue);
         
-        // Debug output
-        console.log(`TOWER DEBUG - Position (${row},${col}): Tower=${numberValue}, Solution=${solutionValue}`);
-        if (matchesSolution) {
-          console.log(`TOWER DEBUG - MATCH: Tower value ${numberValue} matches solution ${solutionValue}.`);
-        } else {
-          console.log(`TOWER DEBUG - MISMATCH: Tower value ${numberValue} does not match solution ${solutionValue}!`);
-        }
+        console.log(`Tower Placement Debug:
+          Position: (${row},${col})
+          Tower Type: ${numberValue}
+          Solution Value: ${solutionValue}
+          Matches Solution: ${matchesSolution}`);
       }
     }
   }
@@ -196,14 +194,10 @@ function createTower(type, row, col) {
       }
     }
     
-    // If incorrect, track it
-    if (!isCorrect) {
+    // If incorrect according to Sudoku rules or solution, track it
+    if (!isCorrect || !matchesSolution) {
       incorrectTowers.add(tower.id);
-    }
-    
-    // If it doesn't match the solution, add to the incorrect towers list
-    if (!matchesSolution) {
-      incorrectTowers.add(tower.id);
+      console.log(`Added tower ${tower.id} to incorrect towers list`);
     }
   }
   
@@ -453,7 +447,7 @@ function findClosestEnemy(tower, enemies) {
     /**
      * Remove incorrect towers after a wave
      */
-    function removeIncorrectTowers() {
+  function removeIncorrectTowers() {
   if (incorrectTowers.size === 0) return;
   
   let refundAmount = 0;
@@ -462,6 +456,13 @@ function findClosestEnemy(tower, enemies) {
   // Identify towers to remove and calculate refund
   towers.forEach(tower => {
     if (incorrectTowers.has(tower.id)) {
+      console.log(`Identifying incorrect tower for removal:
+        Tower ID: ${tower.id}
+        Type: ${tower.type}
+        Position: (${tower.row},${tower.col})
+        Is Correct (Sudoku Rules): ${tower.isCorrect}
+        Matches Solution: ${tower.matchesSolution}`);
+      
       towersToRemove.push(tower);
       
       // Calculate 50% refund
