@@ -1252,6 +1252,71 @@ function isValidMoveForTest(puzzle, row, col, value) {
         
         return true;
     }
+
+/**
+ * Debug function to print the full solution grid
+ * Add this to board-manager.js
+ */
+function debugShowSolution() {
+    if (!solution || !solution.length) {
+        console.log("Solution is not available");
+        return;
+    }
+    
+    console.log("%c===== SUDOKU SOLUTION GRID =====", "font-weight: bold; color: blue; font-size: 14px;");
+    
+    // Create a visual representation of the solution
+    let output = "";
+    for (let row = 0; row < 9; row++) {
+        let rowStr = "";
+        if (row % 3 === 0 && row > 0) {
+            output += "------+-------+------\n";
+        }
+        
+        for (let col = 0; col < 9; col++) {
+            if (col % 3 === 0 && col > 0) {
+                rowStr += "| ";
+            }
+            
+            // Mark path cells differently
+            if (pathCells.has(`${row},${col}`)) {
+                rowStr += "X ";
+            } else {
+                rowStr += solution[row][col] + " ";
+            }
+        }
+        output += rowStr + "\n";
+    }
+    
+    console.log(output);
+    
+    // Also output as a 2D array for copy-pasting
+    console.log("Solution as array:");
+    console.table(solution);
+}
+
+// Add to existing init function (findly where EventSystem.publish(GameEvents.SUDOKU_GENERATED, ...) is called
+// Add this line right after that:
+setTimeout(debugShowSolution, 500);
+
+// Also make it available globally for manual calling
+window.debugShowSolution = debugShowSolution;
+
+/**
+ * Add keyboard shortcut for displaying solution
+ * Add this to board-manager.js or game.js
+ */
+// Add keyboard shortcut to show solution on Ctrl+Alt+S
+document.addEventListener('keydown', function(event) {
+    // Check for Ctrl+Alt+S
+    if (event.ctrlKey && event.altKey && event.key === 's') {
+        event.preventDefault(); // Prevent browser save dialog
+        debugShowSolution();
+        console.log("%c SOLUTION DISPLAYED! Press Ctrl+Alt+S again to show it again", 
+                   "color: green; font-weight: bold");
+    }
+});
+
     
     /**
      * Fix any discrepancies between the board and towers

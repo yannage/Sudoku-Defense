@@ -512,6 +512,44 @@ function setupUIEventListeners() {
   EventSystem.subscribe('board:updated', function(data) {
     updateBoard();
   });
+
+/**
+ * Add a debug button to the UI (optional)
+ * Add this to your game.js file in the setupUIEventListeners function
+ */
+// Add debug solution button for development
+function addDebugSolutionButton() {
+    // Only add in development environment
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        const gameControls = document.getElementById('game-controls');
+        if (!gameControls) return;
+        
+        const debugButton = document.createElement('button');
+        debugButton.id = 'debug-solution-btn';
+        debugButton.textContent = 'Show Solution';
+        debugButton.style.background = '#ff5722';
+        debugButton.style.color = 'white';
+        
+        // Add click handler
+        debugButton.addEventListener('click', function() {
+            if (window.debugShowSolution) {
+                window.debugShowSolution();
+            } else {
+                console.log("debugShowSolution function not available");
+            }
+        });
+        
+        // Add to controls
+        gameControls.appendChild(debugButton);
+    }
+}
+
+// Call this function after DOM is loaded
+setTimeout(addDebugSolutionButton, 1000);
+
+
+
+  
 }
   
   // Tower selection
