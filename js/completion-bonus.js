@@ -56,21 +56,27 @@ let hasCelebrated = false;
                 pointer-events: auto;
             }
             
-            .celebration-content {
-                background-color: #1a1a1a;
-                color: white;
-                border-radius: 10px;
-                padding: 20px;
-                width: 90%;
-                max-width: 500px;
-                text-align: center;
-                position: relative;
-                transform: translateY(20px);
-                opacity: 0;
-                transition: transform 0.5s, opacity 0.5s;
-                max-height: 90vh;
-                overflow-y: auto;
-            }
+           .celebration - content {
+    background - color: #1a1a1a;
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+    position: relative;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: transform 0.5s, opacity 0.5s;
+    max-height: 90vh;
+
+    /* This ensures content scrolls if too tall */
+    overflow-y: auto;
+
+    /* This contains confetti inside the box */
+    overflow-x: hidden;
+    overflow: hidden;
+}
             
             .celebration-content.active {
                 transform: translateY(0);
@@ -369,30 +375,31 @@ let hasCelebrated = false;
     }
     
     // Create confetti effect
-    function createConfetti(container) {
-        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', 'gold', '#ffffff'];
-        
-        for (let i = 0; i < 100; i++) {
-            const confetti = document.createElement('div');
-            confetti.className = 'confetti';
-            confetti.style.left = Math.random() * 100 + '%';
-            confetti.style.width = Math.random() * 10 + 5 + 'px';
-            confetti.style.height = Math.random() * 10 + 5 + 'px';
-            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
-            confetti.style.animationDelay = Math.random() * 2 + 's';
-            
-            container.appendChild(confetti);
-            
-            // Remove confetti after animation completes
-            setTimeout(() => {
-                if (confetti.parentNode === container) {
-                    container.removeChild(confetti);
-                }
-            }, 5000);
-        }
-    }
+   function createConfetti(container) {
+  const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', 'gold', '#ffffff'];
+  
+  for (let i = 0; i < 100; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
     
+    confetti.style.position = 'absolute';
+    confetti.style.top = '0px'; // spawn from top of modal
+    confetti.style.left = Math.random() * 100 + '%';
+    confetti.style.width = Math.random() * 10 + 5 + 'px';
+    confetti.style.height = Math.random() * 10 + 5 + 'px';
+    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+    confetti.style.animationDelay = Math.random() * 2 + 's';
+    
+    container.appendChild(confetti);
+    
+    setTimeout(() => {
+      if (confetti.parentNode === container) {
+        container.removeChild(confetti);
+      }
+    }, 5000);
+  }
+}
     // Render a puzzle for display
     function renderPuzzleGrid(container, board, fixedCells, pathCells) {
         // Clear container
@@ -506,7 +513,10 @@ let hasCelebrated = false;
         container.classList.add('active');
         
         // Create confetti
-        createConfetti(container);
+       const content = container.querySelector('.celebration-content');
+if (content) {
+  createConfetti(content); // attach confetti to the modal content box
+}
         
         // Add small delay for animation
         setTimeout(() => {
