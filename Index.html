@@ -52,28 +52,33 @@
     </div>
 
     <!-- Load the modules in the correct order -->
-    <script src="js/events.js"></script>
-    <!-- Add the new BoardManager before other game modules -->
-    <script src="js/board-manager.js"></script>
-    <!-- Add compatibility layer right after BoardManager -->
-    <script src="js/sudoku-compatibility.js"></script>
-    <script src="js/player.js"></script>
-    <script src="js/enemies.js"></script>
-    <script src="js/towers.js"></script>
-    <script src="js/save-system.js"></script>
-    <script src="js/levels.js"></script>
-    <script src="js/tower-animations.js"></script>
-    <script src="js/custom-font-manager.js"></script>
-    <script src="js/stats-screen.js"></script>
-    <script src="js/game.js"></script>
-    <script src="js/completion-bonus.js"></script>
-    
-    <!-- Keep sudoku.js but commented out for reference if needed -->
-    <!-- <script src="js/sudoku.js"></script> -->
-    
-    <!-- Remove redundant fix scripts since they're now integrated into BoardManager -->
-    <!-- <script src="js/enhanced-sudoku-fix.js"></script> -->
-    <!-- <script src="js/board-fix.js"></script> -->
-    <!-- <script src="js/aggressive-tower-reset-fix.js"></script> -->
+<script src="js/events.js"></script>
+<script src="js/board-manager.js"></script>
+<script src="js/sudoku-compatibility.js"></script>
+<script src="js/player.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/towers.js"></script>
+<script src="js/save-system.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/tower-animations.js"></script>
+<script src="js/ability-system.js"></script> <!-- Position is important -->
+<script src="js/custom-font-manager.js"></script>
+<script src="js/stats-screen.js"></script>
+<script src="js/game.js"></script>
+<script src="js/completion-bonus.js"></script>
+<script src="js/init.js"></script> <!-- This initializes everything -->
+
+
+<!-- Force ability system initialization -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      if (window.AbilitySystem && typeof AbilitySystem.init === 'function') {
+        console.log("Fallback: Forcing AbilitySystem init from index.html");
+        AbilitySystem.init();
+      }
+    }, 1000);
+  });
+</script>
 </body>
 </html>

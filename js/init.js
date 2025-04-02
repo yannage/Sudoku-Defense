@@ -349,6 +349,19 @@ setTimeout(applyGameFixes, 500);
 // Load font preference - add this line
 setTimeout(loadFontPreference, 600);
 
+//clear character 
+localStorage.removeItem('sudoku_td_character');
+
+// Initialize ability system after other modules
+setTimeout(function() {
+  if (window.AbilitySystem && typeof AbilitySystem.init === 'function') {
+    console.log("Initializing Ability System from init.js");
+    AbilitySystem.init();
+  } else {
+    console.warn("AbilitySystem not found, ability features will not be available");
+  }
+}, 1200); // Slightly longer delay than other modules
+
 // Force a UI refresh to display high score
 setTimeout(() => {
   if (Game && Game.updateUI) {
