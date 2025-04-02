@@ -549,18 +549,29 @@ function exportPath() {
         return true;
     }
     
-    /**
-     * Set the value of a cell
-     * @param {number} row - Row index
-     * @param {number} col - Column index
-     * @param {number} value - Value to set
-     * @returns {boolean} Whether the move was valid
-     */
-    function setCellValue(row, col, value) {
+ /**
+ * Set the value of a cell
+ * @param {number} row - Row index
+ * @param {number} col - Column index
+ * @param {number} value - Value to set
+ * @returns {boolean} Whether the move was valid
+ */
+function setCellValue(row, col, value) {
   // Validate row and column
   if (row < 0 || row > 8 || col < 0 || col > 8) {
     console.error(`BoardManager: Invalid cell position (${row}, ${col})`);
     return false;
+  }
+  
+  // Debug output for tower placement
+  if (value > 0) {
+    console.debug(`BoardManager: Tower placed at (${row}, ${col}) with value ${value}`);
+    console.debug(`BoardManager: Correct value at this position is ${solution[row][col]}`);
+    if (value !== solution[row][col]) {
+      console.debug(`BoardManager: MISMATCH - Tower value does not match solution!`);
+    } else {
+      console.debug(`BoardManager: MATCH - Tower value matches solution.`);
+    }
   }
   
   // Check if the cell is fixed
@@ -615,6 +626,23 @@ function exportPath() {
     
     return true;
   }
+  
+  // For valid moves, normal flow continues
+  board[row][col] = value;
+  
+  // Publish event
+  EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
+  
+  // Check for unit completions (rows, columns, grids)
+  checkUnitCompletion();
+  
+  // Check if the Sudoku is complete
+  if (isComplete()) {
+    EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
+  }
+  
+  return true;
+}
   
   // For valid moves, normal flow continues
   board[row][col] = value;
