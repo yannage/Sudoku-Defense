@@ -62,6 +62,19 @@ const TowersModule = (function() {
 function createTower(type, row, col) {
   console.log("TowersModule.createTower called with type:", type, "row:", row, "col:", col);
   
+  // Add debug logging here to check solution value
+  if (window.BoardManager && typeof BoardManager.getSolution === 'function') {
+    const solution = BoardManager.getSolution();
+    if (solution && solution[row] && solution[row][col]) {
+      console.log("TOWER DEBUG - Solution value at this position:", solution[row][col]);
+      if (parseInt(type) !== solution[row][col]) {
+        console.log("TOWER DEBUG - MISMATCH: Tower value does not match solution!");
+      } else {
+        console.log("TOWER DEBUG - MATCH: Tower value matches solution.");
+      }
+    }
+  }
+  
   const typeData = towerTypes[type];
   
   if (!typeData) {
