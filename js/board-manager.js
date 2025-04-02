@@ -207,113 +207,126 @@ const BoardManager = (function() {
      * Creates a non-overlapping path from a starting point to an end point
      */
     function generateEnemyPath() {
-    console.log("BoardManager: Generating enemy path");
-    pathCells.clear();
-    
-    // Only use horizontal and vertical movements to avoid diagonal overlaps
-    const directions = [
-        [-1, 0], // up
-        [1, 0],  // down
-        [0, 1]   // right - only move right, never left to prevent overlaps
-    ];
-    
-    // Start at a random position on the left edge
-    let startRow = Math.floor(Math.random() * 9);
-    let currentRow = startRow;
-    let currentCol = 0;
-    
-    // Choose an end row for the right edge
-    let endRow = Math.floor(Math.random() * 9);
-    
-    // Mark the starting position
-    pathCells.add(`${currentRow},${currentCol}`);
-    
-    // Keep track of visited columns to ensure we always make progress
-    const visitedColumns = new Set([0]);
-    
-    // Generate path until we reach the last column
-    while (currentCol < 8) {
-        let possibleMoves = [];
+        console.log("BoardManager: Generating enemy path");
+        pathCells.clear();
         
-        // Check each direction
-        for (let [dr, dc] of directions) {
-            let newRow = currentRow + dr;
-            let newCol = currentCol + dc;
+        // Only use horizontal and vertical movements to avoid diagonal overlaps
+        const directions = [
+            [-1, 0], // up
+            [1, 0],  // down
+            [0, 1]   // right - only move right, never left to prevent overlaps
+        ];
+        
+        // Start at a random position on the left edge
+        let startRow = Math.floor(Math.random() * 9);
+        let currentRow = startRow;
+        let currentCol = 0;
+        
+        // Choose an end row for the right edge
+        let endRow = Math.floor(Math.random() * 9);
+        
+        // Mark the starting position
+        pathCells.add(`${currentRow},${currentCol}`);
+        
+        // Keep track of visited columns to ensure we always make progress
+        const visitedColumns = new Set([0]);
+        
+        // Generate path until we reach the last column
+        while (currentCol < 8) {
+            let possibleMoves = [];
             
-            // Check if the new position is valid
-            if (
-                newRow >= 0 && newRow < 9 && 
-                newCol >= 0 && newCol < 9 && 
-                !pathCells.has(`${newRow},${newCol}`)
-            ) {
-                // If we're already at the target column, only allow vertical moves
-                if (currentCol === 7 && newCol > currentCol) {
-                    // We've reached column 7, only allow moving to endRow
-                    if (newRow === endRow) {
-                        possibleMoves = [[dr, dc]];
-                        break;
+            // Check each direction
+            for (let [dr, dc] of directions) {
+                let newRow = currentRow + dr;
+                let newCol = currentCol + dc;
+                
+                // Check if the new position is valid
+                if (
+                    newRow >= 0 && newRow < 9 && 
+                    newCol >= 0 && newCol < 9 && 
+                    !pathCells.has(`${newRow},${newCol}`)
+                ) {
+                    // If we're already at the target column, only allow vertical moves
+                    if (currentCol === 7 && newCol > currentCol) {
+                        // We've reached column 7, only allow moving to endRow
+                        if (newRow === endRow) {
+                            possibleMoves = [[dr, dc]];
+                            break;
+                        }
+                    } else {
+                        // Otherwise, consider this move
+                        possibleMoves.push([dr, dc]);
                     }
-                } else {
-                    // Otherwise, consider this move
-                    possibleMoves.push([dr, dc]);
                 }
             }
-        }
-        
-        // If no valid moves, force a move right
-        if (possibleMoves.length === 0) {
-            // Try to move right
-            let newRow = currentRow;
-            let newCol = currentCol + 1;
             
-            if (newCol < 9 && !pathCells.has(`${newRow},${newCol}`)) {
-                currentRow = newRow;
-                currentCol = newCol;
-                pathCells.add(`${currentRow},${currentCol}`);
-                visitedColumns.add(currentCol);
-                continue;
-            } else {
-                // If we can't move right, try to find any non-visited cell
-                let found = false;
-                for (let r = 0; r < 9; r++) {
-                    for (let c = currentCol; c < 9; c++) {
-                        if (!pathCells.has(`${r},${c}`)) {
-                            // Check if we can connect to this cell without crossing the path
-                            if (canConnect(currentRow, currentCol, r, c, pathCells)) {
-                                // Add connecting cells
-                                const connectingCells = getConnectingCells(currentRow, currentCol, r, c);
-                                for (const cell of connectingCells) {
-                                    pathCells.add(cell);
+            // If no valid moves, force a move right
+            if (possibleMoves.length === 0) {
+                // Try to move right
+                let newRow = currentRow;
+                let newCol = currentCol + 1;
+                
+                if (newCol < 9 && !pathCells.has(`${newRow},${newCol}`)) {
+                    currentRow = newRow;
+                    currentCol = newCol;
+                    pathCells.add(`${currentRow},${currentCol}`);
+                    visitedColumns.add(currentCol);
+                    continue;
+                } else {
+                    // If we can't move right, try to find any non-visited cell
+                    let found = false;
+                    for (let r = 0; r < 9; r++) {
+                        for (let c = currentCol; c < 9; c++) {
+                            if (!pathCells.has(`${r},${c}`)) {
+                                // Check if we can connect to this cell without crossing the path
+                                if (canConnect(currentRow, currentCol, r, c, pathCells)) {
+                                    // Add connecting cells
+                                    const connectingCells = getConnectingCells(currentRow, currentCol, r, c);
+                                    for (const cell of connectingCells) {
+                                        pathCells.add(cell);
+                                    }
+                                    currentRow = r;
+                                    currentCol = c;
+                                    found = true;
+                                    break;
                                 }
-                                currentRow = r;
-                                currentCol = c;
-                                found = true;
-                                break;
                             }
                         }
+                        if (found) break;
                     }
-                    if (found) break;
+                    
+                    if (!found) {
+                        // If still no valid moves, break and use what we have
+                        break;
+                    }
+                    continue;
                 }
-                
-                if (!found) {
-                    // If still no valid moves, break and use what we have
-                    break;
-                }
-                continue;
             }
-        }
-        
-        // Prefer moving toward the end
-        let bestMoves = [];
-        
-        // If we're not in the last column, prioritize moving right
-        if (currentCol < 7) {
-            // Prefer moving right
-            const rightMoves = possibleMoves.filter(([dr, dc]) => dc > 0);
-            if (rightMoves.length > 0) {
-                bestMoves = rightMoves;
+            
+            // Prefer moving toward the end
+            let bestMoves = [];
+            
+            // If we're not in the last column, prioritize moving right
+            if (currentCol < 7) {
+                // Prefer moving right
+                const rightMoves = possibleMoves.filter(([dr, dc]) => dc > 0);
+                if (rightMoves.length > 0) {
+                    bestMoves = rightMoves;
+                } else {
+                    // If we can't move right, prefer moving vertically toward endRow
+                    const verticalMoves = possibleMoves.filter(([dr, dc]) => dc === 0);
+                    if (verticalMoves.length > 0) {
+                        const movesTowardEnd = verticalMoves.filter(([dr, dc]) => 
+                            (dr > 0 && currentRow < endRow) || (dr < 0 && currentRow > endRow)
+                        );
+                        
+                        bestMoves = movesTowardEnd.length > 0 ? movesTowardEnd : verticalMoves;
+                    } else {
+                        bestMoves = possibleMoves;
+                    }
+                }
             } else {
-                // If we can't move right, prefer moving vertically toward endRow
+                // In the last column, prioritize getting to endRow
                 const verticalMoves = possibleMoves.filter(([dr, dc]) => dc === 0);
                 if (verticalMoves.length > 0) {
                     const movesTowardEnd = verticalMoves.filter(([dr, dc]) => 
@@ -325,66 +338,53 @@ const BoardManager = (function() {
                     bestMoves = possibleMoves;
                 }
             }
-        } else {
-            // In the last column, prioritize getting to endRow
-            const verticalMoves = possibleMoves.filter(([dr, dc]) => dc === 0);
-            if (verticalMoves.length > 0) {
-                const movesTowardEnd = verticalMoves.filter(([dr, dc]) => 
-                    (dr > 0 && currentRow < endRow) || (dr < 0 && currentRow > endRow)
-                );
-                
-                bestMoves = movesTowardEnd.length > 0 ? movesTowardEnd : verticalMoves;
-            } else {
-                bestMoves = possibleMoves;
+            
+            // Choose a move
+            const [dr, dc] = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+            
+            // Move to the new position
+            currentRow += dr;
+            currentCol += dc;
+            pathCells.add(`${currentRow},${currentCol}`);
+            
+            // Track visited columns
+            visitedColumns.add(currentCol);
+        }
+        
+        // If we haven't reached the end row in the last column, add a straight path to it
+        if (currentCol === 8 && currentRow !== endRow) {
+            // Add a path from current position to the end position
+            const step = currentRow < endRow ? 1 : -1;
+            for (let r = currentRow + step; step > 0 ? r <= endRow : r >= endRow; r += step) {
+                if (!pathCells.has(`${r},${currentCol}`)) {
+                    pathCells.add(`${r},${currentCol}`);
+                }
             }
         }
         
-        // Choose a move
-        const [dr, dc] = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+        // Reset completion tracking when path changes
+        completedRows.clear();
+        completedColumns.clear();
+        completedGrids.clear();
         
-        // Move to the new position
-        currentRow += dr;
-        currentCol += dc;
-        pathCells.add(`${currentRow},${currentCol}`);
+        // Convert the path to an array for compatibility with existing code
+        const pathArray = Array.from(pathCells).map(pos => pos.split(',').map(Number));
         
-        // Track visited columns
-        visitedColumns.add(currentCol);
+        console.log(`BoardManager: Generated enemy path with ${pathArray.length} cells`);
+        
+        // Publish path update event
+        EventSystem.publish('path:updated', pathArray);
+        
+        // Return the path array
+        return pathArray;
     }
-    
-    // If we haven't reached the end row in the last column, add a straight path to it
-    if (currentCol === 8 && currentRow !== endRow) {
-        // Add a path from current position to the end position
-        const step = currentRow < endRow ? 1 : -1;
-        for (let r = currentRow + step; step > 0 ? r <= endRow : r >= endRow; r += step) {
-            if (!pathCells.has(`${r},${currentCol}`)) {
-                pathCells.add(`${r},${currentCol}`);
-            }
-        }
-    }
-    
-    // Reset completion tracking when path changes
-    completedRows.clear();
-    completedColumns.clear();
-    completedGrids.clear();
-    
-    // Convert the path to an array for compatibility with existing code
-    const pathArray = Array.from(pathCells).map(pos => pos.split(',').map(Number));
-    
-    console.log(`BoardManager: Generated enemy path with ${pathArray.length} cells`);
-    
-    // Publish path update event
-    EventSystem.publish('path:updated', pathArray);
-    
-    // Return the path array
-    return pathArray;
-}
 
-// Export a new method for direct path access
-function exportPath() {
-    const pathArray = Array.from(pathCells).map(pos => pos.split(',').map(Number));
-    console.log("BoardManager.exportPath:", pathArray);
-    return pathArray;
-}
+    // Export a new method for direct path access
+    function exportPath() {
+        const pathArray = Array.from(pathCells).map(pos => pos.split(',').map(Number));
+        console.log("BoardManager.exportPath:", pathArray);
+        return pathArray;
+    }
     
     /**
      * Check if we can connect two cells without crossing the existing path
@@ -549,112 +549,110 @@ function exportPath() {
         return true;
     }
     
- /**
- * Set the value of a cell
- * @param {number} row - Row index
- * @param {number} col - Column index
- * @param {number} value - Value to set
- * @returns {boolean} Whether the move was valid
- */
-function setCellValue(row, col, value) {
-  // Validate row and column
-  if (row < 0 || row > 8 || col < 0 || col > 8) {
-    console.error(`BoardManager: Invalid cell position (${row}, ${col})`);
-    return false;
-  }
-  
-  // Debug output for tower placement
-  if (value > 0) {
-    console.debug(`BoardManager: Tower placed at (${row}, ${col}) with value ${value}`);
-    console.debug(`BoardManager: Correct value at this position is ${solution[row][col]}`);
-    if (value !== solution[row][col]) {
-      console.debug(`BoardManager: MISMATCH - Tower value does not match solution!`);
-    } else {
-      console.debug(`BoardManager: MATCH - Tower value matches solution.`);
+    /**
+     * Set the value of a cell
+     * @param {number} row - Row index
+     * @param {number} col - Column index
+     * @param {number} value - Value to set
+     * @returns {boolean} Whether the move was valid
+     */
+    function setCellValue(row, col, value) {
+      // Validate row and column
+      if (row < 0 || row > 8 || col < 0 || col > 8) {
+        console.error(`BoardManager: Invalid cell position (${row}, ${col})`);
+        return false;
+      }
+      
+      // Debug output for tower placement
+      if (value > 0) {
+        console.debug(`BoardManager: Tower placed at (${row}, ${col}) with value ${value}`);
+        console.debug(`BoardManager: Correct value at this position is ${solution[row][col]}`);
+        if (value !== solution[row][col]) {
+          console.debug(`BoardManager: MISMATCH - Tower value does not match solution!`);
+        } else {
+          console.debug(`BoardManager: MATCH - Tower value matches solution.`);
+        }
+      }
+      
+      // Check if the cell is fixed
+      if (fixedCells[row][col]) {
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on a fixed Sudoku cell!");
+        return false;
+      }
+      
+      // Check if the cell is on the enemy path
+      if (pathCells.has(`${row},${col}`)) {
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on the enemy path!");
+        return false;
+      }
+      
+      // If we're clearing a cell (value = 0), always allow it
+      if (value === 0) {
+        board[row][col] = 0;
+        
+        // Check for completions after clearing a cell
+        checkUnitCompletion();
+        
+        // Publish event
+        EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
+        
+        return true;
+      }
+      
+      // Check if the move is valid according to Sudoku rules
+      // But only provide a warning instead of preventing placement
+      if (!isValidMove(row, col, value)) {
+        // Generate warning but STILL ALLOW placement
+        EventSystem.publish(GameEvents.SUDOKU_CELL_INVALID, { row, col, value });
+        
+        // Get valid numbers for better user feedback
+        const validNumbers = getPossibleValues(row, col);
+        if (validNumbers.length > 0) {
+          EventSystem.publish(GameEvents.STATUS_MESSAGE,
+            `Warning: Tower placement violates Sudoku rules. This tower will be removed after the wave with 50% refund. Valid options: ${validNumbers.join(', ')}`);
+        } else {
+          EventSystem.publish(GameEvents.STATUS_MESSAGE,
+            "Warning: This tower violates Sudoku rules and will be removed after the wave with 50% refund.");
+        }
+        
+        // Set the cell value ANYWAY - this is the key difference
+        board[row][col] = value;
+        
+        // Publish event
+        EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
+        
+        // Check for unit completions
+        checkUnitCompletion();
+        
+        return true;
+      }
+      
+      // For valid moves, normal flow continues
+      board[row][col] = value;
+      
+      // Publish event
+      EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
+      
+      // Check for unit completions (rows, columns, grids)
+      checkUnitCompletion();
+      
+      // Check if the Sudoku is complete
+      if (isComplete()) {
+        EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
+      }
+      
+      return true;
     }
-  }
-  
-  // Check if the cell is fixed
-  if (fixedCells[row][col]) {
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on a fixed Sudoku cell!");
-    return false;
-  }
-  
-  // Check if the cell is on the enemy path
-  if (pathCells.has(`${row},${col}`)) {
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on the enemy path!");
-    return false;
-  }
-  
-  // If we're clearing a cell (value = 0), always allow it
-  if (value === 0) {
-    board[row][col] = 0;
-    
-    // Check for completions after clearing a cell
-    checkUnitCompletion();
-    
-    // Publish event
-    EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
-    
-    return true;
-  }
-  
-  // Check if the move is valid according to Sudoku rules
-  // But only provide a warning instead of preventing placement
-  if (!isValidMove(row, col, value)) {
-    // Generate warning but STILL ALLOW placement
-    EventSystem.publish(GameEvents.SUDOKU_CELL_INVALID, { row, col, value });
-    
-    // Get valid numbers for better user feedback
-    const validNumbers = getPossibleValues(row, col);
-    if (validNumbers.length > 0) {
-      EventSystem.publish(GameEvents.STATUS_MESSAGE,
-        `Warning: Tower placement violates Sudoku rules. This tower will be removed after the wave with 50% refund. Valid options: ${validNumbers.join(', ')}`);
-    } else {
-      EventSystem.publish(GameEvents.STATUS_MESSAGE,
-        "Warning: This tower violates Sudoku rules and will be removed after the wave with 50% refund.");
+
+    function isTowerIncorrect(row, col, value) {
+      // Check if it matches the solution
+      if (solution[row][col] !== value) {
+        return true;
+      }
+      
+      return false; // Tower is correct if it matches the solution
     }
     
-    // Set the cell value ANYWAY - this is the key difference
-    board[row][col] = value;
-    
-    // Publish event
-    EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
-    
-    // Check for unit completions
-    checkUnitCompletion();
-    
-    return true;
-  }
-  
-  
-  // For valid moves, normal flow continues
-  board[row][col] = value;
-  
-  // Publish event
-  EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
-  
-  // Check for unit completions (rows, columns, grids)
-  checkUnitCompletion();
-  
-  // Check if the Sudoku is complete
-  if (isComplete()) {
-    EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
-  }
-  
-  return true;
-}
-
-function isTowerIncorrect(row, col, value) {
-  // Check if it matches the solution
-  if (solution[row][col] !== value) {
-    return true;
-  }
-  
-  return false; // Tower is correct if it matches the solution
-}
-
-
     /**
      * Get possible values for a cell
      * @param {number} row - Row index
