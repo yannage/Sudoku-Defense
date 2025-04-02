@@ -962,3 +962,18 @@ button:active {
 .trophy-info div {
   margin: 2px 0;
 }
+
+.celebration-puzzle {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 2px;
+    width: fit-content;
+    margin: 10px auto;
+}
+.celebration-cell {
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    background-color: black;
+    color: white;
+}
