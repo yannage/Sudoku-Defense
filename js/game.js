@@ -974,15 +974,15 @@ window.Game = Game;
  * Improved function to apply visual indicators to towers that don't match the solution
  */
 function applyIncorrectTowerIndicators() {
+    console.log("%c APPLYING INCORRECT TOWER INDICATORS ", "background: purple; color: white;");
+    
     const boardElement = document.getElementById('sudoku-board');
     if (!boardElement) {
         console.warn("Board element not found, cannot apply indicators");
         return;
     }
     
-    console.log("Applying incorrect tower indicators...");
-    
-    // First, clear all indicators
+    // First, clear all existing incorrect tower indicators
     const allCells = boardElement.querySelectorAll('.sudoku-cell');
     allCells.forEach(cell => {
         cell.classList.remove('incorrect-tower');
@@ -990,87 +990,75 @@ function applyIncorrectTowerIndicators() {
         if (xMark) xMark.remove();
     });
     
-    // Get all towers
-    if (!window.TowersModule || typeof window.TowersModule.getTowers !== 'function') return;
-    
-    const towers = window.TowersModule.getTowers();
-    console.log(`Checking ${towers.length} towers for solution matching...`);
-    
-    // Get the solution for verification
-    let solution = null;
-    if (window.BoardManager && typeof BoardManager.getSolution === 'function') {
-      solution = BoardManager.getSolution();
+    // Verify towers module and get towers
+    if (!window.TowersModule || typeof TowersModule.getTowers !== 'function') {
+        console.error("TowersModule not available!");
+        return;
     }
     
-    // Create a direct map of cells by row and column
-    const cellsByPosition = {};
+    const towers = TowersModule.getTowers();
+    console.log(`Found ${towers.length} towers to check`);
     
-    // Map all cells by their data-row and data-col attributes
-    allCells.forEach(cell => {
-        const row = parseInt(cell.getAttribute('data-row'));
-        const col = parseInt(cell.getAttribute('data-col'));
-        
-        if (!isNaN(row) && !isNaN(col)) {
-            const key = `${row},${col}`;
-            cellsByPosition[key] = cell;
-        }
-    });
+    // Get solution for comparison
+    let solution = null;
+    const boardManager = window.BoardManager || window.SudokuModule;
     
-    // Track which towers we're marking as incorrect
-    const markedTowers = [];
+    if (boardManager && typeof boardManager.getSolution === 'function') {
+        solution = boardManager.getSolution();
+    }
     
-    // Apply indicators to towers that don't match the solution
+    if (!solution) {
+        console.error("Could not retrieve solution!");
+        return;
+    }
+    
+    // Track and mark incorrect towers
     towers.forEach(tower => {
         // Skip special towers
         if (tower.type === 'special') return;
         
-        // Get the actual solution value
-        let isIncorrect = false;
-        if (solution && solution[tower.row] && solution[tower.col]) {
-            const towerValue = parseInt(tower.type);
-            const solutionValue = solution[tower.row][tower.col];
-            
-            console.log(`Checking tower at (${tower.row},${tower.col}): Tower=${towerValue}, Solution=${solutionValue}`);
-            
-            // Mark as incorrect if the tower value doesn't match the solution
-            if (towerValue !== solutionValue) {
-                isIncorrect = true;
-                markedTowers.push(`(${tower.row},${tower.col}): ${towerValue} ≠ ${solutionValue}`);
-            }
-        }
+        // Convert tower type to number
+        const towerValue = parseInt(tower.type);
         
-        // Apply visual indicator if incorrect
-        if (isIncorrect) {
-            // Get the cell using our position map
-            const cell = cellsByPosition[`${tower.row},${tower.col}`];
-            
-            if (cell) {
-                // Add the incorrect-tower class for red background
+        // Verify tower is a number tower
+        if (isNaN(towerValue) || towerValue < 1 || towerValue > 9) return;
+        
+        // Check if tower matches solution
+        const solutionValue = solution[tower.row] && solution[tower.row][tower.col];
+        const matchesSolution = towerValue === solutionValue;
+        
+        console.log(`Tower Check: 
+            Position: (${tower.row},${tower.col})
+            Tower Value: ${towerValue}
+            Solution Value: ${solutionValue}
+            Matches Solution: ${matchesSolution}`);
+        
+        // Find the corresponding cell
+        const cell = boardElement.querySelector(
+            `.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`
+        );
+        
+        if (cell) {
+            // If tower doesn't match solution, add incorrect indicators
+            if (!matchesSolution) {
                 cell.classList.add('incorrect-tower');
                 
-                // Add the X mark if it doesn't already exist
+                // Add X mark if not already present
                 if (!cell.querySelector('.incorrect-marker')) {
                     const xMark = document.createElement('div');
                     xMark.className = 'incorrect-marker';
                     xMark.textContent = '❌';
                     cell.appendChild(xMark);
                     
-                    // Add tooltip showing correct value
-                    if (solution && solution[tower.row] && solution[tower.col]) {
-                        cell.title = `Correct value: ${solution[tower.row][tower.col]}`;
-                    }
+                    // Add tooltip with correct value
+                    cell.title = `Correct value: ${solutionValue}`;
                 }
-            } else {
-                console.warn(`Could not find cell for tower at (${tower.row},${tower.col})`);
+                
+                console.log(`%c MARKED CELL AS INCORRECT `, "background: red; color: white;", 
+                    `(${tower.row},${tower.col})`);
             }
         }
     });
-    
-    if (markedTowers.length > 0) {
-        console.log(`Marked ${markedTowers.length} towers as incorrect: ${markedTowers.join(', ')}`);
-    } else {
-        console.log("All towers match their solution values!");
-    }
 }
 
 /**

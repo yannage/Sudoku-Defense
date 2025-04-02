@@ -74,7 +74,10 @@ const TowersModule = (function() {
  * @returns {Object|null} The created tower or null if creation failed
  */
 function createTower(type, row, col) {
-  console.log("TowersModule.createTower called with type:", type, "row:", row, "col:", col);
+  console.log("%c TOWER CREATION STARTED ", "background: yellow; color: black;");
+  console.log(`Tower Details:
+    Type: ${type}
+    Position: (${row}, ${col})`);
   
   const typeData = towerTypes[type];
   
@@ -126,12 +129,21 @@ function createTower(type, row, col) {
         solutionValue = solution[row][col];
         matchesSolution = (numberValue === solutionValue);
         
-        console.log(`Tower Placement Debug:
-          Position: (${row},${col})
-          Tower Type: ${numberValue}
-          Solution Value: ${solutionValue}
-          Matches Solution: ${matchesSolution}`);
+        console.log("%c SOLUTION MATCHING CHECK ", "background: green; color: white;", {
+          position: `(${row},${col})`,
+          towerType: numberValue,
+          solutionValue: solutionValue,
+          matchesSolution: matchesSolution
+        });
+      } else {
+        console.warn("Could not retrieve solution value", {
+          solution: !!solution,
+          rowExists: solution && solution[row],
+          cellExists: solution && solution[row] && solution[row][col]
+        });
       }
+    } else {
+      console.error("No method to get solution!");
     }
   }
   
@@ -194,26 +206,34 @@ function createTower(type, row, col) {
       }
     }
     
-    // If incorrect according to Sudoku rules or solution, track it
+    // MODIFIED: Explicitly handle incorrect towers
+    console.log("%c TOWER INCORRECTNESS CHECK ", "background: red; color: white;", {
+      isCorrect: isCorrect,
+      matchesSolution: matchesSolution
+    });
+    
+    // Add to incorrect towers if either condition is false
     if (!isCorrect || !matchesSolution) {
       incorrectTowers.add(tower.id);
-      console.log(`Added tower ${tower.id} to incorrect towers list`);
+      console.log(`%c ADDED TOWER TO INCORRECT LIST `, "background: red; color: white;", tower.id);
     }
   }
   
   // Publish tower placed event
   EventSystem.publish(GameEvents.TOWER_PLACED, tower);
   
-  // Apply incorrect indicators immediately
+  // Apply incorrect indicators with more aggressive timing
   setTimeout(function() {
+    if (window.Game && typeof Game.updateBoard === 'function') {
+      Game.updateBoard();
+    }
     if (window.Game && typeof Game.applyIncorrectTowerIndicators === 'function') {
       Game.applyIncorrectTowerIndicators();
     }
-  }, 50);
+  }, 100);
   
   return tower;
 }
-
 function manuallyCheckSudokuRules(row, col, value) {
   const boardManager = window.BoardManager || window.SudokuModule;
   const boardData = boardManager.getBoard();
