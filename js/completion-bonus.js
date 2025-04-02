@@ -2,6 +2,8 @@
  * Direct update for completion-bonus.js to use BoardManager
  * This provides a more complete implementation that can be applied to the whole file
  */
+ 
+ let hasCelebrated = false;
 
 (function() {
     console.log("Initializing direct celebration system");
@@ -184,11 +186,12 @@
     }
     
     // Show celebration screen
-    function showCelebration() {
-        console.log("Showing celebration screen");
-        
-        // Save current puzzle
-        const trophy = savePuzzleAsTrophy();
+   function showCelebration() {
+  if (hasCelebrated) return; // Prevent duplicate calls
+  hasCelebrated = true;
+  
+  console.log("Showing celebration screen");
+  const trophy = savePuzzleAsTrophy();
         
         // Create container if it doesn't exist
         let container = document.getElementById('celebration-container');
