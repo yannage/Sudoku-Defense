@@ -494,12 +494,10 @@ let hasCelebrated = false;
                 <div class="celebration-stats">
                     <p>Level ${trophy.level} Completed</p>
                     <p>Current Score: ${trophy.score}</p>
-                    <p>Puzzle added to your Trophy Room!</p>
                 </div>
                 <div class="celebration-puzzle" id="celebration-puzzle"></div>
                 <div class="celebration-footer">
-                    <button class="celebration-button" id="continue-button">Continue to Next Level</button>
-                    <button class="celebration-button secondary" id="view-trophies-button">View Trophy Room</button>
+                    <button class="celebration-button" id="continue-button">Start New Game</button>
                 </div>
             </div>
         `;
@@ -537,14 +535,6 @@ let hasCelebrated = false;
             });
         }
         
-        const viewTrophiesButton = document.getElementById('view-trophies-button');
-        if (viewTrophiesButton) {
-            viewTrophiesButton.addEventListener('click', () => {
-                closeCelebration();
-                showTrophyRoom();
-            });
-        }
-        
         // Pause game while showing celebration
         if (window.Game && typeof Game.pause === 'function') {
             Game.pause();
@@ -571,7 +561,7 @@ let hasCelebrated = false;
         // Reset hasCelebrated flag to allow future celebrations
         hasCelebrated = false;
         
-        console.log("Resetting game after celebration/trophy room closure");
+        console.log("Completely restarting game after celebration");
         
         // Clear any stored character
         localStorage.removeItem('sudoku_td_character');
@@ -579,17 +569,34 @@ let hasCelebrated = false;
         // Add game end indicator
         showGameEndIndicator();
         
-        // Reset game
-        if (window.Game && typeof Game.reset === 'function') {
-            Game.reset();
-        }
-        
-        // Prompt for new character selection
+        // Force a complete refresh of the game
         setTimeout(() => {
-            if (window.AbilitySystem && typeof AbilitySystem.init === 'function') {
-                AbilitySystem.init();
+            // Reset game
+            if (window.Game && typeof Game.reset === 'function') {
+                Game.reset();
             }
-        }, 500);
+            
+            // Force character selection screen to appear with full visibility
+            setTimeout(() => {
+                if (window.AbilitySystem && typeof AbilitySystem.init === 'function') {
+                    // First make sure any existing character UI is cleaned up
+                    const existingCharacterSelection = document.getElementById('character-selection');
+                    if (existingCharacterSelection) {
+                        existingCharacterSelection.remove();
+                    }
+                    
+                    // Reinitialize ability system to trigger character selection
+                    AbilitySystem.init();
+                    
+                    // Ensure character selection is visible
+                    const newCharacterSelection = document.getElementById('character-selection');
+                    if (newCharacterSelection) {
+                        newCharacterSelection.style.display = 'flex';
+                        newCharacterSelection.style.zIndex = '10000';
+                    }
+                }
+            }, 600);
+        }, 200);
     }
     
     // Show game end indicator
@@ -610,7 +617,7 @@ let hasCelebrated = false;
             indicator.style.boxShadow = '0 0 10px gold';
             indicator.style.textAlign = 'center';
             indicator.style.animation = 'fadeOut 3s forwards';
-            indicator.textContent = 'Sudoku Complete! Starting New Game...';
+            indicator.textContent = 'Starting New Game...';
             
             // Add animation style
             const style = document.createElement('style');
