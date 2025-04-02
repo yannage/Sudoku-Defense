@@ -1300,7 +1300,7 @@ function loadState() {
         playerExperience -= experienceToNextLevel;
         
         // Increase experience required for next level
-        experienceToNextLevel = Math.floor(100 * Math.pow(1.1, playerLevel - 1));
+        experienceToNextLevel = Math.floor(500 * Math.pow(1.1, playerLevel - 1));
         
         //Reset mana
         resetMana();
