@@ -7,16 +7,16 @@
  
 
 const AbilitySystem = (function() {
-    // Private variables
-    let currentCharacter = null;
-    let currentMana = 10;
-    let maxMana = 10;
-    let playerLevel = 1;
-    let playerExperience = 0;
-    let experienceToNextLevel = 100;
-    let abilities = [];
-    let characterSelected = false;
-
+      let currentCharacter = null;
+      let currentMana = 10;
+      let maxMana = 10;
+      let playerLevel = 1;
+      let playerExperience = 0;
+      let experienceToNextLevel = 500;
+      let abilities = [];
+      let characterSelected = false;
+      
+      
     // Define character classes with their unique abilities
     const characters = {
         strategist: {
@@ -780,14 +780,21 @@ function createStyles() {
             }
             
             .experience-text {
-                position: absolute;
-                bottom: -3px;
-                left: 0;
-                font-size: 10px;
-                color: white;
-                text-shadow: 0 0 3px black;
-                padding: 2px 5px;
-            }
+    position: absolute;
+    bottom: 85px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.75);
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 2px solid gold;
+    text-shadow: 0 0 2px black;
+    font-weight: bold;
+    z-index: 999;
+    pointer-events: none;
+}
             
             .level-up-effect {
                 position: fixed;
@@ -1024,9 +1031,18 @@ function createCharacterSelectionUI() {
         experienceBar.id = 'experience-bar';
         
         experienceBar.innerHTML = `
-            <div class="experience-fill" style="width: 0%"></div>
-            <div class="experience-text">Level 1</div>
-        `;
+    <div class="experience-fill" style="width: 0%"></div>
+`;
+
+const experienceText = document.createElement('div');
+experienceText.className = 'experience-text';
+experienceText.id = 'experience-text';
+experienceText.textContent = `Level ${playerLevel} (${playerExperience}/${experienceToNextLevel})`;
+
+const abilityBar = document.getElementById('ability-bar');
+if (abilityBar) {
+  abilityBar.appendChild(experienceText);
+}
         
         document.body.appendChild(experienceBar);
         
@@ -1085,8 +1101,8 @@ function loadState() {
     // Load level
     const savedLevel = parseInt(localStorage.getItem('sudoku_td_ability_level'));
     if (!isNaN(savedLevel) && savedLevel > 0) {
-      playerLevel = savedLevel;
-      maxMana = 10 + Math.floor(playerLevel / 5);
+      playerLevel = 0;
+      maxMana = 10;
     }
     
     console.log("Ability System: Loaded saved state, character:", currentCharacter, "level:", playerLevel);
@@ -1286,6 +1302,9 @@ function loadState() {
         // Increase experience required for next level
         experienceToNextLevel = Math.floor(100 * Math.pow(1.1, playerLevel - 1));
         
+        //Reset mana
+        resetMana();
+        
         // Increase max mana every 5 levels
         if (playerLevel % 5 === 0) {
             maxMana++;
@@ -1454,6 +1473,15 @@ function loadState() {
                 updateManaDisplay();
             }
         }, 100);
+        EventSystem.subscribe(GameEvents.WAVE_COMPLETE, () => {
+        resetMana();
+    });
+    
+    EventSystem.subscribe(GameEvents.ENEMY_DEFEATED, (data) => {
+  if (data && typeof data.reward === 'number') {
+    addExperience(data.reward);
+  }
+});
     }
 
     /**
