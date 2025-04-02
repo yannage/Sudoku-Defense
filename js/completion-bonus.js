@@ -1,9 +1,12 @@
 /**
- * Direct update for completion-bonus.js to use BoardManager
- * This provides a more complete implementation that can be applied to the whole file
+ * Updated completion-bonus.js with fixes for celebration screen issues
+ * - Fixes puzzle display to show with celebration message
+ * - Hides character abilities during celebration
+ * - Makes Continue button reset game and prompt for new character selection
  */
  
- let hasCelebrated = false;
+// Track if we've already shown the celebration to prevent duplicates
+let hasCelebrated = false;
 
 (function() {
     console.log("Initializing direct celebration system");
@@ -17,7 +20,7 @@
         const savedPuzzles = localStorage.getItem('sudoku_td_completed_puzzles');
         if (savedPuzzles) {
             completedPuzzles = JSON.parse(savedPuzzles);
-            console.log(`Loaded ${completedPuzzles.length / 2} completed puzzles from storage`);
+            console.log(`Loaded ${completedPuzzles.length} completed puzzles from storage`);
         }
     } catch (error) {
         console.error('Error loading completed puzzles:', error);
@@ -30,8 +33,257 @@
         
         const style = document.createElement('style');
         style.id = 'direct-celebration-styles';
-        // CSS styles here remain unchanged
-        // ...
+        style.textContent = `
+            /* Celebration Screen */
+            #celebration-container {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.85);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000; /* Higher than ability bar */
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.5s;
+            }
+            
+            #celebration-container.active {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            
+            .celebration-content {
+                background-color: #1a1a1a;
+                color: white;
+                border-radius: 10px;
+                padding: 20px;
+                width: 90%;
+                max-width: 500px;
+                text-align: center;
+                position: relative;
+                transform: translateY(20px);
+                opacity: 0;
+                transition: transform 0.5s, opacity 0.5s;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            
+            .celebration-content.active {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            
+            .close-button {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: none;
+                border: none;
+                color: gray;
+                font-size: 24px;
+                cursor: pointer;
+                padding: 0;
+            }
+            
+            .close-button:hover {
+                color: white;
+            }
+            
+            .celebration-title {
+                font-size: 28px;
+                color: gold;
+                margin-bottom: 20px;
+            }
+            
+            .celebration-stats {
+                margin-bottom: 20px;
+            }
+            
+            .celebration-stats p {
+                margin: 5px 0;
+                font-size: 16px;
+            }
+            
+            .celebration-puzzle {
+                display: grid;
+                grid-template-columns: repeat(9, 30px);
+                grid-template-rows: repeat(9, 30px);
+                gap: 1px;
+                background-color: #333;
+                width: fit-content;
+                margin: 0 auto 20px auto;
+                padding: 5px;
+                border-radius: 5px;
+            }
+            
+            /* Ensure puzzles are displayed as squares */
+            .trophy-puzzle {
+                display: grid;
+                grid-template-columns: repeat(9, 30px);
+                grid-template-rows: repeat(9, 30px);
+                gap: 1px;
+                background-color: #333;
+                width: fit-content;
+                margin: 0 auto;
+                padding: 5px;
+                border-radius: 5px;
+            }
+            
+            .trophy-cell {
+                width: 30px;
+                height: 30px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background-color: #222;
+                font-size: 16px;
+                font-weight: bold;
+                color: white;
+            }
+            
+            .trophy-cell.fixed {
+                background-color: #444;
+                font-weight: bold;
+            }
+            
+            .trophy-cell.path {
+                background-color: #063;
+            }
+            
+            .celebration-button {
+                background-color: var(--primary-color, #4CAF50);
+                color: white;
+                border: none;
+                padding: 10px 15px;
+                margin: 10px 5px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: bold;
+                transition: background-color 0.3s;
+            }
+            
+            .celebration-button:hover {
+                background-color: var(--primary-dark, #3e8e41);
+            }
+            
+            .celebration-button.secondary {
+                background-color: #666;
+            }
+            
+            .celebration-button.secondary:hover {
+                background-color: #888;
+            }
+            
+            .celebration-footer {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            
+            /* Trophy Room Styles */
+            #trophy-room {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.85);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.5s;
+            }
+            
+            #trophy-room.active {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            
+            .trophy-content {
+                background-color: #1a1a1a;
+                color: white;
+                border-radius: 10px;
+                padding: 20px;
+                width: 90%;
+                max-width: 800px;
+                text-align: center;
+                position: relative;
+                transform: translateY(20px);
+                opacity: 0;
+                transition: transform 0.5s, opacity 0.5s;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            
+            .trophy-content.active {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            
+            .trophy-title {
+                font-size: 24px;
+                color: gold;
+                margin-bottom: 20px;
+            }
+            
+            .trophy-gallery {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .trophy-item {
+                background-color: #222;
+                border-radius: 8px;
+                padding: 15px;
+                width: max-content;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                margin: 0 auto;
+            }
+            
+            .trophy-info {
+                margin-top: 10px;
+                font-size: 12px;
+                color: #ccc;
+            }
+            
+            .trophy-empty {
+                padding: 20px;
+                color: #ccc;
+                font-style: italic;
+            }
+            
+            /* Confetti Animation */
+            .confetti {
+                position: absolute;
+                width: 10px;
+                height: 10px;
+                background-color: gold;
+                opacity: 0.7;
+                animation: confetti-fall 4s linear forwards;
+            }
+            
+            @keyframes confetti-fall {
+                0% {
+                    transform: translateY(-50px) rotate(0deg);
+                    opacity: 0.7;
+                }
+                100% {
+                    transform: translateY(100vh) rotate(360deg);
+                    opacity: 0;
+                }
+            }
+        `;
         
         document.head.appendChild(style);
     }
@@ -118,8 +370,27 @@
     
     // Create confetti effect
     function createConfetti(container) {
-        // Implementation remains unchanged
-        // ...
+        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', 'gold', '#ffffff'];
+        
+        for (let i = 0; i < 100; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + '%';
+            confetti.style.width = Math.random() * 10 + 5 + 'px';
+            confetti.style.height = Math.random() * 10 + 5 + 'px';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            confetti.style.animationDelay = Math.random() * 2 + 's';
+            
+            container.appendChild(confetti);
+            
+            // Remove confetti after animation completes
+            setTimeout(() => {
+                if (confetti.parentNode === container) {
+                    container.removeChild(confetti);
+                }
+            }, 5000);
+        }
     }
     
     // Render a puzzle for display
@@ -156,11 +427,22 @@
             }
         }
         
+        // Add borders for 3x3 grid lines
+        container.style.position = 'relative';
+        
         // Create cells
         for (let row = 0; row < 9; row++) {
             for (let col = 0; col < 9; col++) {
                 const cell = document.createElement('div');
-                cell.className = 'trophy-cell';;
+                cell.className = 'trophy-cell';
+                
+                // Add 3x3 grid borders
+                if (col % 3 === 2 && col < 8) {
+                    cell.style.borderRight = '2px solid #555';
+                }
+                if (row % 3 === 2 && row < 8) {
+                    cell.style.borderBottom = '2px solid #555';
+                }
                 
                 // Add fixed class if needed
                 if (fixedCells && fixedCells[row] && fixedCells[row][col]) {
@@ -186,12 +468,15 @@
     }
     
     // Show celebration screen
-   function showCelebration() {
-  if (hasCelebrated) return; // Prevent duplicate calls
-  hasCelebrated = true;
-  
-  console.log("Showing celebration screen");
-  const trophy = savePuzzleAsTrophy();
+    function showCelebration() {
+        if (hasCelebrated) return; // Prevent duplicate celebrations
+        hasCelebrated = true;
+        
+        console.log("Showing celebration screen");
+        const trophy = savePuzzleAsTrophy();
+        
+        // Hide ability bar if present
+        hideAbilityBar();
         
         // Create container if it doesn't exist
         let container = document.getElementById('celebration-container');
@@ -239,21 +524,16 @@
         
         // Add event listeners
         const closeButton = container.querySelector('.close-button');
-        console.debug("trying to close trophy room");
         if (closeButton) {
             closeButton.addEventListener('click', () => {
-                closeCelebration();
+                resetGameAfterCelebration();
             });
         }
         
         const continueButton = document.getElementById('continue-button');
         if (continueButton) {
             continueButton.addEventListener('click', () => {
-                closeCelebration();
-                // Resume game if needed
-                if (window.Game && typeof Game.resume === 'function') {
-                    Game.resume();
-                }
+                resetGameAfterCelebration();
             });
         }
         
@@ -271,7 +551,7 @@
         }
     }
     
-    // Close celebration screen
+    // Close celebration screen without resetting
     function closeCelebration() {
         const container = document.getElementById('celebration-container');
         if (container) {
@@ -281,6 +561,99 @@
             setTimeout(() => {
                 container.classList.remove('active');
             }, 300);
+        }
+    }
+    
+    // Reset game and prompt for new character
+    function resetGameAfterCelebration() {
+        closeCelebration();
+        
+        // Reset hasCelebrated flag to allow future celebrations
+        hasCelebrated = false;
+        
+        console.log("Resetting game after celebration/trophy room closure");
+        
+        // Clear any stored character
+        localStorage.removeItem('sudoku_td_character');
+        
+        // Add game end indicator
+        showGameEndIndicator();
+        
+        // Reset game
+        if (window.Game && typeof Game.reset === 'function') {
+            Game.reset();
+        }
+        
+        // Prompt for new character selection
+        setTimeout(() => {
+            if (window.AbilitySystem && typeof AbilitySystem.init === 'function') {
+                AbilitySystem.init();
+            }
+        }, 500);
+    }
+    
+    // Show game end indicator
+    function showGameEndIndicator() {
+        let indicator = document.getElementById('game-end-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'game-end-indicator';
+            indicator.style.position = 'fixed';
+            indicator.style.top = '20px';
+            indicator.style.left = '50%';
+            indicator.style.transform = 'translateX(-50%)';
+            indicator.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+            indicator.style.color = 'white';
+            indicator.style.padding = '10px 20px';
+            indicator.style.borderRadius = '5px';
+            indicator.style.zIndex = '9000';
+            indicator.style.boxShadow = '0 0 10px gold';
+            indicator.style.textAlign = 'center';
+            indicator.style.animation = 'fadeOut 3s forwards';
+            indicator.textContent = 'Sudoku Complete! Starting New Game...';
+            
+            // Add animation style
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fadeOut {
+                    0% { opacity: 1; }
+                    70% { opacity: 1; }
+                    100% { opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(indicator);
+            
+            // Remove after animation completes
+            setTimeout(() => {
+                if (indicator.parentNode) {
+                    indicator.parentNode.removeChild(indicator);
+                }
+            }, 3000);
+        }
+    }
+    
+    // Hide ability bar
+    function hideAbilityBar() {
+        const abilityBar = document.getElementById('ability-bar');
+        if (abilityBar) {
+            abilityBar.style.display = 'none';
+        }
+        
+        const experienceBar = document.getElementById('experience-bar');
+        if (experienceBar) {
+            experienceBar.style.display = 'none';
+        }
+        
+        const experienceText = document.getElementById('experience-text');
+        if (experienceText) {
+            experienceText.style.display = 'none';
+        }
+        
+        const characterIndicator = document.getElementById('character-indicator');
+        if (characterIndicator) {
+            characterIndicator.style.display = 'none';
         }
     }
     
@@ -356,9 +729,9 @@
         
         // Add event listeners
         const closeButtonTop = container.querySelector('.close-button');
-if (closeButtonTop) {
-  closeButtonTop.addEventListener('click', closeTrophyRoom);
-}
+        if (closeButtonTop) {
+            closeButtonTop.addEventListener('click', closeTrophyRoom);
+        }
         
         const closeButtonBottom = document.getElementById('close-trophy-room');
         if (closeButtonBottom) {
@@ -371,25 +744,54 @@ if (closeButtonTop) {
         }
     }
     
-function closeTrophyRoom() {
-  const container = document.getElementById('trophy-room');
-  if (container) {
-    const content = container.querySelector('.trophy-content');
-    if (content) content.classList.remove('active');
+    // Close trophy room
+    function closeTrophyRoom() {
+        const container = document.getElementById('trophy-room');
+        if (container) {
+            const content = container.querySelector('.trophy-content');
+            if (content) content.classList.remove('active');
+            
+            setTimeout(() => {
+                container.classList.remove('active');
+                
+                // If game has completed, reset it
+                if (hasCelebrated) {
+                    resetGameAfterCelebration();
+                } else {
+                    // Otherwise, just show ability UI again
+                    showAbilityBar();
+                    
+                    // Resume game
+                    if (window.Game && typeof Game.resume === 'function') {
+                        Game.resume();
+                    }
+                }
+            }, 300);
+        }
+    }
     
-    setTimeout(() => {
-      container.classList.remove('active');
-      container.innerHTML = ''; // Optional: Clear it completely
-    }, 300);
-  }
-  
-  if (window.Game && typeof Game.resume === 'function') {
-    Game.resume();
-  }
-}
-
-// Make sure it's available globally
-window.closeTrophyRoom = closeTrophyRoom;
+    // Show ability bar (after trophy room is closed)
+    function showAbilityBar() {
+        const abilityBar = document.getElementById('ability-bar');
+        if (abilityBar) {
+            abilityBar.style.display = 'flex';
+        }
+        
+        const experienceBar = document.getElementById('experience-bar');
+        if (experienceBar) {
+            experienceBar.style.display = 'block';
+        }
+        
+        const experienceText = document.getElementById('experience-text');
+        if (experienceText) {
+            experienceText.style.display = 'block';
+        }
+        
+        const characterIndicator = document.getElementById('character-indicator');
+        if (characterIndicator) {
+            characterIndicator.style.display = 'flex';
+        }
+    }
     
     // Directly check unit (row, column, grid) completions using BoardManager
     function checkUnitCompletions() {
@@ -493,35 +895,26 @@ window.closeTrophyRoom = closeTrophyRoom;
             return;
         }
         
-        // Create trophy room button
-        const trophyButton = document.createElement('button');
-        trophyButton.id = 'trophy-room-button';
-        trophyButton.textContent = '🏆 Trophies';
-        trophyButton.onclick = showTrophyRoom;
-        
-        // Add button to controls
-        const newGameButton = document.getElementById('new-game');
-        if (newGameButton) {
-            gameControls.insertBefore(trophyButton, newGameButton);
-        } else {
-            gameControls.appendChild(trophyButton);
+        // Create trophy room button if it doesn't exist
+        if (!document.getElementById('trophy-room-button')) {
+            const trophyButton = document.createElement('button');
+            trophyButton.id = 'trophy-room-button';
+            trophyButton.textContent = '🏆 Trophies';
+            trophyButton.onclick = showTrophyRoom;
+            
+            // Add button to controls
+            const newGameButton = document.getElementById('new-game');
+            if (newGameButton) {
+                gameControls.insertBefore(trophyButton, newGameButton);
+            } else {
+                gameControls.appendChild(trophyButton);
+            }
         }
     }
     
     // Hook into game events
     function hookEvents() {
         console.log("Hooking into game events");
-        
-        // Use BoardManager's checkUnitCompletion for consistency
-        // This ensures that unit completions are detected consistently
-        const originalCheckUnitCompletion = window.BoardManager 
-            ? BoardManager.checkUnitCompletion 
-            : (window.SudokuModule ? SudokuModule.checkUnitCompletion : null);
-        
-        if (originalCheckUnitCompletion) {
-            // We'll let this function continue to work normally
-            // Our event hooks below will catch the completion events
-        }
         
         // Hook into Sudoku complete event
         if (window.EventSystem) {
@@ -569,6 +962,9 @@ window.closeTrophyRoom = closeTrophyRoom;
     function init() {
         console.log("Initializing direct celebration system");
         
+        // Reset celebration flag
+        hasCelebrated = false;
+        
         // Add styles
         addStyles();
         
@@ -591,8 +987,12 @@ window.closeTrophyRoom = closeTrophyRoom;
         savePuzzleAsTrophy: savePuzzleAsTrophy,
         onUnitCompleted: onUnitCompleted,
         checkUnitCompletions: checkUnitCompletions,
-        applyEffects: applyEffects
+        applyEffects: applyEffects,
+        resetGameAfterCelebration: resetGameAfterCelebration
     };
+    
+    // Make closeTrophyRoom globally available for emergency fixes
+    window.closeTrophyRoom = closeTrophyRoom;
     
     // Initialize
     init();
