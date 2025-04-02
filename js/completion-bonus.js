@@ -302,14 +302,27 @@
         updateTowerSelectionButtons();
     }
     
-    // Function to highlight towers - modified to not add visual effects to board
+    // Highlight towers that have a damage bonus
     function highlightTowersWithBonus(number) {
-        // This function is kept for API compatibility but no longer adds
-        // visual highlights to towers on the board, as per user preference
-        // We now only display the completion status in the dashboard
+        // Find towers on the board with the completed number
+        const towers = window.TowersModule ? TowersModule.getTowers() : [];
+        const boardElement = document.getElementById('sudoku-board');
         
-        // No need to add or remove any classes from the towers themselves
-        return;
+        if (!boardElement) return;
+        
+        // First, remove existing bonus highlights
+        const existingHighlights = boardElement.querySelectorAll('.tower-with-bonus');
+        existingHighlights.forEach(el => el.classList.remove('tower-with-bonus'));
+        
+        // Add highlights to towers with bonus
+        towers.forEach(tower => {
+            if (tower.type == number || (number === 'all' && completedNumbers.has(parseInt(tower.type)))) {
+                const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+                if (cell) {
+                    cell.classList.add('tower-with-bonus');
+                }
+            }
+        });
     }
     
     // Update all number bonus UI elements
@@ -320,9 +333,8 @@
         // Update number bonus dashboard
         updateNumberBonusDashboard();
         
-        // Note: We no longer add visual highlights to towers on the board
-        // per user preference - keeping the function call for API compatibility
-        // highlightTowersWithBonus('all');
+        // Highlight all towers with bonuses
+        highlightTowersWithBonus('all');
     }
     
     // Add or update indicators on tower selection buttons
@@ -477,12 +489,44 @@
             updateNumberBonusUI();
         });
         
-        // Simplified event subscription - no visual bonus effects on board per user request
-        // We still hook into the events for the functionality to work
-        EventSystem.subscribe(GameEvents.TOWER_ATTACK, function(data) {
-            // We keep the functionality (damage bonuses) but don't add visual effects to the board
-            // The Number Completion Status will show which numbers have bonuses
-        });
+        // Hook into tower attacks to visualize bonus damage
+        const originalTowerAttack = EventSystem.subscribe;
+        EventSystem.subscribe = function(eventName, callback) {
+            if (eventName === GameEvents.TOWER_ATTACK) {
+                // Wrap the tower attack callback with bonus visualization
+                const enhancedCallback = function(data) {
+                    // Original callback
+                    const result = callback(data);
+                    
+                    // Add visual effect for bonus damage if applicable
+                    if (data && data.tower && data.damage) {
+                        const towerType = parseInt(data.tower.type);
+                        if (!isNaN(towerType) && completedNumbers.has(towerType)) {
+                            // Add stronger visual effect for bonus damage
+                            setTimeout(() => {
+                                const boardElement = document.getElementById('sudoku-board');
+                                if (boardElement) {
+                                    const cell = boardElement.querySelector(`.sudoku-cell[data-row="${data.tower.row}"][data-col="${data.tower.col}"]`);
+                                    if (cell) {
+                                        cell.classList.add('bonus-attack');
+                                        setTimeout(() => {
+                                            cell.classList.remove('bonus-attack');
+                                        }, 300);
+                                    }
+                                }
+                            }, 50);
+                        }
+                    }
+                    
+                    return result;
+                };
+                
+                return originalTowerAttack.call(this, eventName, enhancedCallback);
+            }
+            
+            // Normal subscription for other events
+            return originalTowerAttack.call(this, eventName, callback);
+        };
     }
     
     // Initialize the enhanced system
