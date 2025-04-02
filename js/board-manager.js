@@ -754,6 +754,45 @@ function emergencyPuzzleGeneration() {
     board = puzzle;
     fixedCells = fixed;
 }
+
+
+/**
+ * Check if a move is valid for our testing purpose
+ * Similar to isValidMove but takes a puzzle as parameter
+ */
+function isValidMoveForTest(puzzle, row, col, value) {
+    // Check row
+    for (let i = 0; i < 9; i++) {
+        if (i !== col && puzzle[row][i] === value) {
+            return false;
+        }
+    }
+    
+    // Check column
+    for (let i = 0; i < 9; i++) {
+        if (i !== row && puzzle[i][col] === value) {
+            return false;
+        }
+    }
+    
+    // Check 3x3 box
+    let boxRow = Math.floor(row / 3) * 3;
+    let boxCol = Math.floor(col / 3) * 3;
+    
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            if ((boxRow + i !== row || boxCol + j !== col) && 
+                puzzle[boxRow + i][boxCol + j] === value) {
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
+
+
+
     
     /**
      * Check if a move is valid according to Sudoku rules
