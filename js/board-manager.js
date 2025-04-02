@@ -457,6 +457,10 @@ const BoardManager = (function() {
  * Generate a random valid Sudoku puzzle
  * Modified to ensure the puzzle is solvable even with path cells
  */
+/**
+ * Generate a random valid Sudoku puzzle
+ * Modified with a better validation approach
+ */
 function generatePuzzle() {
     console.log("BoardManager: Generating new Sudoku puzzle...");
     
@@ -468,12 +472,17 @@ function generatePuzzle() {
     let attempts = 0;
     let validPuzzleFound = false;
     
-    while (!validPuzzleFound && attempts < 10) {
+    while (!validPuzzleFound && attempts < 5) {
         attempts++;
         console.log(`BoardManager: Puzzle generation attempt ${attempts}`);
         
         // Generate the enemy path first
-        const pathArray = generateEnemyPath();
+        let pathLength = 9; // Start with shorter paths
+        if (attempts > 3) {
+            // Use an even simpler path on later attempts
+            pathLength = 6;
+        }
+        const pathArray = generateEnemyPath(pathLength);
         
         // Generate a complete solution
         solution = generateCompleteSolution();
@@ -484,8 +493,8 @@ function generatePuzzle() {
         // Create a puzzle from the solution
         const { puzzle, fixed } = createPuzzleFromSolution(solution, pathCells, cellsToReveal);
         
-        // TEST THE PUZZLE: Check if every block can still have all numbers 1-9
-        validPuzzleFound = testPuzzleValidity(puzzle, pathCells);
+        // TEST THE PUZZLE: Check if it's still solvable with backtracking
+        validPuzzleFound = isSudokuSolvable(JSON.parse(JSON.stringify(puzzle)));
         
         if (validPuzzleFound) {
             // Set the board and fixed cells
@@ -501,7 +510,7 @@ function generatePuzzle() {
     }
     
     if (!validPuzzleFound) {
-        console.error("BoardManager: Failed to generate a valid puzzle after multiple attempts");
+        console.log("BoardManager: Failed to generate a valid puzzle after multiple attempts");
         // Emergency fallback - generate a very simple puzzle with minimal path
         emergencyPuzzleGeneration();
     }
@@ -538,104 +547,187 @@ function generatePuzzle() {
 }
 
 /**
- * Test if a puzzle is still solvable with the given path cells
- * @param {number[][]} puzzle - The puzzle to test
- * @param {Set<string>} pathCells - Set of path cells coordinates
- * @returns {boolean} Whether the puzzle is still solvable
+ * Generate a path with a controlled length
+ * @param {number} maxLength - Maximum number of cells in the path
+ * @returns {Array} Array of path coordinates
  */
-function testPuzzleValidity(puzzle, pathCells) {
-    // Check each 3x3 block to make sure all numbers 1-9 can be placed somewhere
-    for (let blockRow = 0; blockRow < 3; blockRow++) {
-        for (let blockCol = 0; blockCol < 3; blockCol++) {
-            // For each block, check if all numbers 1-9 can be placed
-            for (let num = 1; num <= 9; num++) {
-                let canPlaceNumber = false;
-                
-                // Check if the number is already present in the block in a fixed cell
-                blockLoop: for (let i = 0; i < 3; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        const row = blockRow * 3 + i;
-                        const col = blockCol * 3 + j;
-                        
-                        // If number is already placed in a fixed cell, it's satisfied
-                        if (puzzle[row][col] === num && fixedCells[row][col]) {
-                            canPlaceNumber = true;
-                            break blockLoop;
-                        }
-                        
-                        // Skip path cells and already filled cells
-                        if (pathCells.has(`${row},${col}`) || puzzle[row][col] !== 0) {
-                            continue;
-                        }
-                        
-                        // Check if this number can be placed in this cell
-                        if (isValidMoveForTest(puzzle, row, col, num)) {
-                            canPlaceNumber = true;
-                            break blockLoop; // We found a valid position, no need to check further
-                        }
-                    }
-                }
-                
-                // If we can't place this number in this block, the puzzle is invalid
-                if (!canPlaceNumber) {
-                    console.log(`BoardManager: Cannot place ${num} in block ${blockRow},${blockCol}`);
-                    
-                    // Debug which cells are available in this block
-                    let availableCells = [];
-                    for (let i = 0; i < 3; i++) {
-                        for (let j = 0; j < 3; j++) {
-                            const row = blockRow * 3 + i;
-                            const col = blockCol * 3 + j;
-                            
-                            if (!pathCells.has(`${row},${col}`) && puzzle[row][col] === 0) {
-                                availableCells.push(`(${row},${col})`);
-                            }
-                        }
-                    }
-                    
-                    console.log(`Available cells in this block: ${availableCells.join(', ')}`);
-                    return false;
+function generateEnemyPath(maxLength = 13) {
+    console.log("BoardManager: Generating enemy path");
+    pathCells.clear();
+    
+    // Only use horizontal and vertical movements to avoid diagonal overlaps
+    const directions = [
+        [-1, 0], // up
+        [1, 0],  // down
+        [0, 1]   // right - only move right, never left to prevent overlaps
+    ];
+    
+    // Start at a random position on the left edge
+    let startRow = Math.floor(Math.random() * 9);
+    let currentRow = startRow;
+    let currentCol = 0;
+    
+    // Choose an end row for the right edge
+    let endRow = Math.floor(Math.random() * 9);
+    
+    // Mark the starting position
+    pathCells.add(`${currentRow},${currentCol}`);
+    
+    // Generate path until we reach max length or the right edge
+    while (pathCells.size < maxLength && currentCol < 8) {
+        let possibleMoves = [];
+        
+        // Check each direction
+        for (let [dr, dc] of directions) {
+            let newRow = currentRow + dr;
+            let newCol = currentCol + dc;
+            
+            // Check if the new position is valid
+            if (
+                newRow >= 0 && newRow < 9 && 
+                newCol >= 0 && newCol < 9 && 
+                !pathCells.has(`${newRow},${newCol}`)
+            ) {
+                // Prioritize horizontal movement where possible
+                if (dc > 0) {
+                    possibleMoves = [[dr, dc]];
+                    break;
+                } else {
+                    possibleMoves.push([dr, dc]);
                 }
             }
         }
+        
+        // If no valid moves, force a move right if possible
+        if (possibleMoves.length === 0) {
+            let newRow = currentRow;
+            let newCol = currentCol + 1;
+            
+            if (newCol < 9 && !pathCells.has(`${newRow},${newCol}`)) {
+                currentRow = newRow;
+                currentCol = newCol;
+                pathCells.add(`${currentRow},${currentCol}`);
+                continue;
+            } else {
+                // If we can't move right, we're stuck - break out
+                break;
+            }
+        }
+        
+        // Choose a move, preferring right movement
+        const [dr, dc] = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+        
+        // Move to the new position
+        currentRow += dr;
+        currentCol += dc;
+        pathCells.add(`${currentRow},${currentCol}`);
     }
     
-    return true;
+    // Ensure the path reaches the right edge
+    if (currentCol < 8) {
+        // Add a straight line to the right edge
+        for (let col = currentCol + 1; col <= 8; col++) {
+            pathCells.add(`${currentRow},${col}`);
+        }
+    }
+    
+    // Calculate how many cells per 3x3 block are used by the path
+    // This is for debugging to ensure path distribution is reasonable
+    const blocksStats = {};
+    for (let blockRow = 0; blockRow < 3; blockRow++) {
+        for (let blockCol = 0; blockCol < 3; blockCol++) {
+            let count = 0;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    const row = blockRow * 3 + i;
+                    const col = blockCol * 3 + j;
+                    if (pathCells.has(`${row},${col}`)) {
+                        count++;
+                    }
+                }
+            }
+            blocksStats[`${blockRow},${blockCol}`] = count;
+        }
+    }
+    
+    console.log("Path distribution per block:", blocksStats);
+    
+    // Reset completion tracking when path changes
+    completedRows.clear();
+    completedColumns.clear();
+    completedGrids.clear();
+    
+    // Convert the path to an array for compatibility with existing code
+    const pathArray = Array.from(pathCells).map(pos => pos.split(',').map(Number));
+    
+    console.log(`BoardManager: Generated enemy path with ${pathArray.length} cells`);
+    
+    return pathArray;
 }
 
 /**
- * Check if a move is valid for our testing purpose
- * Similar to isValidMove but takes a puzzle as parameter
+ * Check if a given Sudoku puzzle is solvable using backtracking
+ * @param {Array} puzzle - Current puzzle state
+ * @returns {boolean} Whether the puzzle is solvable
  */
-function isValidMoveForTest(puzzle, row, col, value) {
-    // Check row
-    for (let i = 0; i < 9; i++) {
-        if (i !== col && puzzle[row][i] === value) {
-            return false;
-        }
-    }
+function isSudokuSolvable(puzzle) {
+    // First identify cells that are not on the path and are empty
+    const emptyPlayableCells = [];
     
-    // Check column
-    for (let i = 0; i < 9; i++) {
-        if (i !== row && puzzle[i][col] === value) {
-            return false;
-        }
-    }
-    
-    // Check 3x3 box
-    let boxRow = Math.floor(row / 3) * 3;
-    let boxCol = Math.floor(col / 3) * 3;
-    
-    for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-            if ((boxRow + i !== row || boxCol + j !== col) && 
-                puzzle[boxRow + i][boxCol + j] === value) {
-                return false;
+    for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+            if (puzzle[row][col] === 0 && !pathCells.has(`${row},${col}`)) {
+                emptyPlayableCells.push([row, col]);
             }
         }
     }
     
-    return true;
+    // If no empty cells, the puzzle is already solved
+    if (emptyPlayableCells.length === 0) {
+        return true;
+    }
+    
+    console.log(`Checking if puzzle is solvable with ${emptyPlayableCells.length} empty cells`);
+    
+    // Use backtracking to try to solve the puzzle
+    return solveWithBacktracking(puzzle, emptyPlayableCells, 0);
+}
+
+/**
+ * Attempt to solve a Sudoku puzzle using backtracking
+ * @param {Array} puzzle - Current puzzle state
+ * @param {Array} emptyCells - Array of empty cell coordinates [row, col]
+ * @param {number} index - Current index in emptyCells
+ * @returns {boolean} Whether the puzzle is solvable
+ */
+function solveWithBacktracking(puzzle, emptyCells, index) {
+    // If we've filled all empty cells, the puzzle is solved
+    if (index >= emptyCells.length) {
+        return true;
+    }
+    
+    // Get the current empty cell
+    const [row, col] = emptyCells[index];
+    
+    // Try each possible value
+    for (let num = 1; num <= 9; num++) {
+        // Check if this value is valid in this position
+        if (isValidMoveForTest(puzzle, row, col, num)) {
+            // Place the value
+            puzzle[row][col] = num;
+            
+            // Recursively try to solve the rest of the puzzle
+            if (solveWithBacktracking(puzzle, emptyCells, index + 1)) {
+                return true;
+            }
+            
+            // If we couldn't solve it, backtrack
+            puzzle[row][col] = 0;
+        }
+    }
+    
+    // If no value worked, this puzzle is not solvable
+    return false;
 }
 
 /**
@@ -648,7 +740,7 @@ function emergencyPuzzleGeneration() {
     // Generate a complete solution
     solution = generateCompleteSolution();
     
-    // Create a very simple path along the top edge
+    // Create a very simple path along the top edge only
     pathCells.clear();
     for (let i = 0; i < 9; i++) {
         pathCells.add(`0,${i}`); // Top row
