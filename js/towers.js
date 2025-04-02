@@ -66,6 +66,13 @@ const TowersModule = (function() {
  * @param {number} col - Column index on the grid
  * @returns {Object|null} The created tower or null if creation failed
  */
+/**
+ * Create a new tower
+ * @param {number|string} type - Tower type
+ * @param {number} row - Row index on the grid
+ * @param {number} col - Column index on the grid
+ * @returns {Object|null} The created tower or null if creation failed
+ */
 function createTower(type, row, col) {
   console.log("TowersModule.createTower called with type:", type, "row:", row, "col:", col);
   
@@ -106,45 +113,33 @@ function createTower(type, row, col) {
     return null;
   }
   
-  /**
- * Fix for the matchesSolution check in the createTower function
- * Replace the relevant section in the createTower function in towers.js
- */
-  // Determine if the tower matches the solution
+  // IMPORTANT: Check if the tower value matches the solution value
   let matchesSolution = false;
-  const numberValue = parseInt(type);
   let solutionValue = null;
+  const numberValue = parseInt(type);
   
+  // Only check for number towers (not special towers)
   if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9 && type !== 'special') {
-    // Get the solution
     if (boardManager && typeof boardManager.getSolution === 'function') {
       const solution = boardManager.getSolution();
-      
-      // Double-check the solution is valid and indexes are in range
-      if (solution && Array.isArray(solution) && 
-          row >= 0 && row < solution.length && 
-          col >= 0 && col < solution[row].length) {
-        
+      if (solution && solution[row] && solution[row][col]) {
         solutionValue = solution[row][col];
         matchesSolution = (numberValue === solutionValue);
         
+        // Debug output
         console.log(`TOWER DEBUG - Position (${row},${col}): Tower=${numberValue}, Solution=${solutionValue}`);
-        if (!matchesSolution) {
-          console.log(`TOWER DEBUG - MISMATCH: Tower value ${numberValue} does not match solution ${solutionValue}!`);
-        } else {
+        if (matchesSolution) {
           console.log(`TOWER DEBUG - MATCH: Tower value ${numberValue} matches solution ${solutionValue}.`);
+        } else {
+          console.log(`TOWER DEBUG - MISMATCH: Tower value ${numberValue} does not match solution ${solutionValue}!`);
         }
-      } else {
-        console.error(`Invalid solution or indexes: row=${row}, col=${col}, solution=`, solution);
       }
     }
   }
   
-  // Determine if the tower is "correct" according to Sudoku rules
+  // Check if placement is valid according to Sudoku rules
   let isCorrect = true;
-  
   if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9 && type !== 'special') {
-    // Check if placement is valid according to Sudoku rules
     if (boardManager && typeof boardManager.isValidMove === 'function') {
       isCorrect = boardManager.isValidMove(row, col, numberValue);
     } else {
@@ -179,7 +174,7 @@ function createTower(type, row, col) {
     target: null,
     isCorrect: isCorrect,
     matchesSolution: matchesSolution,
-    solutionValue: solutionValue  // Store the correct value for reference
+    solutionValue: solutionValue
   };
   
   // Spend currency
@@ -207,7 +202,6 @@ function createTower(type, row, col) {
     }
     
     // If it doesn't match the solution, add to the incorrect towers list
-    // This is critical for showing the red coloring
     if (!matchesSolution) {
       incorrectTowers.add(tower.id);
     }
@@ -215,6 +209,13 @@ function createTower(type, row, col) {
   
   // Publish tower placed event
   EventSystem.publish(GameEvents.TOWER_PLACED, tower);
+  
+  // Apply incorrect indicators immediately
+  setTimeout(function() {
+    if (window.Game && typeof Game.applyIncorrectTowerIndicators === 'function') {
+      Game.applyIncorrectTowerIndicators();
+    }
+  }, 50);
   
   return tower;
 }
