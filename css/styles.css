@@ -904,3 +904,61 @@ button:active {
   background-color: #666;
   cursor: not-allowed;
 }
+.trophy-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+}
+
+.trophy-item {
+  background-color: #222;
+  border-radius: 10px;
+  padding: 10px;
+  width: 135px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+}
+
+.trophy-puzzle {
+  display: grid;
+  grid-template-columns: repeat(9, 12px);
+  grid-template-rows: repeat(9, 12px);
+  gap: 1px;
+  background-color: #333;
+  margin-bottom: 8px;
+}
+
+.trophy-cell {
+  width: 12px;
+  height: 12px;
+  background-color: #111;
+  text-align: center;
+  font-size: 8px;
+  line-height: 12px;
+  color: #ccc;
+}
+
+.trophy-cell.fixed {
+  background-color: #444;
+  font-weight: bold;
+  color: #fff;
+}
+
+.trophy-cell.path {
+  background-color: #0a0;
+}
+
+.trophy-info {
+  font-size: 10px;
+  text-align: center;
+  color: #ccc;
+}
+
+.trophy-info div {
+  margin: 2px 0;
+}

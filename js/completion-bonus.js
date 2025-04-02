@@ -158,7 +158,7 @@
         for (let row = 0; row < 9; row++) {
             for (let col = 0; col < 9; col++) {
                 const cell = document.createElement('div');
-                cell.className = 'celebration-cell';
+                cell.className = 'trophy-cell';;
                 
                 // Add fixed class if needed
                 if (fixedCells && fixedCells[row] && fixedCells[row][col]) {
@@ -236,6 +236,7 @@
         
         // Add event listeners
         const closeButton = container.querySelector('.close-button');
+        console.debug("trying to close trophy room");
         if (closeButton) {
             closeButton.addEventListener('click', () => {
                 closeCelebration();
@@ -351,10 +352,10 @@
         }, 50);
         
         // Add event listeners
-        const closeButton = container.querySelector('.close-button');
-        if (closeButton) {
-            closeButton.addEventListener('click', closeTrophyRoom);
-        }
+        const closeButtonTop = container.querySelector('.close-button');
+if (closeButtonTop) {
+  closeButtonTop.addEventListener('click', closeTrophyRoom);
+}
         
         const closeButtonBottom = document.getElementById('close-trophy-room');
         if (closeButtonBottom) {
@@ -367,23 +368,25 @@
         }
     }
     
-    // Close trophy room
-    function closeTrophyRoom() {
-        const container = document.getElementById('trophy-room');
-        if (container) {
-            const content = container.querySelector('.trophy-content');
-            if (content) content.classList.remove('active');
-            
-            setTimeout(() => {
-                container.classList.remove('active');
-            }, 300);
-        }
-        
-        // Resume game
-        if (window.Game && typeof Game.resume === 'function') {
-            Game.resume();
-        }
-    }
+function closeTrophyRoom() {
+  const container = document.getElementById('trophy-room');
+  if (container) {
+    const content = container.querySelector('.trophy-content');
+    if (content) content.classList.remove('active');
+    
+    setTimeout(() => {
+      container.classList.remove('active');
+      container.innerHTML = ''; // Optional: Clear it completely
+    }, 300);
+  }
+  
+  if (window.Game && typeof Game.resume === 'function') {
+    Game.resume();
+  }
+}
+
+// Make sure it's available globally
+window.closeTrophyRoom = closeTrophyRoom;
     
     // Directly check unit (row, column, grid) completions using BoardManager
     function checkUnitCompletions() {
