@@ -228,11 +228,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentScore = PlayerModule.getState().score;
             
             // Show level complete notification after the score is updated
-            setTimeout(() => {
+           /* setTimeout(() => {
                 if (window.showLevelComplete) {
                     window.showLevelComplete(currentLevel, currentScore);
                 }
-            }, 500);
+            }, 500);*/
         });
         
         // 8. Add debug tools for saving system

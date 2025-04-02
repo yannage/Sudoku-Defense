@@ -585,6 +585,9 @@ let hasCelebrated = false;
                         existingCharacterSelection.remove();
                     }
                     
+                    //removes the continue button
+                    window.skipContinuePrompt = true;
+                    
                     // Reinitialize ability system to trigger character selection
                     AbilitySystem.init();
                     
