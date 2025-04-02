@@ -974,6 +974,8 @@ function applyIncorrectTowerIndicators() {
     const boardElement = document.getElementById('sudoku-board');
     if (!boardElement) return;
     
+    console.log("Applying incorrect tower indicators...");
+    
     // First, clear all indicators
     const allCells = boardElement.querySelectorAll('.sudoku-cell');
     allCells.forEach(cell => {
@@ -986,27 +988,46 @@ function applyIncorrectTowerIndicators() {
     if (!window.TowersModule || typeof window.TowersModule.getTowers !== 'function') return;
     
     const towers = window.TowersModule.getTowers();
+    console.log(`Checking ${towers.length} towers for solution matching...`);
+    
+    // Get the solution for verification
+    let solution = null;
+    if (window.BoardManager && typeof BoardManager.getSolution === 'function') {
+      solution = BoardManager.getSolution();
+    }
     
     // Apply indicators to towers that don't match the solution
     towers.forEach(tower => {
-        // Check if tower doesn't match the solution value
-        // This is the critical change - now we check matchesSolution rather than just isCorrect
-        if (tower.matchesSolution === false) {
-            const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
-            if (cell) {
-                // Apply incorrect tower class for red background
-                cell.classList.add('incorrect-tower');
-                
-                // Add semi-transparent X mark
-                if (!cell.querySelector('.incorrect-marker')) {
-                    const xMark = document.createElement('div');
-                    xMark.className = 'incorrect-marker';
-                    xMark.textContent = '❌';
-                    cell.appendChild(xMark);
+        // Skip special towers
+        if (tower.type === 'special') return;
+        
+        // Double check against solution directly
+        let valueMatchesSolution = false;
+        if (solution && tower.row < solution.length && tower.col < solution[tower.row].length) {
+            const solutionValue = solution[tower.row][tower.col];
+            const towerValue = parseInt(tower.type);
+            valueMatchesSolution = (towerValue === solutionValue);
+            
+            console.log(`Tower at (${tower.row},${tower.col}): Tower=${towerValue}, Solution=${solutionValue}, Matches=${valueMatchesSolution}`);
+            
+            // ONLY use the direct solution check, not the stored matchesSolution value
+            if (!valueMatchesSolution) {
+                const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+                if (cell) {
+                    // Apply incorrect tower class for red background
+                    cell.classList.add('incorrect-tower');
                     
-                    // Add tooltip showing correct value if available
-                    if (tower.solutionValue) {
-                        cell.title = `Correct value: ${tower.solutionValue}`;
+                    // Add semi-transparent X mark
+                    if (!cell.querySelector('.incorrect-marker')) {
+                        const xMark = document.createElement('div');
+                        xMark.className = 'incorrect-marker';
+                        xMark.textContent = '❌';
+                        cell.appendChild(xMark);
+                        
+                        // Add tooltip showing correct value if available
+                        if (solutionValue) {
+                            cell.title = `Correct value: ${solutionValue}`;
+                        }
                     }
                 }
             }
@@ -1014,7 +1035,6 @@ function applyIncorrectTowerIndicators() {
     });
     
     // Also apply indicators to towers that violate Sudoku rules
-    // (This preserves the existing behavior while adding the solution-checking)
     towers.forEach(tower => {
         if (tower.isCorrect === false) {
             const cell = boardElement.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
@@ -1032,6 +1052,8 @@ function applyIncorrectTowerIndicators() {
             }
         }
     });
+    
+    console.log("Incorrect tower indicators applied.");
 }
     
     // Hook into tower placement event

@@ -106,6 +106,10 @@ function createTower(type, row, col) {
     return null;
   }
   
+  /**
+ * Fix for the matchesSolution check in the createTower function
+ * Replace the relevant section in the createTower function in towers.js
+ */
   // Determine if the tower matches the solution
   let matchesSolution = false;
   const numberValue = parseInt(type);
@@ -115,16 +119,23 @@ function createTower(type, row, col) {
     // Get the solution
     if (boardManager && typeof boardManager.getSolution === 'function') {
       const solution = boardManager.getSolution();
-      if (solution && solution[row] && solution[row][col]) {
+      
+      // Double-check the solution is valid and indexes are in range
+      if (solution && Array.isArray(solution) && 
+          row >= 0 && row < solution.length && 
+          col >= 0 && col < solution[row].length) {
+        
         solutionValue = solution[row][col];
         matchesSolution = (numberValue === solutionValue);
         
-        console.log(`TOWER DEBUG - Solution value at this position: ${solutionValue}`);
+        console.log(`TOWER DEBUG - Position (${row},${col}): Tower=${numberValue}, Solution=${solutionValue}`);
         if (!matchesSolution) {
-          console.log("TOWER DEBUG - MISMATCH: Tower value does not match solution!");
+          console.log(`TOWER DEBUG - MISMATCH: Tower value ${numberValue} does not match solution ${solutionValue}!`);
         } else {
-          console.log("TOWER DEBUG - MATCH: Tower value matches solution.");
+          console.log(`TOWER DEBUG - MATCH: Tower value ${numberValue} matches solution ${solutionValue}.`);
         }
+      } else {
+        console.error(`Invalid solution or indexes: row=${row}, col=${col}, solution=`, solution);
       }
     }
   }
