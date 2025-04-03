@@ -2,6 +2,29 @@
  * A simplified fix that reverts to the original position calculation but ensures first wave projectiles.
  * Replace your tower-animations.js with this version.
  */
+ 
+ function getTowerTypeData(towerType) {
+  // Try to get tower type data from the TowersModule
+  if (window.TowersModule && typeof TowersModule.getTowerTypeData === 'function') {
+    return TowersModule.getTowerTypeData(towerType);
+  }
+  
+  // Fallback in case TowersModule is not accessible
+  const fallbackTypes = {
+    1: { projectileEmoji: "⚪" },
+    2: { projectileEmoji: "🟦" },
+    3: { projectileEmoji: "💢" },
+    4: { projectileEmoji: "🟢" },
+    5: { projectileEmoji: "🔵" },
+    6: { projectileEmoji: "⚡" },
+    7: { projectileEmoji: "🎲" },
+    8: { projectileEmoji: "🔴" },
+    9: { projectileEmoji: "⭐" },
+    'special': { projectileEmoji: "🪩" }
+  };
+  
+  return fallbackTypes[towerType] || { projectileEmoji: "⚪" };
+}
 
 const TowerAnimationsModule = (function() {
     // Private variables
@@ -214,55 +237,227 @@ function calculateEnemyPosition(enemy) {
      * @param {Object} tower - The source tower
      * @param {Object} enemy - The target enemy
      */
-    function createProjectile(tower, enemy) {
-        // Get correct positions
-        const towerPos = calculateTowerPosition(tower);
-        const enemyPos = calculateEnemyPosition(enemy);
-        
-        // Double check container exists
-        ensureProjectileContainer();
-        
-        // Create projectile element
-        const projectile = {
-            id: `projectile_${++projectileId}`,
-            startX: towerPos.x,
-            startY: towerPos.y,
-            targetX: enemyPos.x,
-            targetY: enemyPos.y,
-            progress: 0,
-            speed: 0.005, // Speed of projectile animation
-            target: enemy.id
-        };
-        
-        // Validate projectile coordinates
-        if (isNaN(projectile.startX) || isNaN(projectile.startY) || 
-            isNaN(projectile.targetX) || isNaN(projectile.targetY)) {
-            console.error("Invalid projectile coordinates:", projectile);
-            return;
-        }
-        
-        // Add to projectiles array
-        projectiles.push(projectile);
-        
-        // Create visual element
-        const projectileElement = document.createElement('div');
-        projectileElement.id = projectile.id;
-        projectileElement.className = 'tower-projectile';
-        projectileElement.textContent = '⚫';
-        projectileElement.style.position = 'absolute';
-        projectileElement.style.transform = `translate(${projectile.startX}px, ${projectile.startY}px)`;
-        projectileElement.style.fontSize = '10px';
-        projectileElement.style.zIndex = '25';
-        
-        // Add to projectile container
-        const container = document.getElementById('projectile-container');
-        if (container) {
-            container.appendChild(projectileElement);
-        } else {
-            console.error("Projectile container not found when adding projectile");
-        }
+    /**
+ * Create a projectile from tower to enemy with specialized visuals
+ * @param {Object} tower - The source tower
+ * @param {Object} enemy - The target enemy
+ */
+function createProjectile(tower, enemy) {
+    // Get correct positions
+    const towerPos = calculateTowerPosition(tower);
+    const enemyPos = calculateEnemyPosition(enemy);
+    
+    // Double check container exists
+    ensureProjectileContainer();
+    
+    // Get tower type data with projectile emoji
+    const towerTypeData = getTowerTypeData(tower.type);
+    
+    // Determine projectile emoji - important part! 
+    const projectileEmoji = towerTypeData.projectileEmoji || "⚪";
+    
+    // Create projectile object
+    const projectile = {
+        id: `projectile_${++projectileId}`,
+        startX: towerPos.x,
+        startY: towerPos.y,
+        targetX: enemyPos.x,
+        targetY: enemyPos.y,
+        progress: 0,
+        speed: 0.005, // Speed of projectile animation
+        target: enemy.id,
+        towerType: tower.type,
+        emoji: projectileEmoji  // Store the emoji so we can use it when creating the element
+    };
+    
+    // Validate projectile coordinates
+    if (isNaN(projectile.startX) || isNaN(projectile.startY) || 
+        isNaN(projectile.targetX) || isNaN(projectile.targetY)) {
+        console.error("Invalid projectile coordinates:", projectile);
+        return;
     }
     
+    // Add to projectiles array
+    projectiles.push(projectile);
+    
+    // Create visual element
+    const projectileElement = document.createElement('div');
+    projectileElement.id = projectile.id;
+    projectileElement.className = 'tower-projectile';
+    
+    // This is the key change - set the textContent to the stored emoji
+    projectileElement.textContent = projectile.emoji;
+    
+    projectileElement.style.position = 'absolute';
+    projectileElement.style.transform = `translate(${projectile.startX}px, ${projectile.startY}px)`;
+    projectileElement.style.fontSize = '16px';
+    projectileElement.style.zIndex = '25';
+    
+    // Add special visual effects based on tower type
+    if (tower.type === '4') { // Poison
+        projectileElement.style.filter = "drop-shadow(0 0 3px #00ff00)";
+    } else if (tower.type === '8') { // Sniper 
+        projectileElement.style.filter = "drop-shadow(0 0 3px #ff0000)";
+    }
+    
+    // Add to projectile container
+    const container = document.getElementById('projectile-container');
+    if (container) {
+        container.appendChild(projectileElement);
+    } else {
+        console.error("Projectile container not found when adding projectile");
+    }
+}
+
+/**
+ * Update all projectiles
+ * @param {number} deltaTime - Time elapsed since last update
+ */
+function updateProjectiles(deltaTime) {
+  // Get the container
+  const container = document.getElementById('projectile-container');
+  if (!container) return;
+  
+  // Process each projectile
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const projectile = projectiles[i];
+    
+    // Update progress
+    projectile.progress += projectile.speed * deltaTime;
+    
+    if (projectile.progress >= 1) {
+      // Projectile reached target
+      
+      // Create hit effect based on projectile type
+      if (projectile.specialType === "splash") {
+        createHitEffect(projectile, "splash");
+      } else if (projectile.specialType === "poison") {
+        createHitEffect(projectile, "poison");
+      } else if (projectile.specialType === "stun") {
+        createHitEffect(projectile, "stun");
+      } else if (projectile.specialType === "sniper" && projectile.isCritical) {
+        createHitEffect(projectile, "critical");
+      } else {
+        createHitEffect(projectile, "normal");
+      }
+      
+      // Remove the projectile
+      removeProjectile(projectile.id);
+      projectiles.splice(i, 1);
+      continue;
+    }
+    
+    // Update position
+    const x = projectile.startX + (projectile.targetX - projectile.startX) * projectile.progress;
+    const y = projectile.startY + (projectile.targetY - projectile.startY) * projectile.progress;
+    
+    // Update visual element
+    const element = document.getElementById(projectile.id);
+    if (element) {
+      element.style.transform = `translate(${x}px, ${y}px)`;
+      
+      // Add rotation for some projectile types
+      if (projectile.specialType === "gamble") {
+        element.style.transform += ` rotate(${projectile.progress * 720}deg)`;
+      } else if (projectile.specialType === "splash") {
+        element.style.transform += ` rotate(${projectile.progress * 360}deg)`;
+      }
+      
+      // Pulsing effect for special projectiles
+      if (projectile.isCritical) {
+        const pulseScale = 1 + Math.sin(projectile.progress * Math.PI * 4) * 0.2;
+        element.style.transform += ` scale(${pulseScale})`;
+      }
+    }
+  }
+}
+
+/**
+ * Create a hit effect when a projectile reaches its target
+ * @param {Object} projectile - The projectile
+ * @param {string} effectType - Type of effect to create
+ */
+function createHitEffect(projectile, effectType) {
+  // Create a hit effect div
+  const hitEffect = document.createElement('div');
+  hitEffect.className = `hit-effect ${effectType}-hit`;
+  hitEffect.style.position = 'absolute';
+  hitEffect.style.left = `${projectile.targetX}px`;
+  hitEffect.style.top = `${projectile.targetY}px`;
+  hitEffect.style.transform = 'translate(-50%, -50%)';
+  hitEffect.style.zIndex = '25';
+  
+  // Set size and content based on effect type
+  switch (effectType) {
+    case "splash":
+      hitEffect.style.width = `${cellSize * 1.5}px`;
+      hitEffect.style.height = `${cellSize * 1.5}px`;
+      hitEffect.style.backgroundColor = 'rgba(255, 100, 0, 0.5)';
+      hitEffect.style.borderRadius = '50%';
+      break;
+      
+    case "poison":
+      hitEffect.style.width = `${cellSize * 0.8}px`;
+      hitEffect.style.height = `${cellSize * 0.8}px`;
+      hitEffect.style.backgroundColor = 'rgba(0, 255, 0, 0.5)';
+      hitEffect.style.borderRadius = '50%';
+      break;
+      
+    case "stun":
+      hitEffect.textContent = "⚡";
+      hitEffect.style.fontSize = '20px';
+      hitEffect.style.color = 'yellow';
+      hitEffect.style.textShadow = '0 0 5px black';
+      break;
+      
+    case "critical":
+      hitEffect.textContent = "💥";
+      hitEffect.style.fontSize = '24px';
+      break;
+      
+    default:
+      hitEffect.style.width = `${cellSize * 0.4}px`;
+      hitEffect.style.height = `${cellSize * 0.4}px`;
+      hitEffect.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
+      hitEffect.style.borderRadius = '50%';
+      break;
+  }
+  
+  // Add to container
+  const container = document.getElementById('projectile-container');
+  if (container) {
+    container.appendChild(hitEffect);
+    
+    // Animate and remove
+    let size = 1.0;
+    let opacity = 1.0;
+    
+    const expandInterval = setInterval(() => {
+      if (effectType === "splash" || effectType === "poison") {
+        // Expand and fade
+        size += 0.1;
+        opacity -= 0.1;
+        hitEffect.style.transform = `translate(-50%, -50%) scale(${size})`;
+        hitEffect.style.opacity = opacity.toString();
+      } else {
+        // Fade out
+        opacity -= 0.1;
+        hitEffect.style.opacity = opacity.toString();
+        
+        // Float up for text effects
+        if (effectType === "stun" || effectType === "critical") {
+          const currentTop = parseFloat(hitEffect.style.top) - 2;
+          hitEffect.style.top = `${currentTop}px`;
+        }
+      }
+      
+      if (opacity <= 0) {
+        clearInterval(expandInterval);
+        hitEffect.remove();
+      }
+    }, 50);
+  }
+}
     /**
      * Animation loop for projectiles
      * @param {number} timestamp - Current animation frame timestamp
@@ -408,7 +603,8 @@ function calculateEnemyPosition(enemy) {
         init,
         updateDimensions,
         clearAllProjectiles,
-        ensureProjectileContainer
+        ensureProjectileContainer,
+        getTowerTypeData
     };
 })();
 
@@ -425,20 +621,8 @@ window.TowerAnimationsModule = TowerAnimationsModule;
             filter: drop-shadow(0 0 5px #ffff00) drop-shadow(0 0 10px #ff9900);
             z-index: 15;
         }
-        
-        @keyframes tower-attack-pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
         }
-        
-        /* Projectile styling */
-        .tower-projectile {
-            color: #000;
-            filter: drop-shadow(0 0 2px #fff);
-            pointer-events: none;
-            transform-origin: center center;
-        }
+
     `;
     document.head.appendChild(style);
 })();
@@ -618,3 +802,4 @@ setTimeout(() => {
         console.log("Installed debugging enemy position handler");
     }
 })();
+

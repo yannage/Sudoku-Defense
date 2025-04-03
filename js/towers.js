@@ -10,21 +10,135 @@ const TowersModule = (function() {
     let cellSize = 0;
     
     // Tower types with their properties - ENHANCED DAMAGE VERSION
-    const towerTypes = {
-        // Number towers with reduced costs and improved stats
-        1: { damage: 60, range: 2.5, attackSpeed: 0.7, cost: 30 },
-        2: { damage: 70, range: 2.5, attackSpeed: 0.7, cost: 30 },
-        3: { damage: 80, range: 2.5, attackSpeed: 0.7, cost: 30 },
-        4: { damage: 90, range: 2.5, attackSpeed: 0.7, cost: 35 },
-        5: { damage: 100, range: 2.5, attackSpeed: 0.7, cost: 35 },
-        6: { damage: 110, range: 2.5, attackSpeed: 0.7, cost: 35 },
-        7: { damage: 120, range: 2.5, attackSpeed: 0.7, cost: 40 },
-        8: { damage: 130, range: 2.5, attackSpeed: 0.7, cost: 40 },
-        9: { damage: 140, range: 3.0, attackSpeed: 0.7, cost: 40 },
-        // Special tower
-        'special': { emoji: '🔮', damage: 80, range: 4.0, attackSpeed: 0.3, cost: 100 }
-    };
-    
+  /**
+ * Tower types with specialized behaviors
+ * Replace the existing towerTypes object in towers.js with this enhanced version
+ */
+const towerTypes = {
+  // 1: Fast-firing "machine gun" towers with low damage but high attack speed
+  1: {
+    damage: 5,
+    range: 2.5,
+    attackSpeed: 0.3, // 3x faster than normal
+    cost: 30,
+    specialType: "rapid",
+    projectileEmoji: "⚪", // Small white projectile
+    description: "Rapid-fire tower with low damage but 3x attack speed"
+  },
+  
+  // 2: Slowing towers that reduce enemy speed
+  2: {
+    damage: 20,
+    range: 3.0,
+    attackSpeed: 0.9,
+    cost: 30,
+    specialType: "slow",
+    slowEffect: 0.3, // Slows enemies by 30%
+    slowDuration: 3, // Seconds
+    projectileEmoji: "🟦", // Blue projectile
+    description: "Slows enemies by 30% for 3 seconds"
+  },
+  
+  // 3: Splash damage towers that hit multiple enemies
+  3: {
+    damage: 40,
+    range: 2.0,
+    attackSpeed: 1.0,
+    cost: 35,
+    specialType: "splash",
+    splashRadius: 1.0, // Affects enemies within 1 cell
+    projectileEmoji: "💢", // Splash effect
+    description: "Deals splash damage to nearby enemies"
+  },
+  
+  // 4: Poison towers that apply damage over time
+  4: {
+    damage: 15,
+    range: 2.5,
+    attackSpeed: 0.8,
+    cost: 35,
+    specialType: "poison",
+    poisonDamage: 5, // Damage per tick
+    poisonDuration: 5, // Seconds
+    projectileEmoji: "🟢", // Green projectile
+    description: "Poisons enemies, dealing damage over time"
+  },
+  
+  // 5: Shield-breaking towers effective against armored enemies
+  5: {
+    damage: 50,
+    range: 2.5,
+    attackSpeed: 0.8,
+    cost: 35,
+    specialType: "pierce",
+    armorPierce: 0.5, // 50% armor penetration (for future armored enemies)
+    projectileEmoji: "🔵", // Blue pierce projectile
+    description: "Pierces enemy armor, effective against tough enemies"
+  },
+  
+  // 6: Stun towers with a chance to freeze enemies
+  6: {
+    damage: 25,
+    range: 2.0,
+    attackSpeed: 1.0,
+    cost: 35,
+    specialType: "stun",
+    stunChance: 0.25, // 25% chance to stun
+    stunDuration: 1.0, // 1 second
+    projectileEmoji: "⚡", // Lightning projectile
+    description: "25% chance to stun enemies for 1 second"
+  },
+  
+  // 7: Gambling towers with random effects
+  7: {
+    damage: 30,
+    range: 2.2,
+    attackSpeed: 0.9,
+    cost: 40,
+    specialType: "gamble",
+    bonusRange: [0.5, 2.0], // Min and max multiplier for bonuses
+    projectileEmoji: "🎲", // Dice projectile
+    description: "Random chance for bonus damage or currency"
+  },
+  
+  // 8: Sniper towers with high damage but slow attack
+  8: {
+    damage: 120,
+    range: 5.0,
+    attackSpeed: 1.5,
+    cost: 40,
+    specialType: "sniper",
+    critChance: 0.2, // 20% chance for critical hit
+    critMultiplier: 2.0, // 2x damage on critical hit
+    projectileEmoji: "🔴", // Red sniper projectile
+    description: "Long range, high damage, slow attack with critical hits"
+  },
+  
+  // 9: Support towers that boost adjacent towers
+  9: {
+    damage: 20,
+    range: 1.5,
+    attackSpeed: 1.0,
+    cost: 40,
+    specialType: "support",
+    boostRange: 1, // Affects towers within 1 cell
+    damageBoost: 0.2, // 20% damage boost
+    projectileEmoji: "⭐", // Star projectile
+    description: "Boosts damage of adjacent towers by 20%"
+  },
+  
+  // Special tower (unchanged but with added properties)
+  'special': {
+    emoji: '🔮',
+    damage: 80,
+    range: 4.0,
+    attackSpeed: 0.3,
+    cost: 100,
+    specialType: "special",
+    projectileEmoji: "🪩", // Disco ball
+    description: "Powerful magical tower with rapid attacks"
+  }
+};
     // Track which towers are incorrect
     const incorrectTowers = new Set();
     
@@ -429,40 +543,352 @@ function findClosestEnemy(tower, enemies) {
      * @param {Object} tower - The tower
      * @param {Object} enemy - The enemy
      */
-    function attackEnemy(tower, enemy) {
-        // Get base values
-        const baseDamage = tower.damage;
-        const basePoints = enemy.points || 5;
-        const baseCurrency = enemy.reward || 10;
-        
-        // Apply completion bonuses if the module exists
-        let damage = baseDamage;
-        let points = basePoints;
-        let currency = baseCurrency;
-        
-        if (window.CompletionBonusModule && 
-            typeof CompletionBonusModule.applyEffects === 'function') {
-            const bonusEffects = CompletionBonusModule.applyEffects(
-                tower, enemy, basePoints, baseCurrency
-            );
-            damage = bonusEffects.damage;
-            points = bonusEffects.points;
-            currency = bonusEffects.currency;
+    /**
+ * Attack an enemy with specialized tower effects
+ * @param {Object} tower - The tower
+ * @param {Object} enemy - The enemy
+ */
+function attackEnemy(tower, enemy) {
+    // Get base values
+    const towerTypeData = towerTypes[tower.type];
+    const baseDamage = tower.damage;
+    const basePoints = enemy.points || 5;
+    const baseCurrency = enemy.reward || 10;
+    
+    // Initialize effects and bonuses
+    let damage = baseDamage;
+    let points = basePoints;
+    let currency = baseCurrency;
+    let statusEffects = [];
+    let isCritical = false;
+    
+    // Apply tower type special effects
+    if (towerTypeData && towerTypeData.specialType) {
+        switch (towerTypeData.specialType) {
+            case "sniper":
+                // Sniper tower has chance for critical hit
+                if (Math.random() < towerTypeData.critChance) {
+                    damage *= towerTypeData.critMultiplier;
+                    isCritical = true;
+                }
+                break;
+                
+            case "gamble":
+                // Gambling tower has random effects
+                const roll = Math.random();
+                if (roll < 0.3) {
+                    // Bonus damage (30% chance)
+                    const multiplier = towerTypeData.bonusRange[0] + Math.random() * (towerTypeData.bonusRange[1] - towerTypeData.bonusRange[0]);
+                    damage *= multiplier;
+                    showFloatingText(tower, `${Math.round(multiplier * 100)}% DMG!`);
+                } else if (roll < 0.6) {
+                    // Bonus currency (30% chance)
+                    const multiplier = towerTypeData.bonusRange[0] + Math.random() * (towerTypeData.bonusRange[1] - towerTypeData.bonusRange[0]);
+                    currency *= multiplier;
+                    showFloatingText(tower, `${Math.round(multiplier * 100)}% GOLD!`);
+                }
+                // 40% chance of no bonus
+                break;
+                
+            case "poison":
+                // Poison tower applies damage over time effect
+                statusEffects.push({
+                    type: "poison",
+                    damage: towerTypeData.poisonDamage,
+                    duration: towerTypeData.poisonDuration,
+                    ticksRemaining: towerTypeData.poisonDuration * 10, // 10 ticks per second
+                    source: tower.id
+                });
+                break;
+                
+            case "slow":
+                // Slowing tower reduces enemy speed
+                statusEffects.push({
+                    type: "slow",
+                    slowFactor: towerTypeData.slowEffect,
+                    duration: towerTypeData.slowDuration,
+                    timeRemaining: towerTypeData.slowDuration,
+                    source: tower.id
+                });
+                break;
+                
+            case "stun":
+                // Stun tower has chance to freeze enemy
+                if (Math.random() < towerTypeData.stunChance) {
+                    statusEffects.push({
+                        type: "stun",
+                        duration: towerTypeData.stunDuration,
+                        timeRemaining: towerTypeData.stunDuration,
+                        source: tower.id
+                    });
+                    showFloatingText(enemy, "STUN!");
+                }
+                break;
+                
+            case "splash":
+                // Splash damage affects nearby enemies
+                if (window.EnemiesModule && typeof EnemiesModule.getEnemies === 'function') {
+                    const allEnemies = EnemiesModule.getEnemies();
+                    const splashRadius = towerTypeData.splashRadius * cellSize;
+                    
+                    // Calculate primary target damage
+                    const isKilled = EnemiesModule.damageEnemy(enemy.id, damage);
+                    
+                    // Find and damage enemies near the primary target
+                    allEnemies.forEach(nearbyEnemy => {
+                        if (nearbyEnemy.id !== enemy.id) {
+                            // Calculate distance between enemies
+                            const dx = (nearbyEnemy.col - enemy.col) * cellSize;
+                            const dy = (nearbyEnemy.row - enemy.row) * cellSize;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            
+                            // Apply splash damage if within radius (with falloff)
+                            if (distance <= splashRadius) {
+                                const falloff = 1 - (distance / splashRadius);
+                                const splashDamage = damage * 0.5 * falloff; // 50% damage with distance falloff
+                                EnemiesModule.damageEnemy(nearbyEnemy.id, splashDamage);
+                                
+                                // Create smaller splash effect
+                                createSplashEffect(nearbyEnemy, 0.7);
+                            }
+                        }
+                    });
+                    
+                    // Create main splash effect
+                    createSplashEffect(enemy, 1.0);
+                    
+                    // We handled the damage directly, so return to avoid double damage
+                    EventSystem.publish(GameEvents.TOWER_ATTACK, {
+                        tower: tower,
+                        enemy: enemy,
+                        damage: damage,
+                        killed: isKilled,
+                        points: isKilled ? points : 0,
+                        currency: isKilled ? currency : 0,
+                        isCritical: isCritical,
+                        statusEffects: statusEffects
+                    });
+                    return;
+                }
+                break;
+                
+            case "support":
+                // Support towers boost nearby towers
+                boostNearbyTowers(tower);
+                break;
         }
+    }
+    
+    // Apply completion bonuses if the module exists
+    if (window.CompletionBonusModule && 
+        typeof CompletionBonusModule.applyEffects === 'function') {
+        const bonusEffects = CompletionBonusModule.applyEffects(
+            tower, enemy, basePoints, baseCurrency
+        );
+        damage = bonusEffects.damage;
+        points = bonusEffects.points;
+        currency = bonusEffects.currency;
+    }
+    
+    // Damage the enemy
+    const isKilled = EnemiesModule.damageEnemy(enemy.id, damage);
+    
+    // Apply status effects to the enemy
+    if (statusEffects.length > 0 && !isKilled) {
+        applyStatusEffects(enemy, statusEffects);
+    }
+    
+    // Publish tower attack event with all information
+    EventSystem.publish(GameEvents.TOWER_ATTACK, {
+        tower: tower,
+        enemy: enemy,
+        damage: damage,
+        killed: isKilled,
+        points: isKilled ? points : 0,
+        currency: isKilled ? currency : 0,
+        isCritical: isCritical,
+        statusEffects: statusEffects
+    });
+    
+    // Create appropriate visual effect
+    if (isCritical) {
+        showFloatingText(enemy, `CRIT! ${Math.round(damage)}`);
+    }
+}
+
+/**
+ * Apply status effects to an enemy
+ * @param {Object} enemy - The enemy
+ * @param {Array} statusEffects - Array of status effects to apply
+ */
+function applyStatusEffects(enemy, statusEffects) {
+    // Initialize enemy status effects array if it doesn't exist
+    if (!enemy.statusEffects) {
+        enemy.statusEffects = [];
+    }
+    
+    // Process each new status effect
+    statusEffects.forEach(newEffect => {
+        // Check if the enemy already has this type of effect
+        const existingEffectIndex = enemy.statusEffects.findIndex(
+            effect => effect.type === newEffect.type && effect.source === newEffect.source
+        );
         
-        // Damage the enemy
-        const isKilled = EnemiesModule.damageEnemy(enemy.id, damage);
+        if (existingEffectIndex >= 0) {
+            // Refresh the existing effect
+            enemy.statusEffects[existingEffectIndex] = newEffect;
+        } else {
+            // Add the new effect
+            enemy.statusEffects.push(newEffect);
+            
+            // Apply immediate effects
+            if (newEffect.type === "slow" && typeof enemy.originalSpeed === 'undefined') {
+                enemy.originalSpeed = enemy.speed;
+                enemy.speed *= (1 - newEffect.slowFactor);
+            } else if (newEffect.type === "stun") {
+                enemy.stunned = true;
+                enemy.originalSpeed = enemy.originalSpeed || enemy.speed;
+                enemy.speed = 0;
+            }
+        }
+    });
+}
+
+/**
+ * Create a splash effect around an enemy
+ * @param {Object} enemy - The enemy
+ * @param {number} scale - Effect size scale
+ */
+function createSplashEffect(enemy, scale) {
+    // Create a splash effect at the enemy's position
+    const explosion = document.createElement('div');
+    explosion.className = 'splash-effect';
+    explosion.style.position = 'absolute';
+    explosion.style.left = `${enemy.col * cellSize + cellSize / 2}px`;
+    explosion.style.top = `${enemy.row * cellSize + cellSize / 2}px`;
+    explosion.style.width = `${cellSize * scale}px`;
+    explosion.style.height = `${cellSize * scale}px`;
+    explosion.style.transform = 'translate(-50%, -50%)';
+    explosion.style.borderRadius = '50%';
+    explosion.style.backgroundColor = 'rgba(255, 100, 0, 0.5)';
+    explosion.style.zIndex = '25';
+    
+    // Add to the board
+    const projectileContainer = document.getElementById('projectile-container');
+    if (projectileContainer) {
+        projectileContainer.appendChild(explosion);
         
-        // Publish tower attack event with bonus information
-        EventSystem.publish(GameEvents.TOWER_ATTACK, {
-            tower: tower,
-            enemy: enemy,
-            damage: damage,
-            killed: isKilled,
-            points: isKilled ? points : 0,
-            currency: isKilled ? currency : 0
+        // Animate and remove
+        let size = 0.8;
+        const expandInterval = setInterval(() => {
+            size += 0.1;
+            explosion.style.transform = `translate(-50%, -50%) scale(${size})`;
+            explosion.style.opacity = (1.5 - size).toString();
+            
+            if (size >= 1.5) {
+                clearInterval(expandInterval);
+                explosion.remove();
+            }
+        }, 30);
+    }
+}
+
+/**
+ * Show floating text above an object
+ * @param {Object} obj - The object (tower or enemy)
+ * @param {string} text - Text to display
+ */
+function showFloatingText(obj, text) {
+    // Create a floating text element
+    const textElement = document.createElement('div');
+    textElement.className = 'floating-text';
+    textElement.textContent = text;
+    textElement.style.position = 'absolute';
+    textElement.style.left = `${obj.col * cellSize + cellSize / 2}px`;
+    textElement.style.top = `${obj.row * cellSize}px`;
+    textElement.style.transform = 'translate(-50%, -100%)';
+    textElement.style.color = 'white';
+    textElement.style.fontWeight = 'bold';
+    textElement.style.fontSize = '12px';
+    textElement.style.textShadow = '0 0 3px black';
+    textElement.style.zIndex = '30';
+    
+    // Add to the board
+    const boardElement = document.getElementById('sudoku-board');
+    if (boardElement) {
+        boardElement.appendChild(textElement);
+        
+        // Animate and remove
+        let y = 0;
+        const moveInterval = setInterval(() => {
+            y -= 1;
+            textElement.style.transform = `translate(-50%, calc(-100% + ${y}px))`;
+            textElement.style.opacity = (1 + y / 20).toString();
+            
+            if (y <= -20) {
+                clearInterval(moveInterval);
+                textElement.remove();
+            }
+        }, 30);
+    }
+}
+
+/**
+ * Boost nearby towers
+ * @param {Object} supportTower - The support tower
+ */
+function boostNearbyTowers(supportTower) {
+    const supportType = towerTypes[supportTower.type];
+    if (!supportType || supportType.specialType !== 'support') return;
+    
+    // Get all towers
+    if (window.TowersModule && typeof TowersModule.getTowers === 'function') {
+        const towers = TowersModule.getTowers();
+        const boostRadius = supportType.boostRange * cellSize;
+        
+        towers.forEach(tower => {
+            // Skip self or other support towers
+            if (tower.id === supportTower.id || 
+                (towerTypes[tower.type] && towerTypes[tower.type].specialType === 'support')) {
+                return;
+            }
+            
+            // Calculate distance
+            const dx = (tower.col - supportTower.col) * cellSize;
+            const dy = (tower.row - supportTower.row) * cellSize;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Apply boost if within radius
+            if (distance <= boostRadius) {
+                // Apply damage boost if not already boosted
+                if (!tower.supportBoosted) {
+                    tower.baseDamage = tower.baseDamage || tower.damage; // Store original damage
+                    tower.damage = Math.floor(tower.baseDamage * (1 + supportType.damageBoost));
+                    tower.supportBoosted = true;
+                    tower.supportSource = supportTower.id;
+                    
+                    // Visual indication
+                    const towerElement = document.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+                    if (towerElement) {
+                        towerElement.classList.add('support-boosted');
+                    }
+                }
+            } 
+            // Remove boost if tower moved out of range
+            else if (tower.supportBoosted && tower.supportSource === supportTower.id) {
+                tower.damage = tower.baseDamage;
+                tower.supportBoosted = false;
+                tower.supportSource = null;
+                
+                // Remove visual indication
+                const towerElement = document.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+                if (towerElement) {
+                    towerElement.classList.remove('support-boosted');
+                }
+            }
         });
     }
+}
     
     /**
      * Remove incorrect towers after a wave
@@ -622,7 +1048,9 @@ function findClosestEnemy(tower, enemies) {
         getTowerCost,
         getTowerTypeData,
         getTowerTypes,
-        setCellSize
+        setCellSize,
+        // Make towerTypes accessible to other modules
+towerTypes: towerTypes
     };
 })();
 
