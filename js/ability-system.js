@@ -33,19 +33,34 @@ const AbilitySystem = (function() {
         manaCost: 5,
         icon: "↪️",
         cooldown: 0,
-        execute: function() {
-          if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
-            BoardManager.generateEnemyPath();
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Enemy path redirected!");
-            return true;
-          } else if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
-            SudokuModule.generateEnemyPath();
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Enemy path redirected!");
-            return true;
-          }
-          EventSystem.publish(GameEvents.STATUS_MESSAGE, "Failed to redirect path!");
-          return false;
-        }
+execute: function() {
+  if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
+    const newPath = BoardManager.generateEnemyPath();
+    
+    // Notify relevant modules about the path update
+    EventSystem.publish(GameEvents.PATH_CHANGED, newPath);
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Enemy path redirected!");
+    
+    // Optionally trigger visual re-rendering if needed
+    if (window.Game && typeof Game.updateBoard === 'function') {
+      Game.updateBoard();
+    }
+    
+    // Let the wave system know if it needs to recalculate enemy positions
+    if (window.WaveSystem && typeof WaveSystem.onPathChanged === 'function') {
+      WaveSystem.onPathChanged(newPath);
+    }
+    
+    return true;
+  } else if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
+    SudokuModule.generateEnemyPath();
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Enemy path redirected!");
+    return true;
+  }
+  
+  EventSystem.publish(GameEvents.STATUS_MESSAGE, "Failed to redirect path!");
+  return false;
+}
       }
     },
     engineer: {
