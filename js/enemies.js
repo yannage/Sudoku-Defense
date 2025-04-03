@@ -532,6 +532,255 @@ function moveEnemy(enemy, deltaTime) {
     }
     
     /**
+ * This code needs to be added to make the status effects visible on enemies.
+ * Add this to the end of your enemies.js file or at the end of your game.js file
+ * where the renderEnemies function is defined.
+ */
+
+// Apply status effect visuals to enemies
+function applyStatusEffectsVisuals() {
+  // First find all enemy elements
+  const enemyElements = document.querySelectorAll('.enemy');
+  
+  // Check if we have any enemies
+  if (!enemyElements.length) return;
+  
+  // Get all enemies from the module
+  if (!window.EnemiesModule || typeof EnemiesModule.getEnemies !== 'function') return;
+  
+  const enemies = EnemiesModule.getEnemies();
+  
+  // Match enemies to their elements
+  enemies.forEach(enemy => {
+    const enemyElement = document.getElementById(enemy.id);
+    if (!enemyElement) return;
+    
+    // Clear previous status classes first
+    enemyElement.classList.remove('poisoned', 'slowed', 'stunned');
+    
+    // Check for status effects and apply the appropriate class
+    if (enemy.poisoned) {
+      enemyElement.classList.add('poisoned');
+    }
+    
+    if (enemy.slowed) {
+      enemyElement.classList.add('slowed');
+    }
+    
+    if (enemy.stunned) {
+      enemyElement.classList.add('stunned');
+    }
+    
+    // Check for statusEffects array (used in the comprehensive implementation)
+    if (enemy.statusEffects && Array.isArray(enemy.statusEffects) && enemy.statusEffects.length > 0) {
+      enemy.statusEffects.forEach(effect => {
+        if (effect.type === 'poison') {
+          enemyElement.classList.add('poisoned');
+        } else if (effect.type === 'slow') {
+          enemyElement.classList.add('slowed');
+        } else if (effect.type === 'stun') {
+          enemyElement.classList.add('stunned');
+        }
+      });
+    }
+  });
+}
+
+// Call this every frame to update the status effect visuals
+function injectStatusEffectVisuals() {
+  // Method 1: Override the render function in game.js
+  if (window.Game && typeof Game.render === 'function') {
+    const originalRender = Game.render;
+    Game.render = function() {
+      // Call the original render function
+      originalRender.apply(this, arguments);
+      // Then apply our status effect visuals
+      applyStatusEffectsVisuals();
+    };
+  }
+  
+  // Method 2: Override the renderEnemies function in game.js
+  if (window.Game && typeof Game.renderEnemies === 'function') {
+    const originalRenderEnemies = Game.renderEnemies;
+    Game.renderEnemies = function() {
+      // Call the original renderEnemies function
+      originalRenderEnemies.apply(this, arguments);
+      // Then apply our status effect visuals
+      applyStatusEffectsVisuals();
+    };
+  }
+  
+  // Method 3: Set up a recurring interval if we can't override the render functions
+  if ((!window.Game || typeof Game.render !== 'function') &&
+    (!window.Game || typeof Game.renderEnemies !== 'function')) {
+    setInterval(applyStatusEffectsVisuals, 100); // Update 10 times per second
+  }
+  
+  console.log("Status effect visuals enabled");
+}
+
+// Additional CSS for the status effect indicators
+function addStatusEffectStyles() {
+  // Check if styles already exist
+  if (document.getElementById('status-effect-styles')) return;
+  
+  const styles = document.createElement('style');
+  styles.id = 'status-effect-styles';
+  styles.textContent = `
+        /* Poisoned enemy */
+        .enemy.poisoned {
+            box-shadow: 0 0 8px #00ff00 !important;
+            position: relative;
+        }
+        
+        .enemy.poisoned::after {
+            content: "☢️";
+            position: absolute;
+            top: -10px;
+            right: -5px;
+            font-size: 12px;
+            z-index: 35;
+        }
+        
+        /* Slowed enemy */
+        .enemy.slowed {
+            box-shadow: 0 0 8px #00ffff !important;
+            position: relative;
+            filter: brightness(0.7);
+            transition: transform 0.5s !important; /* Make movement visibly slower */
+        }
+        
+        .enemy.slowed::after {
+            content: "🐌";
+            position: absolute;
+            top: -10px;
+            right: -5px;
+            font-size: 12px;
+            z-index: 35;
+        }
+        
+        /* Stunned enemy */
+        .enemy.stunned {
+            box-shadow: 0 0 8px #ffff00 !important;
+            position: relative;
+            animation: shake 0.5s infinite;
+        }
+        
+        .enemy.stunned::after {
+            content: "💫";
+            position: absolute;
+            top: -10px;
+            right: -5px;
+            font-size: 12px;
+            z-index: 35;
+        }
+        
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+    `;
+  
+  document.head.appendChild(styles);
+}
+
+// Initialize everything
+(function() {
+  // Add the styles
+  addStatusEffectStyles();
+  
+  // Set up the visual update system
+  injectStatusEffectVisuals();
+  
+  // Also hook into GameEvents.TOWER_ATTACK to apply status effects
+  EventSystem.subscribe(GameEvents.TOWER_ATTACK, function(data) {
+    if (!data || !data.enemy || !data.tower) return;
+    
+    // Get tower type
+    const towerType = data.tower.type;
+    
+    // Apply status effects based on tower type
+    if (towerType === '2') { // Slowing tower
+      data.enemy.slowed = true;
+      
+      // Save original speed if not already saved
+      if (typeof data.enemy.originalSpeed === 'undefined') {
+        data.enemy.originalSpeed = data.enemy.speed;
+        data.enemy.speed *= 0.7; // Reduce speed by 30%
+      }
+      
+      // Clear the effect after 3 seconds
+      setTimeout(() => {
+        if (data.enemy && data.enemy.active) {
+          data.enemy.slowed = false;
+          
+          // Restore original speed
+          if (typeof data.enemy.originalSpeed !== 'undefined') {
+            data.enemy.speed = data.enemy.originalSpeed;
+            delete data.enemy.originalSpeed;
+          }
+        }
+      }, 3000);
+    }
+    else if (towerType === '4') { // Poison tower
+      data.enemy.poisoned = true;
+      
+      // Apply damage over time
+      let ticksRemaining = 5;
+      const poisonInterval = setInterval(() => {
+        if (!data.enemy || !data.enemy.active || ticksRemaining <= 0) {
+          clearInterval(poisonInterval);
+          
+          // Make sure to remove the poisoned flag if the enemy is still active
+          if (data.enemy && data.enemy.active) {
+            data.enemy.poisoned = false;
+          }
+          return;
+        }
+        
+        // Apply poison damage
+        if (EnemiesModule && typeof EnemiesModule.damageEnemy === 'function') {
+          EnemiesModule.damageEnemy(data.enemy.id, 5); // 5 damage per tick
+        }
+        
+        ticksRemaining--;
+      }, 1000); // Tick every second
+    }
+    else if (towerType === '6' && Math.random() < 0.25) { // Stun tower with 25% chance
+      data.enemy.stunned = true;
+      
+      // Save original speed if not already saved
+      if (typeof data.enemy.originalSpeed === 'undefined') {
+        data.enemy.originalSpeed = data.enemy.speed;
+        data.enemy.speed = 0; // Stop movement
+      }
+      
+      // Clear the effect after 1 second
+      setTimeout(() => {
+        if (data.enemy && data.enemy.active) {
+          data.enemy.stunned = false;
+          
+          // Restore original speed
+          if (typeof data.enemy.originalSpeed !== 'undefined') {
+            data.enemy.speed = data.enemy.originalSpeed;
+            delete data.enemy.originalSpeed;
+          }
+        }
+      }, 1000);
+    }
+  });
+})();
+    
+    /**
      * Initialize event listeners
      */
     function initEventListeners() {
