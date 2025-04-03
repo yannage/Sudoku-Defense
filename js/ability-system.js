@@ -225,7 +225,7 @@ const AbilitySystem = (function() {
           // Place towers in these cells
           cellsToReveal.forEach(cell => {
             if (window.TowersModule && typeof TowersModule.createTower === 'function') {
-              TowersModule.createTower(cell.value, cell.row, cell.col);
+              TowersModule.createTower(cell.value, cell.row, cell.col, { free: true });
             } else {
               // Fallback - update the board directly
               boardManager.setCellValue(cell.row, cell.col, cell.value);

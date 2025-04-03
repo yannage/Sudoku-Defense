@@ -187,7 +187,8 @@ const towerTypes = {
  * @param {number} col - Column index on the grid
  * @returns {Object|null} The created tower or null if creation failed
  */
-function createTower(type, row, col) {
+function createTower(type, row, col, options = {}) {
+  const { free = false } = options;
   console.log("%c TOWER CREATION STARTED ", "background: yellow; color: black;");
   console.log(`Tower Details:
     Type: ${type}
@@ -301,8 +302,18 @@ function createTower(type, row, col) {
     solutionValue: solutionValue
   };
   
-  // Spend currency
+  
+if (!free) {
+  if (playerState.currency < typeData.cost) {
+    console.log("Not enough currency to build tower");
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, `Not enough currency to build this tower! Need ${typeData.cost}`);
+    return null;
+  }
+  
   PlayerModule.spendCurrency(typeData.cost);
+}
+  
+
   
   // Add to towers array
   towers.push(tower);
