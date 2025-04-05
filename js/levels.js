@@ -87,6 +87,8 @@ const LevelsModule = (function() {
     console.log("Starting wave via EnemiesModule.startWave()");
     EnemiesModule.startWave();
     
+    setTimeout(() => BoardManager.toggleDisplayMode(false), 50); // Show tower sprites during the wave
+    
     //add ground art
     applyGroundArt();
 }
@@ -227,8 +229,10 @@ function removeGroundArt() {
     }, 200);
   }
   
-  // Remove the grass/dirt overlay after the wave ends
-  removeGroundArt();
+// Remove the grass/dirt overlay after the wave ends
+removeGroundArt();
+
+setTimeout(() => BoardManager.toggleDisplayMode(true), 100);
 });
   
   // Listen for Sudoku completion to advance to next level

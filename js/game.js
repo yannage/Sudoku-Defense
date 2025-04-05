@@ -368,78 +368,63 @@ const Game = (function() {
      * Update the Sudoku board display
      * This function has been modified to properly handle path cells with numbers
      */
-    function updateBoard() {
-    console.log("Updating board display");
-    
-    // Get board state from BoardManager (or fallback to SudokuModule)
-    const board = window.BoardManager ? BoardManager.getBoard() : SudokuModule.getBoard();
-    const fixedCells = window.BoardManager ? BoardManager.getFixedCells() : SudokuModule.getFixedCells();
-    const pathCells = window.BoardManager ? BoardManager.getPathCells() : SudokuModule.getPathCells();
-    
-    // Update each cell
-    for (let row = 0; row < 9; row++) {
-        for (let col = 0; col < 9; col++) {
-            const cellElement = boardElement.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-            
-            if (!cellElement) {
-                console.warn(`Cell element not found for row ${row}, col ${col}`);
-                continue;
-            }
-            
-            // Clear previous classes
-            cellElement.classList.remove('fixed', 'path');
-            
-            // Set value
-            const value = board[row][col];
-            cellElement.textContent = value > 0 ? value : '';
-            
-            // Mark fixed cells
-            if (fixedCells[row][col]) {
-                cellElement.classList.add('fixed');
-            }
-            
-            // Mark path cells - a cell can be both a path and have a number
-            if (pathCells.has(`${row},${col}`)) {
-                cellElement.classList.add('path');
-            }
-            
-            // Check for tower
-            const tower = TowersModule.getTowerAt(row, col);
-            
-            if (tower && !pathCells.has(`${row},${col}`)) {
-                // Clear existing content
-                cellElement.textContent = '';
-                
-                // Create tower sprite element
-                const towerSprite = document.createElement('div');
-                towerSprite.classList.add('tower');
-                
-                if (tower.type === 'special') {
-                    towerSprite.classList.add('tower-special');
-                } else {
-                    towerSprite.classList.add(`tower-${tower.type}`);
-                }
-                
-                // Add level indicator if tower level > 1
-                if (tower.level > 1) {
-                    const levelIndicator = document.createElement('span');
-                    levelIndicator.className = 'tower-level';
-                    levelIndicator.textContent = tower.level;
-                    towerSprite.appendChild(levelIndicator);
-                }
-                
-                // Append sprite to cell
-                cellElement.appendChild(towerSprite);
-            }
+function updateBoard() {
+  console.log("Updating board display");
+  
+  const board = window.BoardManager ? BoardManager.getBoard() : SudokuModule.getBoard();
+  const fixedCells = window.BoardManager ? BoardManager.getFixedCells() : SudokuModule.getFixedCells();
+  const pathCells = window.BoardManager ? BoardManager.getPathCells() : SudokuModule.getPathCells();
+  
+  for (let row = 0; row < 9; row++) {
+    for (let col = 0; col < 9; col++) {
+      const cellElement = boardElement.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+      if (!cellElement) continue;
+      
+      cellElement.className = 'sudoku-cell'; // Reset all classes
+      const value = board[row][col];
+      
+      // Set basic text content
+      cellElement.textContent = value > 0 ? value : '';
+      
+      if (fixedCells[row][col]) {
+        cellElement.classList.add('fixed');
+      }
+      
+      if (pathCells.has(`${row},${col}`)) {
+        cellElement.classList.add('path');
+      }
+      
+      const tower = TowersModule.getTowerAt(row, col);
+      
+      if (tower && !pathCells.has(`${row},${col}`)) {
+        cellElement.textContent = '';
+        cellElement.innerHTML = ''; // Clear inner HTML
+        
+        if (Game.displayMode === 'sprites') {
+          const towerSprite = document.createElement('div');
+          towerSprite.classList.add('tower', `tower-${tower.type}`);
+          
+          if (tower.level > 1) {
+            const levelIndicator = document.createElement('span');
+            levelIndicator.className = 'tower-level';
+            levelIndicator.textContent = tower.level;
+            towerSprite.appendChild(levelIndicator);
+          }
+          
+          cellElement.appendChild(towerSprite);
+        } else {
+          // Show tower as number
+          cellElement.textContent = tower.type;
+          cellElement.classList.add('tower-number');
         }
+      }
     }
-    
-    // Fix any discrepancies between board state and towers
-    if (window.BoardManager && typeof BoardManager.fixBoardDiscrepancies === 'function') {
-        setTimeout(() => {
-            BoardManager.fixBoardDiscrepancies();
-        }, 50);
-    }
+  }
+  
+  // Fix board discrepancies
+  if (window.BoardManager && typeof BoardManager.fixBoardDiscrepancies === 'function') {
+    setTimeout(() => BoardManager.fixBoardDiscrepancies(), 50);
+  }
 }
 
     /**

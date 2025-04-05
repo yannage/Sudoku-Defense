@@ -1387,40 +1387,63 @@ document.addEventListener('keydown', function(event) {
         }
     }
     
-    function toggleDisplayMode(showNumbers) {
-  const board = BoardManager.getBoardRaw(); // Access live board state
-  const pathCells = BoardManager.getPathCells(); // Get path cells as Set
+function toggleDisplayMode(showNumbers) {
+  window.Game.displayMode = showNumbers ? 'numbers' : 'sprites';
+  
   const cells = document.querySelectorAll('.sudoku-cell');
+  const board = BoardManager.getBoard();
+  const fixedCells = BoardManager.getFixedCells();
+  const pathCells = BoardManager.getPathCells();
   
   cells.forEach(cell => {
-    const row = parseInt(cell.getAttribute('data-row'));
-    const col = parseInt(cell.getAttribute('data-col'));
+    const row = parseInt(cell.getAttribute('data-row'), 10);
+    const col = parseInt(cell.getAttribute('data-col'), 10);
     const value = board[row][col];
     
-    // Clear the cell
+    // Clear content and reset display classes
     cell.innerHTML = '';
+    cell.classList.remove('tower-number', 'fixed-block');
     
-    // Skip path or empty cells
-    if (value === 0 || pathCells.has(`${row},${col}`)) return;
+    // Skip path cells
+    if (pathCells.has(`${row},${col}`)) return;
+    
+    const isFixed = fixedCells[row][col];
+    
+    if (value === 0) return;
     
     if (showNumbers) {
-      // Show number
-      const span = document.createElement('span');
-      span.textContent = value;
-      span.style.fontSize = '18px';
-      span.style.color = 'white';
-      span.style.fontWeight = 'bold';
-      cell.appendChild(span);
+      // Show numbers for player-placed towers only
+      if (!isFixed) {
+        const span = document.createElement('span');
+        span.textContent = value;
+        span.style.fontSize = '18px';
+        span.style.color = 'white';
+        span.style.fontWeight = 'bold';
+        cell.appendChild(span);
+        cell.classList.add('tower-number');
+      }
     } else {
-      // Show tower sprite
-      const sprite = TowersModule.getSpriteForType(value);
-      if (sprite) {
-        cell.appendChild(sprite);
+      // Sprite mode
+      if (isFixed) {
+        // Show dark green block for fixed numbers
+        cell.classList.add('fixed-block');
+      } else {
+        // Show tower sprite for player-placed towers
+        let sprite;
+        if (window.TowersModule?.getSpriteForType) {
+          sprite = TowersModule.getSpriteForType(value);
+        } else {
+          sprite = document.createElement('div');
+          sprite.classList.add('tower', `tower-${value}`);
+        }
+        
+        if (sprite) {
+          cell.appendChild(sprite);
+        }
       }
     }
   });
 }
-    
     /**
      * Get the completion status of rows, columns, and grids
      * @returns {Object} Completion status
@@ -1440,10 +1463,10 @@ document.addEventListener('keydown', function(event) {
   generateEnemyPath,
   setCellValue,
   getBoard,
-  getBoardRaw: () => board, // <-- Add this
+  getBoardRaw: () => board,
   getSolution,
   getFixedCells,
-  getPathCells, // <-- Already exists, just ensure it's exposed
+  getPathCells,
   getPathArray,
   setDifficulty,
   isValidMove,
@@ -1451,7 +1474,9 @@ document.addEventListener('keydown', function(event) {
   checkUnitCompletion,
   isComplete,
   getCompletionStatus,
-  fixBoardDiscrepancies
+  fixBoardDiscrepancies,
+  // ADD THIS LINE:
+  toggleDisplayMode
 };
 })();
 
