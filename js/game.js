@@ -371,62 +371,73 @@ const Game = (function() {
 function updateBoard() {
   console.log("Updating board display");
   
-  const board = window.BoardManager ? BoardManager.getBoard() : SudokuModule.getBoard();
-  const fixedCells = window.BoardManager ? BoardManager.getFixedCells() : SudokuModule.getFixedCells();
-  const pathCells = window.BoardManager ? BoardManager.getPathCells() : SudokuModule.getPathCells();
+  const board = BoardManager.getBoard();
+  const fixedCells = BoardManager.getFixedCells();
+  const pathCells = BoardManager.getPathCells();
+  const boardElement = document.getElementById("sudoku-board");
   
   for (let row = 0; row < 9; row++) {
     for (let col = 0; col < 9; col++) {
       const cellElement = boardElement.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
       if (!cellElement) continue;
       
-      cellElement.className = 'sudoku-cell'; // Reset all classes
+      // Reset content and classes
+      cellElement.textContent = '';
+      cellElement.innerHTML = '';
+      cellElement.className = 'sudoku-cell';
+      cellElement.classList.remove('path', 'tower-number', 'dark-grass');
+      
       const value = board[row][col];
-      
-      // Set basic text content
-      cellElement.textContent = value > 0 ? value : '';
-      
-      if (fixedCells[row][col]) {
-        cellElement.classList.add('fixed');
-      }
-      
-      if (pathCells.has(`${row},${col}`)) {
-        cellElement.classList.add('path');
-      }
-      
+      const isFixed = fixedCells[row][col];
+      const isPath = pathCells.has(`${row},${col}`);
       const tower = TowersModule.getTowerAt(row, col);
       
-      if (tower && !pathCells.has(`${row},${col}`)) {
-        cellElement.textContent = '';
-        cellElement.innerHTML = ''; // Clear inner HTML
-        
+      // Path cells
+      if (isPath) {
+        cellElement.classList.add('path');
+        continue;
+      }
+      
+      // Fixed cells become dark blocks during wave mode, numbers otherwise
+      if (isFixed) {
         if (Game.displayMode === 'sprites') {
-          const towerSprite = document.createElement('div');
-          towerSprite.classList.add('tower', `tower-${tower.type}`);
-          
+          cellElement.classList.add('dark-grass');
+        } else {
+          cellElement.textContent = value;
+          cellElement.classList.add('fixed');
+        }
+        continue;
+      }
+      
+      // Tower cells (user-placed)
+      if (tower) {
+        if (Game.displayMode === 'sprites') {
+          const sprite = document.createElement('div');
+          sprite.classList.add('tower', `tower-${tower.type}`);
           if (tower.level > 1) {
             const levelIndicator = document.createElement('span');
             levelIndicator.className = 'tower-level';
             levelIndicator.textContent = tower.level;
-            towerSprite.appendChild(levelIndicator);
+            sprite.appendChild(levelIndicator);
           }
-          
-          cellElement.appendChild(towerSprite);
+          cellElement.appendChild(sprite);
         } else {
-          // Show tower as number
           cellElement.textContent = tower.type;
           cellElement.classList.add('tower-number');
         }
+      } else if (value > 0) {
+        // Other non-fixed numbers (e.g., hint reveals or valid moves)
+        cellElement.textContent = value;
+        cellElement.classList.add('tower-number');
       }
     }
   }
   
-  // Fix board discrepancies
-  if (window.BoardManager && typeof BoardManager.fixBoardDiscrepancies === 'function') {
+  // Optional: repair board inconsistencies
+  if (typeof BoardManager.fixBoardDiscrepancies === 'function') {
     setTimeout(() => BoardManager.fixBoardDiscrepancies(), 50);
   }
 }
-
     /**
      * Handle cell click event
      * @param {number} row - Row index

@@ -1131,3 +1131,6 @@ button:active {
 .sudoku-cell.fixed-block {
   background-color: #2e7d32 !important; /* Dark green */
 }
+.sudoku-cell.dark-grass {
+  background-color: #2e7d32 !important; /* Dark green */
+}

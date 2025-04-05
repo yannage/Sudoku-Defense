@@ -331,17 +331,17 @@ if (!free) {
       }
     }
     
-    // MODIFIED: Explicitly handle incorrect towers
-    console.log("%c TOWER INCORRECTNESS CHECK ", "background: red; color: white;", {
-      isCorrect: isCorrect,
-      matchesSolution: matchesSolution
-    });
-    
-    // Add to incorrect towers if either condition is false
-    if (!isCorrect || !matchesSolution) {
-      incorrectTowers.add(tower.id);
-      console.log(`%c ADDED TOWER TO INCORRECT LIST `, "background: red; color: white;", tower.id);
-    }
+// MODIFIED: Explicitly handle incorrect towers
+console.log("%c TOWER INCORRECTNESS CHECK ", "background: red; color: white;", {
+  isCorrect: isCorrect,
+  matchesSolution: matchesSolution
+});
+
+// Only mark as incorrect if it breaks Sudoku rules (not if it just mismatches the solution)
+if (!isCorrect) {
+  incorrectTowers.add(tower.id);
+  console.log(`%c ADDED TOWER TO INCORRECT LIST `, "background: red; color: white;", tower.id);
+}
   }
   
   // Publish tower placed event
