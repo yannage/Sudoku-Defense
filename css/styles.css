@@ -1116,3 +1116,10 @@ button:active {
     background-color: black;
     color: white;
 }
+.sudoku-cell.grass {
+  background-color: #6ab04c !important; /* soft green */
+}
+
+.sudoku-cell.dirt {
+  background-color: #b5835a !important; /* dirt brown */
+}
