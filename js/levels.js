@@ -86,6 +86,9 @@ const LevelsModule = (function() {
     // Start the wave in the enemies module
     console.log("Starting wave via EnemiesModule.startWave()");
     EnemiesModule.startWave();
+    
+    //add ground art
+    applyGroundArt();
 }
 
     /**
@@ -138,6 +141,33 @@ const LevelsModule = (function() {
         return currentWave;
     }
     
+    function applyGroundArt() {
+  const cells = document.querySelectorAll('.sudoku-cell');
+  const pathSet = new Set(
+    (window.BoardManager?.getPathArray() || []).map(([r, c]) => `${r},${c}`)
+  );
+  
+  cells.forEach(cell => {
+    const row = cell.getAttribute('data-row');
+    const col = cell.getAttribute('data-col');
+    const key = `${row},${col}`;
+    
+    cell.classList.remove('grass', 'dirt');
+    
+    if (pathSet.has(key)) {
+      cell.classList.add('dirt');
+    } else {
+      cell.classList.add('grass');
+    }
+  });
+}
+
+function removeGroundArt() {
+  const cells = document.querySelectorAll('.sudoku-cell');
+  cells.forEach(cell => {
+    cell.classList.remove('grass', 'dirt');
+  });
+}
     /**
      * Advance to the next level
      */
@@ -180,30 +210,26 @@ const LevelsModule = (function() {
   
   // Listen for wave completion
   EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
-    // Increment the wave number
-    currentWave++;
-    
-    // Sync wave number with EnemiesModule
-    if (window.EnemiesModule && typeof EnemiesModule.setWaveNumber === 'function') {
-      EnemiesModule.setWaveNumber(currentWave);
-    }
-    
-    // Update UI
-    EventSystem.publish(GameEvents.UI_UPDATE, {
-      wave: currentWave
-    });
-    
-    // Show a message about the changing path
-    EventSystem.publish(GameEvents.STATUS_MESSAGE,
-      `Wave ${currentWave} approaching! The enemies will find a new path!`);
-    
-    // Generate a new path for the next wave
-    if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
-      setTimeout(() => {
-        BoardManager.generateEnemyPath();
-      }, 200);
-    }
-  });
+  currentWave++;
+  
+  if (window.EnemiesModule?.setWaveNumber) {
+    EnemiesModule.setWaveNumber(currentWave);
+  }
+  
+  EventSystem.publish(GameEvents.UI_UPDATE, { wave: currentWave });
+  EventSystem.publish(GameEvents.STATUS_MESSAGE,
+    `Wave ${currentWave} approaching! The enemies will find a new path!`
+  );
+  
+  if (window.BoardManager?.generateEnemyPath) {
+    setTimeout(() => {
+      BoardManager.generateEnemyPath();
+    }, 200);
+  }
+  
+  // Remove the grass/dirt overlay after the wave ends
+  removeGroundArt();
+});
   
   // Listen for Sudoku completion to advance to next level
   EventSystem.subscribe(GameEvents.SUDOKU_COMPLETE, function() {
