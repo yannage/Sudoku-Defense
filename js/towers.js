@@ -202,7 +202,7 @@ function createTower(type, row, col, options = {}) {
     return null;
   }
   
-  // Check if player has enough currency. Required ro place towers down
+  // Check if player has enough currency
   const playerState = PlayerModule.getState();
   if (playerState.currency < typeData.cost) {
     console.log("Not enough currency to build tower");

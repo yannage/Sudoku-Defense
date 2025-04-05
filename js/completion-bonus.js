@@ -305,7 +305,7 @@ let hasCelebrated = false;
             let score = 0;
             
             // Get board data from BoardManager with fallback to SudokuModule
-            const boardManager = window.BoardManager || window.SudokuModule;
+            const boardManager = window.BoardManage;
             if (boardManager) {
                 if (typeof boardManager.getBoard === 'function') {
                     const board = boardManager.getBoard();
@@ -407,7 +407,7 @@ let hasCelebrated = false;
         
         // If data wasn't provided, try to get it from BoardManager or SudokuModule
         if (!board) {
-            const boardManager = window.BoardManager || window.SudokuModule;
+            const boardManager = window.BoardManage;
             if (boardManager) {
                 board = boardManager.getBoard();
                 fixedCells = boardManager.getFixedCells();

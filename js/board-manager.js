@@ -1121,141 +1121,107 @@ function isValidMoveForTest(puzzle, row, col, value) {
      * @returns {boolean} Whether the Sudoku is complete
      */
     function isComplete() {
-        console.log("BoardManager: Checking if Sudoku is complete");
-        
-
- // Check 1: All non-path cells must be filled
-const emptyCells = [];
-
-for (let row = 0; row < 9; row++) {
-  for (let col = 0; col < 9; col++) {
-    if (pathCells.has(`${row},${col}`)) {
-      continue;
+  console.log("BoardManager: Checking if Sudoku is complete");
+  
+  if (!solution || solution.length !== 9) {
+    console.warn("BoardManager: Solution is not available or malformed.");
+    return false;
+  }
+  
+  const newlyCompletedRows = [];
+  const newlyCompletedColumns = [];
+  const newlyCompletedGrids = [];
+  
+  for (let row = 0; row < 9; row++) {
+    let rowComplete = true;
+    
+    for (let col = 0; col < 9; col++) {
+      const actual = board[row][col];
+      const expected = solution[row][col];
+      
+      if (actual !== expected) {
+        return false;
+      }
+      
+      if (actual < 1 || actual > 9) {
+        return false;
+      }
     }
     
-    if (board[row][col] === 0) {
-      emptyCells.push([row, col]);
+    // Row is complete
+    if (!completedRows.has(row)) {
+      completedRows.add(row);
+      newlyCompletedRows.push(row);
     }
   }
-}
-
-if (emptyCells.length > 0) {
-  return false;
-}
-        
-        if (emptyCells.length > 0) {
-            console.log(`BoardManager: Found ${emptyCells.length} empty cells - not complete`);
-            return false;
-        }
-        
-        // Check 2: Each row must have valid Sudoku values (excluding path cells)
-        for (let row = 0; row < 9; row++) {
-            const values = new Set();
-            const nonPathCellsInRow = [];
-            
-            for (let col = 0; col < 9; col++) {
-                if (!pathCells.has(`${row},${col}`)) {
-                    nonPathCellsInRow.push([row, col, board[row][col]]);
-                    values.add(board[row][col]);
-                }
-            }
-            
-            // If there are non-path cells in this row, check for valid values
-            if (nonPathCellsInRow.length > 0) {
-                // Check that we have the right number of unique values
-                if (values.size !== nonPathCellsInRow.length) {
-                    console.log(`BoardManager: Row ${row} has invalid values - not complete`);
-                    return false;
-                }
-                
-                // Make sure all values are in the range 1-9
-                for (const value of values) {
-                    if (value < 1 || value > 9) {
-                        console.log(`BoardManager: Row ${row} has invalid value: ${value} - not complete`);
-                        return false;
-                    }
-                }
-            }
-        }
-        
-        // Check 3: Each column must have valid Sudoku values (excluding path cells)
-        for (let col = 0; col < 9; col++) {
-            const values = new Set();
-            const nonPathCellsInCol = [];
-            
-            for (let row = 0; row < 9; row++) {
-                if (!pathCells.has(`${row},${col}`)) {
-                    nonPathCellsInCol.push([row, col, board[row][col]]);
-                    values.add(board[row][col]);
-                }
-            }
-            
-            // If there are non-path cells in this column, check for valid values
-            if (nonPathCellsInCol.length > 0) {
-                // Check that we have the right number of unique values
-                if (values.size !== nonPathCellsInCol.length) {
-                    console.log(`BoardManager: Column ${col} has invalid values - not complete`);
-                    return false;
-                }
-                
-                // Make sure all values are in the range 1-9
-                for (const value of values) {
-                    if (value < 1 || value > 9) {
-                        console.log(`BoardManager: Column ${col} has invalid value: ${value} - not complete`);
-                        return false;
-                    }
-                }
-            }
-        }
-        
-        // Check 4: Each 3x3 box must have valid Sudoku values (excluding path cells)
-        for (let boxRow = 0; boxRow < 3; boxRow++) {
-            for (let boxCol = 0; boxCol < 3; boxCol++) {
-                const values = new Set();
-                const nonPathCellsInBox = [];
-                
-                for (let i = 0; i < 3; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        const row = boxRow * 3 + i;
-                        const col = boxCol * 3 + j;
-                        
-                        if (!pathCells.has(`${row},${col}`)) {
-                            nonPathCellsInBox.push([row, col, board[row][col]]);
-                            values.add(board[row][col]);
-                        }
-                    }
-                }
-                
-                // If there are non-path cells in this box, check for valid values
-                if (nonPathCellsInBox.length > 0) {
-                    // Check that we have the right number of unique values
-                    if (values.size !== nonPathCellsInBox.length) {
-                        console.log(`BoardManager: Box ${boxRow},${boxCol} has invalid values - not complete`);
-                        return false;
-                    }
-                    
-                    // Make sure all values are in the range 1-9
-                    for (const value of values) {
-                        if (value < 1 || value > 9) {
-                            console.log(`BoardManager: Box ${boxRow},${boxCol} has invalid value: ${value} - not complete`);
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-        
-        // If we passed all checks, the Sudoku is complete and valid
-        console.log("BoardManager: Sudoku puzzle is COMPLETE!");
-        
-        // Prevent duplicate events by tracking last completion time
-        if (!window._lastCompletionTime || (Date.now() - window._lastCompletionTime > 5000)) {
-            window._lastCompletionTime = Date.now();
-        }
-        
-        return true;
+  
+  for (let col = 0; col < 9; col++) {
+    let colComplete = true;
+    
+    for (let row = 0; row < 9; row++) {
+      const actual = board[row][col];
+      const expected = solution[row][col];
+      
+      if (actual !== expected) {
+        colComplete = false;
+        break;
+      }
     }
-
+    
+    if (colComplete && !completedColumns.has(col)) {
+      completedColumns.add(col);
+      newlyCompletedColumns.push(col);
+    }
+  }
+  
+  for (let boxRow = 0; boxRow < 3; boxRow++) {
+    for (let boxCol = 0; boxCol < 3; boxCol++) {
+      let gridComplete = true;
+      const gridKey = `${boxRow}-${boxCol}`;
+      
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          const row = boxRow * 3 + i;
+          const col = boxCol * 3 + j;
+          const actual = board[row][col];
+          const expected = solution[row][col];
+          
+          if (actual !== expected) {
+            gridComplete = false;
+            break;
+          }
+        }
+        if (!gridComplete) break;
+      }
+      
+      if (gridComplete && !completedGrids.has(gridKey)) {
+        completedGrids.add(gridKey);
+        newlyCompletedGrids.push(gridKey);
+      }
+    }
+  }
+  
+  // Fire completion events
+  for (const row of newlyCompletedRows) {
+    EventSystem.publish('row:completed', row);
+  }
+  
+  for (const col of newlyCompletedColumns) {
+    EventSystem.publish('column:completed', col);
+  }
+  
+  for (const grid of newlyCompletedGrids) {
+    EventSystem.publish('grid:completed', grid);
+  }
+  
+  console.log("BoardManager: Sudoku puzzle is COMPLETE!");
+  
+  if (!window._lastCompletionTime || (Date.now() - window._lastCompletionTime > 5000)) {
+    window._lastCompletionTime = Date.now();
+  }
+  
+  return true;
+}
 /**
  * Debug function to print the full solution grid
  * Add this to board-manager.js
