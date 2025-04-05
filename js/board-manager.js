@@ -1123,22 +1123,25 @@ function isValidMoveForTest(puzzle, row, col, value) {
     function isComplete() {
         console.log("BoardManager: Checking if Sudoku is complete");
         
-        // Check 1: All non-path cells must be filled
-        const emptyCells = [];
-        
-        for (let row = 0; row < 9; row++) {
-            for (let col = 0; col < 9; col++) {
-                // Skip path cells
-                if (pathCells.has(`${row},${col}`)) {
-                    continue;
-                }
-                
-                // Check if the cell is empty
-                if (board[row][col] === 0) {
-                    emptyCells.push([row, col]);
-                }
-            }
-        }
+
+ // Check 1: All non-path cells must be filled
+const emptyCells = [];
+
+for (let row = 0; row < 9; row++) {
+  for (let col = 0; col < 9; col++) {
+    if (pathCells.has(`${row},${col}`)) {
+      continue;
+    }
+    
+    if (board[row][col] === 0) {
+      emptyCells.push([row, col]);
+    }
+  }
+}
+
+if (emptyCells.length > 0) {
+  return false;
+}
         
         if (emptyCells.length > 0) {
             console.log(`BoardManager: Found ${emptyCells.length} empty cells - not complete`);
