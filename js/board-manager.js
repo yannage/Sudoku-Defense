@@ -1387,6 +1387,40 @@ document.addEventListener('keydown', function(event) {
         }
     }
     
+    function toggleDisplayMode(showNumbers) {
+  const board = BoardManager.getBoardRaw(); // Access live board state
+  const pathCells = BoardManager.getPathCells(); // Get path cells as Set
+  const cells = document.querySelectorAll('.sudoku-cell');
+  
+  cells.forEach(cell => {
+    const row = parseInt(cell.getAttribute('data-row'));
+    const col = parseInt(cell.getAttribute('data-col'));
+    const value = board[row][col];
+    
+    // Clear the cell
+    cell.innerHTML = '';
+    
+    // Skip path or empty cells
+    if (value === 0 || pathCells.has(`${row},${col}`)) return;
+    
+    if (showNumbers) {
+      // Show number
+      const span = document.createElement('span');
+      span.textContent = value;
+      span.style.fontSize = '18px';
+      span.style.color = 'white';
+      span.style.fontWeight = 'bold';
+      cell.appendChild(span);
+    } else {
+      // Show tower sprite
+      const sprite = TowersModule.getSpriteForType(value);
+      if (sprite) {
+        cell.appendChild(sprite);
+      }
+    }
+  });
+}
+    
     /**
      * Get the completion status of rows, columns, and grids
      * @returns {Object} Completion status
@@ -1401,23 +1435,24 @@ document.addEventListener('keydown', function(event) {
     
     // Public API
     return {
-        init,
-        generatePuzzle,
-        generateEnemyPath,
-        setCellValue,
-        getBoard,
-        getSolution,
-        getFixedCells,
-        getPathCells,
-        getPathArray,
-        setDifficulty,
-        isValidMove,
-        getPossibleValues,
-        checkUnitCompletion,
-        isComplete,
-        getCompletionStatus,
-        fixBoardDiscrepancies
-    };
+  init,
+  generatePuzzle,
+  generateEnemyPath,
+  setCellValue,
+  getBoard,
+  getBoardRaw: () => board, // <-- Add this
+  getSolution,
+  getFixedCells,
+  getPathCells, // <-- Already exists, just ensure it's exposed
+  getPathArray,
+  setDifficulty,
+  isValidMove,
+  getPossibleValues,
+  checkUnitCompletion,
+  isComplete,
+  getCompletionStatus,
+  fixBoardDiscrepancies
+};
 })();
 
 // Make module available globally
