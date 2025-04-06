@@ -518,79 +518,64 @@ const AbilitySystem = (function() {
         }
         
         /* === Mana Bar - Now right-aligned on screen === */
-        .mana-bar-container {
-            position: fixed;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 5px;
-            height: 200px;
-            background-color: #111;
-            border-radius: 3px;
-            overflow: hidden;
-            z-index: 899;
-        }
-        
-        .mana-bar-fill {
-            width: 100%;
-            background-color: #4477ff;
-            position: absolute;
-            bottom: 0;
-            transition: height 0.3s;
-        }
-        
-        .mana-text {
-            position: fixed;
-            right: 25px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 12px;
-            color: white;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 3px 6px;
-            border-radius: 3px;
-            white-space: nowrap;
-            text-shadow: 0 0 3px black;
-            z-index: 900;
-        }
-        
-        /* === Experience Bar - Now positioned on the left side === */
-        .experience-bar {
-            position: fixed;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 5px;
-            height: 200px;
-            background-color: rgba(0, 0, 0, 0.5);
-            border-radius: 3px;
-            overflow: hidden;
-            z-index: 899;
-        }
-        
-        .experience-fill {
-            width: 100%;
-            background-color: #4caf50;
-            position: absolute;
-            bottom: 0;
-            transition: height 0.3s;
-        }
-        
-        .experience-text {
-            position: fixed;
-            left: 25px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 12px;
-            color: white;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 3px 6px;
-            border-radius: 3px;
-            white-space: nowrap;
-            text-shadow: 0 0 3px black;
-            z-index: 899;
-        }
-        
+       /* === Mana Bar - Horizontal at bottom-left === */
+.mana-bar-container {
+  position: fixed;
+  bottom: 90px;
+  left: 15px;
+  width: 200px;
+  height: 10px;
+  background-color: #111;
+  border-radius: 5px;
+  overflow: hidden;
+  z-index: 899;
+}
+
+.mana-bar-fill {
+  height: 100%;
+  background-color: #4477ff;
+  transition: width 0.3s;
+}
+
+/* === Experience Bar - Horizontal at bottom-right === */
+.experience-bar {
+  position: fixed;
+  bottom: 120px;
+  right: 15px;
+  width: 200px;
+  height: 10px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 5px;
+  overflow: hidden;
+  z-index: 899;
+}
+
+.experience-fill {
+  height: 100%;
+  background-color: #4caf50;
+  transition: width 0.3s;
+}
+
+.mana-text,
+.experience-text {
+  position: fixed;
+  bottom: 105px;
+  font-size: 12px;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  z-index: 900;
+}
+
+.mana-text {
+  left: 15px;
+}
+
+.experience-text {
+  right: 15px;
+}
         .level-up-effect {
             position: fixed;
             top: 0;
@@ -824,7 +809,7 @@ const AbilitySystem = (function() {
             }
             
             .mana-bar-container, .experience-bar {
-                height: 150px;
+                height: 10px;
             }
         }
         
@@ -1077,7 +1062,7 @@ const AbilitySystem = (function() {
     
     const experienceFill = document.createElement('div');
     experienceFill.className = 'experience-fill';
-    experienceFill.style.height = '0%';
+    experienceFill.style.height = '100%';
     experienceBar.appendChild(experienceFill);
     
     document.body.appendChild(experienceBar);
@@ -1266,35 +1251,35 @@ const AbilitySystem = (function() {
   /**
    * Update mana display - UPDATED VERSION
    */
-  function updateManaDisplay() {
-    const manaBarFill = document.querySelector('.mana-bar-fill');
-    const manaText = document.querySelector('.mana-text');
-    
-    if (manaBarFill) {
-      // For vertical bar, we set height instead of width
-      manaBarFill.style.height = `${(currentMana / maxMana) * 100}%`;
-    }
-    
-    if (manaText) {
-      manaText.textContent = `Mana: ${currentMana}/${maxMana}`;
-    }
-    
-    // Update ability slots active/inactive state
-    const abilitySlots = document.querySelectorAll('.ability-slot');
-    abilitySlots.forEach((slot, index) => {
-      if (index < abilities.length) {
-        const ability = abilities[index];
-        if (currentMana >= ability.manaCost && ability.cooldown <= 0) {
-          slot.classList.remove('inactive');
-          slot.classList.add('active');
-        } else {
-          slot.classList.remove('active');
-          slot.classList.add('inactive');
-        }
-      }
-    });
+ function updateManaDisplay() {
+  const manaBarFill = document.querySelector('.mana-bar-fill');
+  const manaText = document.querySelector('.mana-text');
+  
+  if (manaBarFill) {
+    manaBarFill.style.width = `${(currentMana / maxMana) * 100}%`;
   }
   
+  if (manaText) {
+    manaText.textContent = `Mana: ${currentMana}/${maxMana}`;
+  }
+  
+  // Update ability states
+  const abilitySlots = document.querySelectorAll('.ability-slot');
+  abilitySlots.forEach((slot, index) => {
+    if (index < abilities.length) {
+      const ability = abilities[index];
+      if (currentMana >= ability.manaCost && ability.cooldown <= 0) {
+        slot.classList.remove('inactive');
+        slot.classList.add('active');
+      } else {
+        slot.classList.remove('active');
+        slot.classList.add('inactive');
+      }
+    }
+  });
+}
+
+
   /**
    * Reset mana to maximum (called after wave completion)
    */
@@ -1323,21 +1308,19 @@ const AbilitySystem = (function() {
   /**
    * Update experience bar display - UPDATED VERSION
    */
-  function updateExperienceBar() {
-    const experienceFill = document.querySelector('.experience-fill');
-    const experienceText = document.querySelector('.experience-text');
-    
-    if (experienceFill) {
-      // For vertical bar, we set height instead of width
-      const percentage = (playerExperience / experienceToNextLevel) * 100;
-      experienceFill.style.height = `${percentage}%`;
-    }
-    
-    if (experienceText) {
-      experienceText.textContent = `Level ${playerLevel} (${playerExperience}/${experienceToNextLevel})`;
-    }
+function updateExperienceBar() {
+  const experienceFill = document.querySelector('.experience-fill');
+  const experienceText = document.querySelector('.experience-text');
+  
+  if (experienceFill) {
+    const percentage = (playerExperience / experienceToNextLevel) * 100;
+    experienceFill.style.width = `${percentage}%`;
   }
   
+  if (experienceText) {
+    experienceText.textContent = `Level ${playerLevel} (${playerExperience}/${experienceToNextLevel})`;
+  }
+}
   /**
    * Level up the player
    */
