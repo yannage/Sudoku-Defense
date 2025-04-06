@@ -4,8 +4,6 @@
  * mana management, and an experience/leveling system.
  */
 
-
-
 const AbilitySystem = (function() {
   let currentCharacter = null;
   let currentMana = 10;
@@ -33,34 +31,34 @@ const AbilitySystem = (function() {
         manaCost: 5,
         icon: "↪️",
         cooldown: 0,
-execute: function() {
-  if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
-    const newPath = BoardManager.generateEnemyPath();
-    
-    // Notify relevant modules about the path update
-    EventSystem.publish(GameEvents.PATH_CHANGED, newPath);
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Enemy path redirected!");
-    
-    // Optionally trigger visual re-rendering if needed
-    if (window.Game && typeof Game.updateBoard === 'function') {
-      Game.updateBoard();
-    }
-    
-    // Let the wave system know if it needs to recalculate enemy positions
-    if (window.WaveSystem && typeof WaveSystem.onPathChanged === 'function') {
-      WaveSystem.onPathChanged(newPath);
-    }
-    
-    return true;
-  } else if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
-    SudokuModule.generateEnemyPath();
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Enemy path redirected!");
-    return true;
-  }
-  
-  EventSystem.publish(GameEvents.STATUS_MESSAGE, "Failed to redirect path!");
-  return false;
-}
+        execute: function() {
+          if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
+            const newPath = BoardManager.generateEnemyPath();
+            
+            // Notify relevant modules about the path update
+            EventSystem.publish(GameEvents.PATH_CHANGED, newPath);
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Enemy path redirected!");
+            
+            // Optionally trigger visual re-rendering if needed
+            if (window.Game && typeof Game.updateBoard === 'function') {
+              Game.updateBoard();
+            }
+            
+            // Let the wave system know if it needs to recalculate enemy positions
+            if (window.WaveSystem && typeof WaveSystem.onPathChanged === 'function') {
+              WaveSystem.onPathChanged(newPath);
+            }
+            
+            return true;
+          } else if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
+            SudokuModule.generateEnemyPath();
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Enemy path redirected!");
+            return true;
+          }
+          
+          EventSystem.publish(GameEvents.STATUS_MESSAGE, "Failed to redirect path!");
+          return false;
+        }
       }
     },
     engineer: {
@@ -414,16 +412,218 @@ execute: function() {
   }
   
   /**
-   * Create CSS styles for the ability system
+   * Create CSS styles for the ability system - UPDATED VERSION
    */
-  // Update this portion of the createStyles function in ability-system.js
-  
   function createStyles() {
     if (document.getElementById('ability-system-styles')) return;
     
     const style = document.createElement('style');
     style.id = 'ability-system-styles';
     style.textContent = `
+        /* === Ability Bar - Now positioned at bottom-center with fixed width === */
+        .ability-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            z-index: 900;
+            width: auto;
+            max-width: 80%;
+            justify-content: center;
+        }
+        
+        .ability-slot {
+            width: 60px;
+            height: 60px;
+            background-color: #333;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.1s;
+            border: 2px solid transparent;
+        }
+        
+        .ability-slot:hover {
+            border-color: white;
+        }
+        
+        .ability-slot.active:hover {
+            transform: scale(1.05);
+        }
+        
+        .ability-slot.active {
+            border-color: gold;
+        }
+        
+        .ability-slot.inactive {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .ability-icon {
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+        
+        .ability-cost {
+            font-size: 12px;
+            color: #aaf;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 2px 5px;
+            border-radius: 10px;
+            position: absolute;
+            bottom: -5px;
+        }
+        
+        .ability-cooldown {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background-color: rgba(100, 100, 255, 0.3);
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .ability-tooltip {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            z-index: 901;
+        }
+        
+        .ability-slot:hover .ability-tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* === Mana Bar - Now right-aligned on screen === */
+        .mana-bar-container {
+            position: fixed;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 5px;
+            height: 200px;
+            background-color: #111;
+            border-radius: 3px;
+            overflow: hidden;
+            z-index: 899;
+        }
+        
+        .mana-bar-fill {
+            width: 100%;
+            background-color: #4477ff;
+            position: absolute;
+            bottom: 0;
+            transition: height 0.3s;
+        }
+        
+        .mana-text {
+            position: fixed;
+            right: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 3px 6px;
+            border-radius: 3px;
+            white-space: nowrap;
+            text-shadow: 0 0 3px black;
+            z-index: 900;
+        }
+        
+        /* === Experience Bar - Now positioned on the left side === */
+        .experience-bar {
+            position: fixed;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 5px;
+            height: 200px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 3px;
+            overflow: hidden;
+            z-index: 899;
+        }
+        
+        .experience-fill {
+            width: 100%;
+            background-color: #4caf50;
+            position: absolute;
+            bottom: 0;
+            transition: height 0.3s;
+        }
+        
+        .experience-text {
+            position: fixed;
+            left: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 3px 6px;
+            border-radius: 3px;
+            white-space: nowrap;
+            text-shadow: 0 0 3px black;
+            z-index: 899;
+        }
+        
+        .level-up-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(76, 175, 80, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+            z-index: 898;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        /* === Character Indicator - Now positioned at top-right === */
+        .character-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 8px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            color: white;
+            font-size: 12px;
+            z-index: 899;
+        }
+        
+        .character-indicator-icon {
+            font-size: 20px;
+            margin-right: 5px;
+        }
+
         /* Character Selection */
         .character-selection {
             position: fixed;
@@ -612,306 +812,122 @@ execute: function() {
                 padding: 8px 16px;
                 font-size: 14px;
             }
-        }
-        
-/* === Updated Scroll Arrows for Character Carousel === */
-.scroll-indicator {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 28px;
-    height: 28px;
-    background-color: rgba(0, 0, 0, 0.6);
-    border-radius: 50%;
-    color: white;
-    font-size: 18px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2;
-    cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.3s, background-color 0.3s;
-    pointer-events: auto;
-}
 
-.scroll-indicator:hover {
-    opacity: 1;
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.scroll-left {
-    left: 10px;
-}
-
-.scroll-right {
-    right: 10px;
-}
-        
-        /* Rest of your existing styles... */
-        /* Ability Bar */
-        .ability-bar {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.7);
-            border-radius: 10px;
-            padding: 10px;
-            display: flex;
-            gap: 10px;
-            z-index: 900;
-        }
+            .ability-bar {
+                bottom: 10px;
+                padding: 5px;
+            }
             
             .ability-slot {
-                width: 60px;
-                height: 60px;
-                background-color: #333;
-                border-radius: 8px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                position: relative;
-                cursor: pointer;
-                transition: transform 0.1s;
-                border: 2px solid transparent;
+                width: 50px;
+                height: 50px;
             }
             
-            .ability-slot:hover {
-                border-color: white;
+            .mana-bar-container, .experience-bar {
+                height: 150px;
             }
-            
-            .ability-slot.active:hover {
-                transform: scale(1.05);
-            }
-            
-            .ability-slot.active {
-                border-color: gold;
-            }
-            
-            .ability-slot.inactive {
-                opacity: 0.6;
-                cursor: not-allowed;
-            }
-            
-            .ability-icon {
-                font-size: 24px;
-                margin-bottom: 2px;
-            }
-            
-            .ability-cost {
-                font-size: 12px;
-                color: #aaf;
-                background-color: rgba(0, 0, 0, 0.5);
-                padding: 2px 5px;
-                border-radius: 10px;
-                position: absolute;
-                bottom: -5px;
-            }
-            
-            .ability-cooldown {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                height: 0%;
-                background-color: rgba(100, 100, 255, 0.3);
-                border-radius: 0 0 8px 8px;
-            }
-            
-            .ability-tooltip {
-                position: absolute;
-                bottom: 70px;
-                left: 50%;
-                transform: translateX(-50%);
-                background-color: rgba(0, 0, 0, 0.8);
-                color: white;
-                padding: 8px 12px;
-                border-radius: 5px;
-                font-size: 12px;
-                white-space: nowrap;
-                visibility: hidden;
-                opacity: 0;
-                transition: opacity 0.2s;
-                pointer-events: none;
-                z-index: 901;
-            }
-            
-            .ability-slot:hover .ability-tooltip {
-                visibility: visible;
-                opacity: 1;
-            }
-            
-            /* Mana bar */
-            .mana-bar-container {
-                position: absolute;
-                bottom: -10px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 80%;
-                height: 5px;
-                background-color: #111;
-                border-radius: 3px;
-                overflow: hidden;
-            }
-            
-            .mana-bar-fill {
-                height: 100%;
-                background-color: #4477ff;
-                transition: width 0.3s;
-            }
-            
-            .mana-text {
-                position: absolute;
-                bottom: -25px;
-                left: 50%;
-                transform: translateX(-50%);
-                font-size: 12px;
-                color: white;
-                white-space: nowrap;
-                text-shadow: 0 0 3px black;
-            }
-            
-            /* Experience bar */
-            .experience-bar {
-                position: fixed;
-                bottom: 10px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 60%;
-                height: 5px;
-                background-color: rgba(0, 0, 0, 0.5);
-                border-radius: 3px;
-                overflow: hidden;
-                z-index: 899;
-            }
-            
-            .experience-fill {
-                height: 100%;
-                background-color: #4caf50;
-                transition: width 0.3s;
-            }
-            
-            .experience-text {
-    position: absolute;
-    bottom: 85px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 10px;
-    color: white;
-    background-color: rgba(0, 0, 0, 0.75);
-    padding: 4px 8px;
-    border-radius: 6px;
-    border: 2px solid gold;
-    text-shadow: 0 0 2px black;
-    font-weight: bold;
-    z-index: 999;
-    pointer-events: none;
-}
-            
-            .level-up-effect {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: radial-gradient(circle, rgba(76, 175, 80, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
-                z-index: 898;
-                pointer-events: none;
-                opacity: 0;
-                transition: opacity 0.5s;
-            }
-            
-            /* Character indicator */
-            .character-indicator {
-                position: fixed;
-                bottom: 90px;
-                right: 10px;
-                background-color: rgba(0, 0, 0, 0.7);
-                padding: 8px;
-                border-radius: 5px;
-                display: flex;
-                align-items: center;
-                color: white;
-                font-size: 12px;
-                z-index: 899;
-            }
-            
-            .character-indicator-icon {
-                font-size: 20px;
-                margin-right: 5px;
-            }
-            
-            /* Effects */
-            .effect-indicator {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background-color: rgba(0, 0, 0, 0.7);
-                color: white;
-                padding: 15px 30px;
-                border-radius: 10px;
-                text-align: center;
-                z-index: 950;
-                pointer-events: none;
-                animation: fade-in-out 2.5s forwards;
-            }
-            
-            .effect-indicator-title {
-                font-size: 24px;
-                margin-bottom: 5px;
-                color: gold;
-            }
-            
-            .effect-indicator-desc {
-                font-size: 16px;
-            }
-            
-            .damage-flash {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(255, 0, 0, 0.2);
-                z-index: 950;
-                pointer-events: none;
-                animation: flash 0.3s forwards;
-            }
-            
-            .ability-highlight {
-                animation: highlight-pulse 1s infinite;
-            }
-            
-            @keyframes highlight-pulse {
-                0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
-                70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
-                100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
-            }
-            
-            @keyframes fade-in-out {
-                0% { opacity: 0; transform: translate(-50%, -70%); }
-                10% { opacity: 1; transform: translate(-50%, -50%); }
-                80% { opacity: 1; transform: translate(-50%, -50%); }
-                100% { opacity: 0; transform: translate(-50%, -30%); }
-            }
-            
-            @keyframes flash {
-                0% { opacity: 1; }
-                100% { opacity: 0; }
-            }
-        `;
+        }
+        
+        /* === Scroll Arrows for Character Carousel === */
+        .scroll-indicator {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            background-color: rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s, background-color 0.3s;
+            pointer-events: auto;
+        }
+        
+        .scroll-indicator:hover {
+            opacity: 1;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .scroll-left {
+            left: 10px;
+        }
+        
+        .scroll-right {
+            right: 10px;
+        }
+        
+        /* Effects Styles */
+        .effect-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 950;
+            pointer-events: none;
+            animation: fade-in-out 2.5s forwards;
+        }
+        
+        .effect-indicator-title {
+            font-size: 24px;
+            margin-bottom: 5px;
+            color: gold;
+        }
+        
+        .effect-indicator-desc {
+            font-size: 16px;
+        }
+        
+        .damage-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 0, 0, 0.2);
+            z-index: 950;
+            pointer-events: none;
+            animation: flash 0.3s forwards;
+        }
+        
+        .ability-highlight {
+            animation: highlight-pulse 1s infinite;
+        }
+        
+        @keyframes highlight-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+        }
+        
+        @keyframes fade-in-out {
+            0% { opacity: 0; transform: translate(-50%, -70%); }
+            10% { opacity: 1; transform: translate(-50%, -50%); }
+            80% { opacity: 1; transform: translate(-50%, -50%); }
+            100% { opacity: 0; transform: translate(-50%, -30%); }
+        }
+        
+        @keyframes flash {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    `;
     
     document.head.appendChild(style);
   }
   
   /**
    * Create character selection UI
-   */
-  /**
-   * Create character selection UI with improved mobile support
    */
   function createCharacterSelectionUI() {
     if (document.getElementById('character-selection') || characterSelected) return;
@@ -939,8 +955,8 @@ execute: function() {
     cardsContainer.className = 'character-cards';
     
     let selectedCharacterId = null;
-    
-    Object.entries(characters).forEach(([id, char]) => {
+      
+      Object.entries(characters).forEach(([id, char]) => {
       const card = document.createElement('div');
       card.className = 'character-card';
       card.dataset.character = id;
@@ -1008,8 +1024,9 @@ execute: function() {
     window.addEventListener('resize', updateScrollIndicators);
     setTimeout(updateScrollIndicators, 100);
   }
+  
   /**
-   * Create ability bar UI
+   * Create ability bar UI - UPDATED VERSION
    */
   function createAbilityBarUI() {
     // Check if ability bar already exists
@@ -1020,21 +1037,35 @@ execute: function() {
     abilityBar.id = 'ability-bar';
     
     // Initially, the bar will be empty until a character is selected
-    abilityBar.innerHTML = `
-            <div class="mana-bar-container">
-                <div class="mana-bar-fill" style="width: 100%"></div>
-            </div>
-            <div class="mana-text">Mana: 10/10</div>
-        `;
-    
     document.body.appendChild(abilityBar);
+    
+    // Create mana bar separately
+    const manaBarContainer = document.createElement('div');
+    manaBarContainer.className = 'mana-bar-container';
+    manaBarContainer.id = 'mana-bar-container';
+    
+    const manaBarFill = document.createElement('div');
+    manaBarFill.className = 'mana-bar-fill';
+    manaBarFill.style.height = '100%';
+    manaBarContainer.appendChild(manaBarFill);
+    
+    document.body.appendChild(manaBarContainer);
+    
+    // Create mana text separately
+    const manaText = document.createElement('div');
+    manaText.className = 'mana-text';
+    manaText.id = 'mana-text';
+    manaText.textContent = 'Mana: 10/10';
+    document.body.appendChild(manaText);
     
     // Hide until character is selected
     abilityBar.style.display = 'none';
+    manaBarContainer.style.display = 'none';
+    manaText.style.display = 'none';
   }
   
   /**
-   * Create experience bar UI
+   * Create experience bar UI - UPDATED VERSION
    */
   function createExperienceBarUI() {
     // Check if experience bar already exists
@@ -1044,21 +1075,19 @@ execute: function() {
     experienceBar.className = 'experience-bar';
     experienceBar.id = 'experience-bar';
     
-    experienceBar.innerHTML = `
-    <div class="experience-fill" style="width: 0%"></div>
-`;
+    const experienceFill = document.createElement('div');
+    experienceFill.className = 'experience-fill';
+    experienceFill.style.height = '0%';
+    experienceBar.appendChild(experienceFill);
     
+    document.body.appendChild(experienceBar);
+    
+    // Create experience text separately
     const experienceText = document.createElement('div');
     experienceText.className = 'experience-text';
     experienceText.id = 'experience-text';
     experienceText.textContent = `Level ${playerLevel} (${playerExperience}/${experienceToNextLevel})`;
-    
-    const abilityBar = document.getElementById('ability-bar');
-    if (abilityBar) {
-      abilityBar.appendChild(experienceText);
-    }
-    
-    document.body.appendChild(experienceBar);
+    document.body.appendChild(experienceText);
     
     // Create level up effect element
     const levelUpEffect = document.createElement('div');
@@ -1068,6 +1097,7 @@ execute: function() {
     
     // Hide until character is selected
     experienceBar.style.display = 'none';
+    experienceText.style.display = 'none';
   }
   
   /**
@@ -1089,14 +1119,9 @@ execute: function() {
             `;
     }
     
-    
-    
     document.body.appendChild(characterIndicator);
   }
   
-  /**
-   * Load saved state
-   */
   /**
    * Load saved state
    */
@@ -1111,12 +1136,11 @@ execute: function() {
         characterSelected = false;
       }
       
-      
       // Load level
       const savedLevel = parseInt(localStorage.getItem('sudoku_td_ability_level'));
       if (!isNaN(savedLevel) && savedLevel > 0) {
-        playerLevel = 0;
-        maxMana = 10;
+        playerLevel = savedLevel;
+        maxMana = characters[currentCharacter]?.baseMaxMana || 10 + Math.floor(savedLevel / 5);
       }
       
       console.log("Ability System: Loaded saved state, character:", currentCharacter, "level:", playerLevel);
@@ -1124,84 +1148,60 @@ execute: function() {
       console.error("Error loading ability system state:", e);
       currentCharacter = null;
       characterSelected = false;
-      
     }
   }
   
   /**
-   * Select a character
+   * Select a character - UPDATED VERSION
    * @param {string} characterId - ID of the character to select
    */
-function selectCharacter(characterId) {
-  if (!characters[characterId]) {
-    console.warn("Character not found:", characterId);
-    return false;
+  function selectCharacter(characterId) {
+    if (!characters[characterId]) {
+      console.warn("Character not found:", characterId);
+      return false;
+    }
+    
+    console.log("Selecting character:", characterId);
+    
+    currentCharacter = characterId;
+    characterSelected = true;
+    
+    const character = characters[characterId];
+    
+    // Set initial mana
+    maxMana = character.baseMaxMana + Math.floor(playerLevel / 5);
+    currentMana = character.startingMana;
+    
+    // Set up abilities
+    setupAbilities();
+    
+    // Save selection
+    localStorage.setItem('sudoku_td_character', characterId);
+    
+    // Show and update UI elements
+    const abilityBar = document.getElementById('ability-bar');
+    const manaBarContainer = document.getElementById('mana-bar-container');
+    const manaText = document.getElementById('mana-text');
+    const experienceBar = document.getElementById('experience-bar');
+    const experienceText = document.getElementById('experience-text');
+    
+    if (abilityBar) abilityBar.style.display = 'flex';
+    if (manaBarContainer) manaBarContainer.style.display = 'block';
+    if (manaText) manaText.style.display = 'block';
+    if (experienceBar) experienceBar.style.display = 'block';
+    if (experienceText) experienceText.style.display = 'block';
+    
+    // Update their contents
+    updateManaDisplay();
+    updateExperienceBar();
+    
+    // Recreate or update the character indicator
+    const existingIndicator = document.getElementById('character-indicator');
+    if (existingIndicator) existingIndicator.remove();
+    createCharacterIndicatorUI();
+    
+    return true;
   }
-  
-  console.log("Selecting character:", characterId);
-  
-  currentCharacter = characterId;
-  characterSelected = true;
-  
-  const character = characters[characterId];
-  
-  // Set initial mana
-  maxMana = character.baseMaxMana + Math.floor(playerLevel / 5);
-  currentMana = character.startingMana;
-  
-  // Set up abilities
-  setupAbilities();
-  
-  // Save selection
-  localStorage.setItem('sudoku_td_character', characterId);
-  
-  // Show and update ability bar
-  const abilityBar = document.getElementById('ability-bar');
-if (abilityBar) {
-  abilityBar.style.display = 'flex';
-} else {
-  createAbilityBarUI(); // Create it if missing
-}
-
-// Always show the experience bar after character selection
-showExperienceBar();
-  
-  // Show or create experience bar
-  let experienceBar = document.getElementById('experience-bar');
-  if (!experienceBar) {
-    createExperienceBarUI(); // create bar if missing
-    experienceBar = document.getElementById('experience-bar');
-  }
-  experienceBar.style.display = 'block';
-  updateExperienceBar();
-  
-  // Recreate or update the character indicator
-  const existingIndicator = document.getElementById('character-indicator');
-  if (existingIndicator) existingIndicator.remove();
-  createCharacterIndicatorUI();
-  
-  return true;
-}
-
-function showExperienceBar() {
-  const experienceBar = document.getElementById('experience-bar');
-  const experienceText = document.getElementById('experience-text');
-  
-  if (experienceBar) {
-    experienceBar.style.display = 'block';
-    console.log("Experience bar made visible.");
-  } else {
-    console.warn("No #experience-bar found.");
-  }
-  
-  if (experienceText) {
-    experienceText.style.display = 'block';
-    experienceText.textContent = `Level ${AbilitySystem.getPlayerLevel?.() || 1}`;
-    console.log("Experience text made visible.");
-  } else {
-    console.warn("No #experience-text found.");
-  }
-}
   
   /**
    * Set up abilities based on selected character
@@ -1255,13 +1255,8 @@ function showExperienceBar() {
         }
       });
       
-      // Insert before mana bar
-      const manaBar = abilityBar.querySelector('.mana-bar-container');
-      if (manaBar) {
-        abilityBar.insertBefore(slot, manaBar);
-      } else {
-        abilityBar.appendChild(slot);
-      }
+      // Add to ability bar
+      abilityBar.appendChild(slot);
     });
     
     // Update mana display
@@ -1269,14 +1264,15 @@ function showExperienceBar() {
   }
   
   /**
-   * Update mana display
+   * Update mana display - UPDATED VERSION
    */
   function updateManaDisplay() {
     const manaBarFill = document.querySelector('.mana-bar-fill');
     const manaText = document.querySelector('.mana-text');
     
     if (manaBarFill) {
-      manaBarFill.style.width = `${(currentMana / maxMana) * 100}%`;
+      // For vertical bar, we set height instead of width
+      manaBarFill.style.height = `${(currentMana / maxMana) * 100}%`;
     }
     
     if (manaText) {
@@ -1325,15 +1321,16 @@ function showExperienceBar() {
   }
   
   /**
-   * Update experience bar display
+   * Update experience bar display - UPDATED VERSION
    */
   function updateExperienceBar() {
     const experienceFill = document.querySelector('.experience-fill');
     const experienceText = document.querySelector('.experience-text');
     
     if (experienceFill) {
+      // For vertical bar, we set height instead of width
       const percentage = (playerExperience / experienceToNextLevel) * 100;
-      experienceFill.style.width = `${percentage}%`;
+      experienceFill.style.height = `${percentage}%`;
     }
     
     if (experienceText) {
@@ -1522,6 +1519,7 @@ function showExperienceBar() {
         updateManaDisplay();
       }
     }, 100);
+    
     EventSystem.subscribe(GameEvents.WAVE_COMPLETE, () => {
       resetMana();
     });
