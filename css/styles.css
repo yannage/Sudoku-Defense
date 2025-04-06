@@ -1134,3 +1134,13 @@ button:active {
 .sudoku-cell.dark-grass {
   background-color: #2e7d32 !important; /* Dark green */
 }
+
+/* Path cells during Sudoku phase */
+.sudoku-cell.prewave-path {
+  background-color: var(--path-color); /* Use your existing path color */
+}
+
+.sudoku-cell.dirt:hover {
+  background-color: var(--dirt-color) !important;
+  cursor: default;
+}
