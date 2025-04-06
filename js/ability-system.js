@@ -496,7 +496,7 @@ const AbilitySystem = (function() {
         
         .ability-tooltip {
             position: absolute;
-            bottom: 70px;
+            bottom: 125px;
             left: 50%;
             transform: translateX(-50%);
             background-color: rgba(0, 0, 0, 0.8);
@@ -521,8 +521,7 @@ const AbilitySystem = (function() {
        /* === Mana Bar - Horizontal at bottom-left === */
 .mana-bar-container {
   position: fixed;
-  bottom: 90px;
-  left: 15px;
+  bottom: 80px;
   width: 200px;
   height: 10px;
   background-color: #111;
@@ -540,8 +539,8 @@ const AbilitySystem = (function() {
 /* === Experience Bar - Horizontal at bottom-right === */
 .experience-bar {
   position: fixed;
-  bottom: 120px;
-  right: 15px;
+  top: 35px;
+  left: 15px;
   width: 200px;
   height: 10px;
   background-color: rgba(0, 0, 0, 0.5);
@@ -556,10 +555,21 @@ const AbilitySystem = (function() {
   transition: width 0.3s;
 }
 
-.mana-text,
+.mana-text
+{
+  position: fixed;
+  bottom: 95px;
+  font-size: 12px;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  z-index: 900;
+}
 .experience-text {
   position: fixed;
-  bottom: 105px;
+  top: 5px;
   font-size: 12px;
   color: white;
   background-color: rgba(0, 0, 0, 0.5);
@@ -569,12 +579,10 @@ const AbilitySystem = (function() {
   z-index: 900;
 }
 
-.mana-text {
-  left: 15px;
-}
+
 
 .experience-text {
-  right: 15px;
+  left: 15px;
 }
         .level-up-effect {
             position: fixed;
