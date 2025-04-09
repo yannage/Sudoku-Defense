@@ -198,54 +198,45 @@
     // Add required styles
     const style = document.createElement('style');
     style.textContent = `
-            /* Tower barrel styles */
-.tower - barrel {
-  position: absolute;
-  top: 50 % ;
-  left: 50 % ;
-  width: 24 px;
-  height: 24 px;
-  transform - origin: center center;
-  transform: translate(-50 % , -50 % );
-  pointer - events: none;
-  z - index: 2;
-}
-            /* Different barrel colors based on tower types */
-            .tower-1 .tower-barrel { background-color: rgba(255, 255, 255, 0.8); } /* Rapid tower */
-            .tower-2 .tower-barrel { background-color: rgba(173, 216, 230, 0.8); } /* Slowing tower */
-            .tower-3 .tower-barrel { background-color: rgba(255, 165, 0, 0.8); }   /* Splash tower */
-            .tower-4 .tower-barrel { background-color: rgba(144, 238, 144, 0.8); } /* Poison tower */
-            .tower-5 .tower-barrel { background-color: rgba(192, 192, 192, 0.8); } /* Pierce tower */
-            .tower-6 .tower-barrel { background-color: rgba(255, 255, 0, 0.8); }   /* Stun tower */
-            .tower-7 .tower-barrel { background-color: rgba(128, 0, 128, 0.8); }   /* Gamble tower */
-            .tower-8 .tower-barrel { background-color: rgba(255, 0, 0, 0.8); }     /* Sniper tower */
-            .tower-9 .tower-barrel { background-color: rgba(255, 215, 0, 0.8); }   /* Support tower */
-            
-            /* Tower base indication */
-            .tower-barrel {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 24px;
-  height: 24px;
-  transform-origin: center center;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  z-index: 2;
-}
-            
-            /* Animation for attacking towers */
-            @keyframes tower-attack-recoil {
-                0% { transform: translateY(-50%) scaleX(1); }
-                20% { transform: translateY(-50%) scaleX(0.85); }
-                100% { transform: translateY(-50%) scaleX(1); }
-            }
-            
-            .tower-barrel.attacking {
-                animation: tower-attack-recoil 0.3s ease-out;
-            }
-        `;
+      /* Tower barrel styles */
+      .tower-barrel {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 32px;
+        height: 32px;
+        z-index: 10;
+        transform-origin: center center;
+        transition: transform 0.2s ease-out;
+        pointer-events: none;
+      }
+      
+      /* Animation for attacking towers */
+      @keyframes tower-attack-recoil {
+        0% { transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1); }
+        20% { transform: translate(-50%, -50%) rotate(var(--rotation)) scale(0.85); }
+        100% { transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1); }
+      }
+      
+      .tower-barrel.attacking {
+        animation: tower-attack-recoil 0.3s ease-out forwards;
+      }
+    `;
     document.head.appendChild(style);
+    
+    // Define sprite positions for each tower type
+    const spritePositions = {
+      1: { x: 0, y: 0 },
+      2: { x: -32, y: 0 },
+      3: { x: -64, y: 0 },
+      4: { x: 0, y: -32 },
+      5: { x: -32, y: -32 },
+      6: { x: -64, y: -32 },
+      7: { x: 0, y: -64 },
+      8: { x: -32, y: -64 },
+      9: { x: -64, y: -64 }
+    };
     
     // Track towers that need rotation
     const activeRotations = {};
@@ -261,15 +252,36 @@
         // Skip if already has a barrel
         if (towerElement.querySelector('.tower-barrel')) return;
         
-        // Create base element
-        const baseElement = document.createElement('div');
-        baseElement.className = 'tower-base';
-        towerElement.appendChild(baseElement);
+        // Get tower type from the parent cell's data attribute or the tower's class
+        let towerType = 1; // Default to type 1
+        const cellElement = towerElement.closest('.sudoku-cell');
+        if (cellElement) {
+          const cellValue = cellElement.getAttribute('data-value');
+          if (cellValue && !isNaN(parseInt(cellValue))) {
+            towerType = parseInt(cellValue);
+          }
+        }
+        
+        // For tower classes like 'tower-1', 'tower-2', etc.
+        const towerClassMatch = Array.from(towerElement.classList)
+          .find(cls => cls.startsWith('tower-') && !isNaN(parseInt(cls.replace('tower-', ''))));
+        if (towerClassMatch) {
+          towerType = parseInt(towerClassMatch.replace('tower-', ''));
+        }
         
         // Create barrel element
-        const barrelElement = document.createElement('img');
+        const barrelElement = document.createElement('div');
         barrelElement.className = 'tower-barrel';
-        barrelElement.src = '/assets/aim.png'; // Adjust path if needed
+        barrelElement.setAttribute('data-type', towerType);
+        
+        // Set the background image and position based on tower type
+        const spritePos = spritePositions[towerType] || spritePositions[1];
+        barrelElement.style.backgroundImage = 'url("/assets/aimsheet.png")';
+        barrelElement.style.backgroundSize = '96px 96px';
+        barrelElement.style.backgroundPosition = `${spritePos.x}px ${spritePos.y}px`;
+        barrelElement.style.backgroundRepeat = 'no-repeat';
+        barrelElement.style.imageRendering = 'pixelated';
+        
         towerElement.appendChild(barrelElement);
       });
     }
@@ -306,24 +318,25 @@
       let barrelElement = towerElement.querySelector('.tower-barrel');
       if (!barrelElement) {
         // Add barrel if missing
-        const barrelElement = document.createElement('img');
+        const spritePos = spritePositions[tower.type] || spritePositions[1];
+        barrelElement = document.createElement('div');
         barrelElement.className = 'tower-barrel';
-        barrelElement.src = '/assets/aim.png'; 
-        towerElement.appendChild(barrelElement);
+        barrelElement.setAttribute('data-type', tower.type);
+        barrelElement.style.backgroundImage = 'url("/assets/aimsheet.png")';
+        barrelElement.style.backgroundSize = '96px 96px';
+        barrelElement.style.backgroundPosition = `${spritePos.x}px ${spritePos.y}px`;
+        barrelElement.style.backgroundRepeat = 'no-repeat';
+        barrelElement.style.imageRendering = 'pixelated';
         
-        // Add base element if missing
-        if (!towerElement.querySelector('.tower-base')) {
-          const baseElement = document.createElement('div');
-          baseElement.className = 'tower-base';
-          towerElement.appendChild(baseElement);
-        }
+        towerElement.appendChild(barrelElement);
       }
       
       // Calculate angle
       const angle = calculateAngle(tower, enemy);
       
       // Apply rotation to the barrel
-      barrelElement.style.transform = `translateY(-50%) rotate(${angle}deg)`;
+      barrelElement.style.setProperty('--rotation', `${angle}deg`);
+      barrelElement.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
       
       // Add attacking animation
       barrelElement.classList.add('attacking');
@@ -364,7 +377,7 @@
           
           // Reset rotation with transition
           barrelElement.style.transition = 'transform 0.5s ease-out';
-          barrelElement.style.transform = 'translateY(-50%) rotate(0deg)';
+          barrelElement.style.transform = 'translate(-50%, -50%) rotate(0deg)';
           
           // Remove transition after animation completes
           setTimeout(() => {
@@ -407,7 +420,7 @@
     EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
       setTimeout(() => {
         if (USE_ENHANCED_BARREL_VERSION) {
-          const addBarrelsToTowers = document.querySelectorAll('.tower').length > 0;
+          addBarrelsToTowers();
         }
       }, 500);
     });
@@ -416,24 +429,7 @@
     EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function() {
       setTimeout(() => {
         if (USE_ENHANCED_BARREL_VERSION) {
-          // Re-scan for towers that need barrels
-          const towerElements = document.querySelectorAll('.tower');
-          if (towerElements.length > 0) {
-            towerElements.forEach(towerElement => {
-              if (!towerElement.querySelector('.tower-barrel')) {
-                // Create base element
-                const baseElement = document.createElement('div');
-                baseElement.className = 'tower-base';
-                towerElement.appendChild(baseElement);
-                
-                // Create barrel element
-        const barrelElement = document.createElement('img');
-        barrelElement.className = 'tower-barrel';
-        barrelElement.src = '/assets/aim.png';
-                towerElement.appendChild(barrelElement);
-              }
-            });
-          }
+          addBarrelsToTowers();
         }
       }, 500);
     });
@@ -442,21 +438,7 @@
     EventSystem.subscribe(GameEvents.TOWER_PLACED, function() {
       setTimeout(() => {
         if (USE_ENHANCED_BARREL_VERSION) {
-          // Add barrels to the newly placed tower
-          const towerElements = document.querySelectorAll('.tower');
-          towerElements.forEach(towerElement => {
-            if (!towerElement.querySelector('.tower-barrel')) {
-              // Create base element
-              const baseElement = document.createElement('div');
-              baseElement.className = 'tower-base';
-              towerElement.appendChild(baseElement);
-              
-        const barrelElement = document.createElement('img');
-        barrelElement.className = 'tower-barrel';
-        barrelElement.src = '/assets/aim.png';
-              towerElement.appendChild(barrelElement);
-            }
-          });
+          addBarrelsToTowers();
         }
       }, 200);
     });
@@ -471,24 +453,56 @@
         // Re-add barrels after mode change
         setTimeout(() => {
           if (USE_ENHANCED_BARREL_VERSION && !showNumbers) {
-            const towerElements = document.querySelectorAll('.tower');
-            towerElements.forEach(towerElement => {
-              if (!towerElement.querySelector('.tower-barrel')) {
-                // Create base element
-                const baseElement = document.createElement('div');
-                baseElement.className = 'tower-base';
-                towerElement.appendChild(baseElement);
-                
-                const barrelElement = document.createElement('img');
-barrelElement.className = 'tower-barrel';
-barrelElement.src = '/assets/aim.png';
-towerElement.appendChild(barrelElement);
-              }
-            });
+            addBarrelsToTowers();
           }
         }, 100);
       };
     }
+  }
+
+  /**
+   * Function to add barrels to all towers
+   * Used by both the event handlers and utility function
+   */
+  function addBarrelsToTowers() {
+    const towerElements = document.querySelectorAll('.tower');
+    towerElements.forEach(towerElement => {
+      // Skip if already has a barrel
+      if (towerElement.querySelector('.tower-barrel')) return;
+      
+      // Get tower type from the parent cell's data attribute or the tower's class
+      let towerType = 1; // Default to type 1
+      const cellElement = towerElement.closest('.sudoku-cell');
+      if (cellElement) {
+        const cellValue = cellElement.getAttribute('data-value');
+        if (cellValue && !isNaN(parseInt(cellValue))) {
+          towerType = parseInt(cellValue);
+        }
+      }
+      
+      // For tower classes like 'tower-1', 'tower-2', etc.
+      const towerClassMatch = Array.from(towerElement.classList)
+        .find(cls => cls.startsWith('tower-') && !isNaN(parseInt(cls.replace('tower-', ''))));
+      if (towerClassMatch) {
+        towerType = parseInt(towerClassMatch.replace('tower-', ''));
+      }
+      
+      // Create barrel element
+      const barrelElement = document.createElement('div');
+      barrelElement.className = 'tower-barrel';
+      barrelElement.setAttribute('data-type', towerType);
+      
+      // Set the background image and position based on tower type
+      const spritePos = spritePositions[towerType] || { x: 0, y: 0 };
+      barrelElement.style.backgroundImage = 'url("/assets/aimsheet.png")';
+      barrelElement.style.backgroundSize = '96px 96px';
+      barrelElement.style.backgroundPosition = `${spritePos.x}px ${spritePos.y}px`;
+      barrelElement.style.backgroundRepeat = 'no-repeat';
+      barrelElement.style.imageRendering = 'pixelated';
+      
+      towerElement.appendChild(barrelElement);
+    });
+    return towerElements.length;
   }
   
   // Initialize the tower rotation system after a delay to ensure other modules are loaded
@@ -498,21 +512,8 @@ towerElement.appendChild(barrelElement);
   window.TowerRotationUtils = {
     initialize: initTowerRotation,
     addBarrelsToAllTowers: function() {
-      const towerElements = document.querySelectorAll('.tower');
-      towerElements.forEach(towerElement => {
-        if (!towerElement.querySelector('.tower-barrel')) {
-          // Create base element
-          const baseElement = document.createElement('div');
-          baseElement.className = 'tower-base';
-          towerElement.appendChild(baseElement);
-          
-        const barrelElement = document.createElement('img');
-        barrelElement.className = 'tower-barrel';
-        barrelElement.src = '/assets/aim.png';
-          towerElement.appendChild(barrelElement);
-        }
-      });
-      return `Added barrels to ${towerElements.length} towers`;
+      const count = addBarrelsToTowers();
+      return `Added barrels to ${count} towers`;
     }
   };
 })();
