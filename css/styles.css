@@ -159,7 +159,7 @@ h1 {
 .tower {
     width: 32px;
     height: 32px;
-    background-image: url('/assets/spritesheet5.png');
+    background-image: url('/assets/spritesheet9.png');
     background-size: 98px 98px;
     background-repeat: no-repeat;
     display: inline-block;
@@ -168,14 +168,14 @@ h1 {
 }
 
 .tower.tower-1 { background-position: 0px 0px; }
-.tower.tower-2 { background-position: -36px 0px; }
+.tower.tower-2 { background-position: -32px 0px; }
 .tower.tower-3 { background-position: -64px 0px; }
 .tower.tower-4 { background-position: 0px -34px; }
 .tower.tower-5 { background-position: -32px -34px; }
-.tower.tower-6 { background-position: -65px -34px; }
-.tower.tower-7 { background-position: -5px -68px; }
-.tower.tower-8 { background-position: -32px -68px; }
-.tower.tower-9 { background-position: -66px -69px; }
+.tower.tower-6 { background-position: -64px -34px; }
+.tower.tower-7 { background-position: 0px -64px; }
+.tower.tower-8 { background-position: -32px -64px; }
+.tower.tower-9 { background-position: -64px -64px; }
 .tower-special {
     width: 32px;
     height: 32px;
