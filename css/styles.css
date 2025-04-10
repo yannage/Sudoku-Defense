@@ -159,7 +159,7 @@ h1 {
 .tower {
     width: 32px;
     height: 32px;
-    background-image: url('/assets/spritesheet4.png');
+    background-image: url('/assets/spritesheet3.png');
     background-size: 98px 98px;
     background-repeat: no-repeat;
     display: inline-block;
