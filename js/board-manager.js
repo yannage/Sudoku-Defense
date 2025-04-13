@@ -972,149 +972,118 @@ function isValidMoveForTest(puzzle, row, col, value) {
      * Triggers completion bonus events for newly completed units
      */
     function checkUnitCompletion() {
-        // Check rows
-        for (let row = 0; row < 9; row++) {
-            let nonPathCellCount = 0;
-            let filledCellCount = 0;
-            let fixedCellCount = 0;
-            let numberSet = new Set();
-            let isComplete = true;
-            
-            for (let col = 0; col < 9; col++) {
-                if (!pathCells.has(`${row},${col}`)) {
-                    nonPathCellCount++;
-                    
-                    if (fixedCells[row][col]) {
-                        fixedCellCount++;
-                    }
-                    
-                    if (board[row][col] > 0) {
-                        filledCellCount++;
-                        numberSet.add(board[row][col]);
-                    } else {
-                        isComplete = false;
-                    }
-                }
-            }
-            
-            // Row is complete if all available cells are filled with unique values
-            isComplete = isComplete && (filledCellCount === nonPathCellCount) &&
-                (numberSet.size === nonPathCellCount) && (nonPathCellCount > 0);
-            
-            // Only consider a row player-completed if player placed at least one tower
-            const playerContributed = (filledCellCount > fixedCellCount);
-            
-            if (isComplete && !completedRows.has(row)) {
-                // Newly completed row
-                completedRows.add(row);
-                
-                // Only trigger bonus if player placed at least one tower
-                if (playerContributed) {
-                    if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
-                        CompletionBonusModule.onUnitCompleted('row', row);
-                    }
-                }
-            } else if (!isComplete && completedRows.has(row)) {
-                // No longer complete
-                completedRows.delete(row);
-            }
-        }
-        
-        // Check columns (similar logic)
-        for (let col = 0; col < 9; col++) {
-            let nonPathCellCount = 0;
-            let filledCellCount = 0;
-            let fixedCellCount = 0;
-            let numberSet = new Set();
-            let isComplete = true;
-            
-            for (let row = 0; row < 9; row++) {
-                if (!pathCells.has(`${row},${col}`)) {
-                    nonPathCellCount++;
-                    
-                    if (fixedCells[row][col]) {
-                        fixedCellCount++;
-                    }
-                    
-                    if (board[row][col] > 0) {
-                        filledCellCount++;
-                        numberSet.add(board[row][col]);
-                    } else {
-                        isComplete = false;
-                    }
-                }
-            }
-            
-            isComplete = isComplete && (filledCellCount === nonPathCellCount) &&
-                (numberSet.size === nonPathCellCount) && (nonPathCellCount > 0);
-            
-            const playerContributed = (filledCellCount > fixedCellCount);
-            
-            if (isComplete && !completedColumns.has(col)) {
-                completedColumns.add(col);
-                
-                if (playerContributed) {
-                    if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
-                        CompletionBonusModule.onUnitCompleted('column', col);
-                    }
-                }
-            } else if (!isComplete && completedColumns.has(col)) {
-                completedColumns.delete(col);
-            }
-        }
-        
-        // Check 3x3 grids (similar logic)
-        for (let gridRow = 0; gridRow < 3; gridRow++) {
-            for (let gridCol = 0; gridCol < 3; gridCol++) {
-                let nonPathCellCount = 0;
-                let filledCellCount = 0;
-                let fixedCellCount = 0;
-                let numberSet = new Set();
-                let isComplete = true;
-                
-                for (let i = 0; i < 3; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        const row = gridRow * 3 + i;
-                        const col = gridCol * 3 + j;
-                        
-                        if (!pathCells.has(`${row},${col}`)) {
-                            nonPathCellCount++;
-                            
-                            if (fixedCells[row][col]) {
-                                fixedCellCount++;
-                            }
-                            
-                            if (board[row][col] > 0) {
-                                filledCellCount++;
-                                numberSet.add(board[row][col]);
-                            } else {
-                                isComplete = false;
-                            }
-                        }
-                    }
-                }
-                
-                isComplete = isComplete && (filledCellCount === nonPathCellCount) &&
-                    (numberSet.size === nonPathCellCount) && (nonPathCellCount > 0);
-                
-                const playerContributed = (filledCellCount > fixedCellCount);
-                const gridKey = `${gridRow}-${gridCol}`;
-                
-                if (isComplete && !completedGrids.has(gridKey)) {
-                    completedGrids.add(gridKey);
-                    
-                    if (playerContributed) {
-                        if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
-                            CompletionBonusModule.onUnitCompleted('grid', gridKey);
-                        }
-                    }
-                } else if (!isComplete && completedGrids.has(gridKey)) {
-                    completedGrids.delete(gridKey);
-                }
-            }
-        }
+  // Rows
+  for (let row = 0; row < 9; row++) {
+    let nonPathCellCount = 0;
+    let filledCellCount = 0;
+    let fixedCellCount = 0;
+    let numberSet = new Set();
+    let isComplete = true;
+    
+    for (let col = 0; col < 9; col++) {
+      if (pathCells.has(`${row},${col}`)) continue;
+      
+      nonPathCellCount++;
+      if (fixedCells[row][col]) fixedCellCount++;
+      const val = board[row][col];
+      if (val > 0) {
+        filledCellCount++;
+        numberSet.add(val);
+      } else {
+        isComplete = false;
+      }
     }
     
+    isComplete = isComplete && numberSet.size === nonPathCellCount && nonPathCellCount > 0;
+    const playerContributed = filledCellCount > fixedCellCount;
+    
+    if (isComplete && !completedRows.has(row)) {
+      completedRows.add(row);
+      if (playerContributed) {
+        CompletionBonusModule?.onUnitCompleted?.('row', row);
+      }
+    } else if (!isComplete && completedRows.has(row)) {
+      completedRows.delete(row);
+    }
+  }
+  
+  // Columns
+  for (let col = 0; col < 9; col++) {
+    let nonPathCellCount = 0;
+    let filledCellCount = 0;
+    let fixedCellCount = 0;
+    let numberSet = new Set();
+    let isComplete = true;
+    
+    for (let row = 0; row < 9; row++) {
+      if (pathCells.has(`${row},${col}`)) continue;
+      
+      nonPathCellCount++;
+      if (fixedCells[row][col]) fixedCellCount++;
+      const val = board[row][col];
+      if (val > 0) {
+        filledCellCount++;
+        numberSet.add(val);
+      } else {
+        isComplete = false;
+      }
+    }
+    
+    isComplete = isComplete && numberSet.size === nonPathCellCount && nonPathCellCount > 0;
+    const playerContributed = filledCellCount > fixedCellCount;
+    
+    if (isComplete && !completedColumns.has(col)) {
+      completedColumns.add(col);
+      if (playerContributed) {
+        CompletionBonusModule?.onUnitCompleted?.('column', col);
+      }
+    } else if (!isComplete && completedColumns.has(col)) {
+      completedColumns.delete(col);
+    }
+  }
+  
+  // Grids
+  for (let gridRow = 0; gridRow < 3; gridRow++) {
+    for (let gridCol = 0; gridCol < 3; gridCol++) {
+      let nonPathCellCount = 0;
+      let filledCellCount = 0;
+      let fixedCellCount = 0;
+      let numberSet = new Set();
+      let isComplete = true;
+      
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          const row = gridRow * 3 + i;
+          const col = gridCol * 3 + j;
+          if (pathCells.has(`${row},${col}`)) continue;
+          
+          nonPathCellCount++;
+          if (fixedCells[row][col]) fixedCellCount++;
+          const val = board[row][col];
+          if (val > 0) {
+            filledCellCount++;
+            numberSet.add(val);
+          } else {
+            isComplete = false;
+          }
+        }
+      }
+      
+      isComplete = isComplete && numberSet.size === nonPathCellCount && nonPathCellCount > 0;
+      const playerContributed = filledCellCount > fixedCellCount;
+      const gridKey = `${gridRow}-${gridCol}`;
+      
+      if (isComplete && !completedGrids.has(gridKey)) {
+        completedGrids.add(gridKey);
+        if (playerContributed) {
+          CompletionBonusModule?.onUnitCompleted?.('grid', gridKey);
+        }
+      } else if (!isComplete && completedGrids.has(gridKey)) {
+        completedGrids.delete(gridKey);
+      }
+    }
+  }
+}
     /**
      * Check if the Sudoku is complete and correct
      * This is the robust implementation from enhanced-sudoku-fix.js
