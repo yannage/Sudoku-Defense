@@ -1,7 +1,6 @@
 /**
- * ability-system.js - Adds rogue-like abilities, character classes, and progression
- * This module enhances Sudoku Tower Defense with character selection, special abilities,
- * mana management, and an experience/leveling system.
+ * Updated Ability System for Sudoku Tower Defense
+ * Refactored to support single unique ability per character
  */
 
 const AbilitySystem = (function() {
@@ -11,377 +10,10 @@ const AbilitySystem = (function() {
   let playerLevel = 1;
   let playerExperience = 0;
   let experienceToNextLevel = 500;
-  let abilities = [];
   let characterSelected = false;
-  
-  
-  // Define character classes with their unique abilities
-  const characters = {
-    strategist: {
-      name: "Strategist",
-      description: "Master of battlefield control and enemy redirection.",
-      icon: "🧠",
-      color: "#7e57c2",
-      baseMaxMana: 10,
-      startingMana: 10,
-      uniqueAbility: {
-        id: "redirect_path",
-        name: "Redirect Path",
-        description: "Generates a new path for enemies to follow",
-        manaCost: 5,
-        icon: "↪️",
-        cooldown: 0,
-        execute: function() {
-          if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
-            const newPath = BoardManager.generateEnemyPath();
-            
-            // Notify relevant modules about the path update
-            EventSystem.publish(GameEvents.PATH_CHANGED, newPath);
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Enemy path redirected!");
-            
-            // Optionally trigger visual re-rendering if needed
-            if (window.Game && typeof Game.updateBoard === 'function') {
-              Game.updateBoard();
-            }
-            
-            // Let the wave system know if it needs to recalculate enemy positions
-            if (window.WaveSystem && typeof WaveSystem.onPathChanged === 'function') {
-              WaveSystem.onPathChanged(newPath);
-            }
-            
-            return true;
-          } else if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
-            SudokuModule.generateEnemyPath();
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, "Enemy path redirected!");
-            return true;
-          }
-          
-          EventSystem.publish(GameEvents.STATUS_MESSAGE, "Failed to redirect path!");
-          return false;
-        }
-      }
-    },
-    engineer: {
-      name: "Engineer",
-      description: "Tower specialist focusing on enhancement and efficiency.",
-      icon: "⚙️",
-      color: "#ff9800",
-      baseMaxMana: 10,
-      startingMana: 10,
-      uniqueAbility: {
-        id: "power_surge",
-        name: "Power Surge",
-        description: "Temporarily doubles all tower damage",
-        manaCost: 6,
-        icon: "⚡",
-        cooldown: 0,
-        execute: function() {
-          // Get all towers
-          if (window.TowersModule && typeof TowersModule.getTowers === 'function') {
-            const towers = TowersModule.getTowers();
-            
-            // Temporarily boost each tower's damage
-            towers.forEach(tower => {
-              tower.originalDamage = tower.damage;
-              tower.damage *= 2;
-            });
-            
-            // Show effect indicator
-            showEffectIndicator("Power Surge", "All towers deal 2x damage for 10 seconds!");
-            
-            // Reset after 10 seconds
-            setTimeout(() => {
-              towers.forEach(tower => {
-                if (tower.originalDamage) {
-                  tower.damage = tower.originalDamage;
-                  delete tower.originalDamage;
-                }
-              });
-              EventSystem.publish(GameEvents.STATUS_MESSAGE, "Power Surge ended");
-            }, 10000);
-            
-            return true;
-          }
-          return false;
-        }
-      }
-    },
-    tactician: {
-      name: "Tactician",
-      description: "Combat specialist with powerful offensive abilities.",
-      icon: "🎯",
-      color: "#f44336",
-      baseMaxMana: 10,
-      startingMana: 10,
-      uniqueAbility: {
-        id: "precision_strike",
-        name: "Precision Strike",
-        description: "Deal heavy damage to all enemies on screen",
-        manaCost: 7,
-        icon: "💥",
-        cooldown: 0,
-        execute: function() {
-          if (window.EnemiesModule && typeof EnemiesModule.getEnemies === 'function') {
-            const enemies = EnemiesModule.getEnemies();
-            let count = 0;
-            
-            // Damage each enemy
-            enemies.forEach(enemy => {
-              const damage = enemy.maxHealth * 0.3; // 30% max health damage
-              if (EnemiesModule.damageEnemy(enemy.id, damage)) {
-                count++;
-              }
-            });
-            
-            // Visual effect
-            showDamageFlash();
-            
-            EventSystem.publish(GameEvents.STATUS_MESSAGE,
-              `Precision Strike hit ${enemies.length} enemies` +
-              (count > 0 ? `, defeating ${count}!` : "!"));
-            return true;
-          }
-          return false;
-        }
-      }
-    },
-    mystic: {
-      name: "Mystic",
-      description: "Manipulator of time and space with temporal abilities.",
-      icon: "🔮",
-      color: "#9c27b0",
-      baseMaxMana: 10,
-      startingMana: 10,
-      uniqueAbility: {
-        id: "time_warp",
-        name: "Time Warp",
-        description: "Slows all enemies by 50% for 8 seconds",
-        manaCost: 5,
-        icon: "⏱️",
-        cooldown: 0,
-        execute: function() {
-          if (window.EnemiesModule && typeof EnemiesModule.getEnemies === 'function') {
-            const enemies = EnemiesModule.getEnemies();
-            
-            // Slow each enemy
-            enemies.forEach(enemy => {
-              enemy.originalSpeed = enemy.speed;
-              enemy.speed *= 0.5; // 50% slower
-            });
-            
-            // Visual effect
-            showEffectIndicator("Time Warp", "Enemies slowed by 50% for 8 seconds!");
-            
-            // Reset after 8 seconds
-            setTimeout(() => {
-              EnemiesModule.getEnemies().forEach(enemy => {
-                if (enemy.originalSpeed) {
-                  enemy.speed = enemy.originalSpeed;
-                  delete enemy.originalSpeed;
-                }
-              });
-              EventSystem.publish(GameEvents.STATUS_MESSAGE, "Time Warp ended");
-            }, 8000);
-            
-            return true;
-          }
-          return false;
-        }
-      }
-    },
-    arithmetician: {
-      name: "Arithmetician",
-      description: "Sudoku specialist with puzzle-solving powers.",
-      icon: "🔢",
-      color: "#4caf50",
-      baseMaxMana: 10,
-      startingMana: 10,
-      uniqueAbility: {
-        id: "number_insight",
-        name: "Number Insight",
-        description: "Reveals 3 correct cells in the puzzle",
-        manaCost: 4,
-        icon: "💡",
-        cooldown: 0,
-        execute: function() {
-          const boardManager = window.BoardManager || window.SudokuModule;
-          if (!boardManager) return false;
-          
-          const board = boardManager.getBoard();
-          const solution = boardManager.getSolution();
-          const pathCells = boardManager.getPathCells();
-          
-          // Find empty cells that aren't on the path
-          const emptyCells = [];
-          
-          for (let row = 0; row < 9; row++) {
-            for (let col = 0; col < 9; col++) {
-              if (board[row][col] === 0 && !pathCells.has(`${row},${col}`)) {
-                emptyCells.push({
-                  row: row,
-                  col: col,
-                  value: solution[row][col]
-                });
-              }
-            }
-          }
-          
-          if (emptyCells.length === 0) {
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, "No empty cells to reveal!");
-            return false;
-          }
-          
-          // Shuffle and take up to 3 cells
-          shuffleArray(emptyCells);
-          const cellsToReveal = emptyCells.slice(0, Math.min(3, emptyCells.length));
-          
-          // Place towers in these cells
-          cellsToReveal.forEach(cell => {
-            if (window.TowersModule && typeof TowersModule.createTower === 'function') {
-              TowersModule.createTower(cell.value, cell.row, cell.col, { free: true });
-            } else {
-              // Fallback - update the board directly
-              boardManager.setCellValue(cell.row, cell.col, cell.value);
-            }
-            
-            // Highlight the cell
-            const cellElement = document.querySelector(`.sudoku-cell[data-row="${cell.row}"][data-col="${cell.col}"]`);
-            if (cellElement) {
-              cellElement.classList.add('ability-highlight');
-              setTimeout(() => {
-                cellElement.classList.remove('ability-highlight');
-              }, 3000);
-            }
-          });
-          
-          EventSystem.publish(GameEvents.STATUS_MESSAGE,
-            `Revealed ${cellsToReveal.length} correct numbers!`);
-          return true;
-        }
-      }
-    }
-  };
-  
-  // Common abilities available to all characters
-  const commonAbilities = [
-  {
-    id: "emergency_repair",
-    name: "Emergency Repair",
-    description: "Gain 1 life",
-    manaCost: 8,
-    icon: "❤️",
-    cooldown: 0,
-    execute: function() {
-      if (window.PlayerModule && typeof PlayerModule.addLife === 'function') {
-        PlayerModule.addLife(1);
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Gained 1 life!");
-        return true;
-      }
-      return false;
-    }
-  },
-  {
-    id: "gold_rush",
-    name: "Gold Rush",
-    description: "Gain 50 currency",
-    manaCost: 3,
-    icon: "💰",
-    cooldown: 0,
-    execute: function() {
-      if (window.PlayerModule && typeof PlayerModule.addCurrency === 'function') {
-        PlayerModule.addCurrency(50);
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Gained 50 currency!");
-        return true;
-      }
-      return false;
-    }
-  },
-  {
-    id: "quick_thinking",
-    name: "Quick Thinking",
-    description: "Reset all tower cooldowns",
-    manaCost: 4,
-    icon: "⚡",
-    cooldown: 0,
-    execute: function() {
-      if (window.TowersModule && typeof TowersModule.getTowers === 'function') {
-        const towers = TowersModule.getTowers();
-        let count = 0;
-        
-        towers.forEach(tower => {
-          if (tower.attackCooldown > 0) {
-            tower.attackCooldown = 0;
-            count++;
-          }
-        });
-        
-        EventSystem.publish(GameEvents.STATUS_MESSAGE,
-          `Reset cooldowns for ${count} towers!`);
-        return count > 0;
-      }
-      return false;
-    }
-  },
-  {
-    id: "clear_mistakes",
-    name: "Clear Mistakes",
-    description: "Remove all incorrect towers with full refund",
-    manaCost: 6,
-    icon: "🧹",
-    cooldown: 0,
-    execute: function() {
-      if (window.TowersModule && typeof TowersModule.getTowers === 'function' &&
-        typeof TowersModule.removeTower === 'function') {
-        
-        const towers = TowersModule.getTowers();
-        const boardManager = window.BoardManager || window.SudokuModule;
-        if (!boardManager || typeof boardManager.getSolution !== 'function') return false;
-        
-        const solution = boardManager.getSolution();
-        let count = 0;
-        let refundAmount = 0;
-        
-        // Find incorrect towers
-        const incorrectTowers = towers.filter(tower => {
-          // Skip special towers
-          if (tower.type === 'special') return false;
-          
-          // Check if the tower matches the solution
-          const towerValue = parseInt(tower.type);
-          if (isNaN(towerValue)) return false;
-          
-          const correctValue = solution[tower.row][tower.col];
-          return towerValue !== correctValue;
-        });
-        
-        // Give full refund for each incorrect tower
-        incorrectTowers.forEach(tower => {
-          // Calculate refund (base cost + upgrades)
-          const towerTypeData = TowersModule.getTowerTypeData(tower.type);
-          if (towerTypeData) {
-            const baseCost = towerTypeData.cost;
-            const upgradeCost = baseCost * 0.75 * (tower.level - 1);
-            refundAmount += baseCost + upgradeCost;
-          }
-          
-          // Remove the tower
-          TowersModule.removeTower(tower.id);
-          count++;
-        });
-        
-        // Add refund
-        if (count > 0 && refundAmount > 0 &&
-          window.PlayerModule && typeof PlayerModule.addCurrency === 'function') {
-          PlayerModule.addCurrency(Math.floor(refundAmount));
-        }
-        
-        EventSystem.publish(GameEvents.STATUS_MESSAGE,
-          `Removed ${count} incorrect towers with ${Math.floor(refundAmount)} currency refund!`);
-        return count > 0;
-      }
-      return false;
-    }
-  }];
+
+  // Import characters definition from the characters object
+  // This should be defined in a separate file (characters.js)
   
   /**
    * Initialize the ability system
@@ -412,7 +44,7 @@ const AbilitySystem = (function() {
   }
   
   /**
-   * Create CSS styles for the ability system - UPDATED VERSION
+   * Create CSS styles for the ability system
    */
   function createStyles() {
     if (document.getElementById('ability-system-styles')) return;
@@ -432,14 +64,12 @@ const AbilitySystem = (function() {
             display: flex;
             gap: 10px;
             z-index: 900;
-            width: auto;
-            max-width: 80%;
             justify-content: center;
         }
         
         .ability-slot {
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             background-color: #333;
             border-radius: 8px;
             display: flex;
@@ -496,7 +126,7 @@ const AbilitySystem = (function() {
         
         .ability-tooltip {
             position: absolute;
-            bottom: 125px;
+            bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
             background-color: rgba(0, 0, 0, 0.8);
@@ -517,73 +147,67 @@ const AbilitySystem = (function() {
             opacity: 1;
         }
         
-        /* === Mana Bar - Now right-aligned on screen === */
-       /* === Mana Bar - Horizontal at bottom-left === */
-.mana-bar-container {
-  position: fixed;
-  bottom: 80px;
-  width: 200px;
-  height: 10px;
-  background-color: #111;
-  border-radius: 5px;
-  overflow: hidden;
-  z-index: 899;
-}
-
-.mana-bar-fill {
-  height: 100%;
-  background-color: #4477ff;
-  transition: width 0.3s;
-}
-
-/* === Experience Bar - Horizontal at bottom-right === */
-.experience-bar {
-  position: fixed;
-  top: 35px;
-  left: 15px;
-  width: 200px;
-  height: 10px;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 5px;
-  overflow: hidden;
-  z-index: 899;
-}
-
-.experience-fill {
-  height: 100%;
-  background-color: #4caf50;
-  transition: width 0.3s;
-}
-
-.mana-text
-{
-  position: fixed;
-  bottom: 95px;
-  font-size: 12px;
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 2px 6px;
-  border-radius: 3px;
-  white-space: nowrap;
-  z-index: 900;
-}
-.experience-text {
-  position: fixed;
-  top: 5px;
-  font-size: 12px;
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 2px 6px;
-  border-radius: 3px;
-  white-space: nowrap;
-  z-index: 900;
-}
-
-
-
-.experience-text {
-  left: 15px;
-}
+        /* === Mana Bar - Horizontal at bottom-center === */
+        .mana-bar-container {
+            position: fixed;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 10px;
+            background-color: #111;
+            border-radius: 5px;
+            overflow: hidden;
+            z-index: 899;
+        }
+        
+        .mana-bar-fill {
+            height: 100%;
+            background-color: #4477ff;
+            transition: width 0.3s;
+        }
+        
+        /* === Experience Bar - Positioned at top-left === */
+        .experience-bar {
+            position: fixed;
+            top: 35px;
+            left: 15px;
+            width: 200px;
+            height: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            overflow: hidden;
+            z-index: 899;
+        }
+        
+        .experience-fill {
+            height: 100%;
+            background-color: #4caf50;
+            transition: width 0.3s;
+        }
+        
+        .mana-text, .experience-text {
+            position: fixed;
+            font-size: 12px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 2px 6px;
+            border-radius: 3px;
+            white-space: nowrap;
+            z-index: 900;
+        }
+        
+        .mana-text {
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .experience-text {
+            top: 15px;
+            left: 15px;
+        }
+        
         .level-up-effect {
             position: fixed;
             top: 0;
@@ -763,6 +387,87 @@ const AbilitySystem = (function() {
             cursor: not-allowed;
         }
         
+        /* Visual Effect Classes */
+        .effect-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 950;
+            pointer-events: none;
+            animation: fade-in-out 2.5s forwards;
+        }
+        
+        .effect-indicator-title {
+            font-size: 24px;
+            margin-bottom: 5px;
+            color: gold;
+        }
+        
+        .effect-indicator-desc {
+            font-size: 16px;
+        }
+        
+        .damage-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 0, 0, 0.2);
+            z-index: 950;
+            pointer-events: none;
+            animation: flash 0.3s forwards;
+        }
+        
+        .ability-highlight {
+            animation: highlight-pulse 1s infinite;
+        }
+        
+        .frozen {
+            filter: brightness(1.5) sepia(0.5) hue-rotate(180deg);
+            animation: freeze-pulse 1.5s infinite !important;
+        }
+        
+        .temporary-tower {
+            animation: temporary-pulse 1.5s infinite !important;
+        }
+        
+        @keyframes highlight-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+        }
+        
+        @keyframes freeze-pulse {
+            0% { filter: brightness(1.5) sepia(0.5) hue-rotate(180deg); }
+            50% { filter: brightness(1.7) sepia(0.7) hue-rotate(200deg); }
+            100% { filter: brightness(1.5) sepia(0.5) hue-rotate(180deg); }
+        }
+        
+        @keyframes temporary-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(135, 206, 250, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(135, 206, 250, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(135, 206, 250, 0); }
+        }
+        
+        @keyframes fade-in-out {
+            0% { opacity: 0; transform: translate(-50%, -70%); }
+            10% { opacity: 1; transform: translate(-50%, -50%); }
+            80% { opacity: 1; transform: translate(-50%, -50%); }
+            100% { opacity: 0; transform: translate(-50%, -30%); }
+        }
+        
+        @keyframes flash {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
         /* Mobile specific adjustments */
         @media (max-width: 768px) {
             .character-selection-content {
@@ -812,107 +517,13 @@ const AbilitySystem = (function() {
             }
             
             .ability-slot {
-                width: 50px;
-                height: 50px;
+                width: 60px;
+                height: 60px;
             }
             
             .mana-bar-container, .experience-bar {
                 height: 10px;
             }
-        }
-        
-        /* === Scroll Arrows for Character Carousel === */
-        .scroll-indicator {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 28px;
-            height: 28px;
-            background-color: rgba(0, 0, 0, 0.6);
-            border-radius: 50%;
-            color: white;
-            font-size: 18px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.3s, background-color 0.3s;
-            pointer-events: auto;
-        }
-        
-        .scroll-indicator:hover {
-            opacity: 1;
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-        
-        .scroll-left {
-            left: 10px;
-        }
-        
-        .scroll-right {
-            right: 10px;
-        }
-        
-        /* Effects Styles */
-        .effect-indicator {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 15px 30px;
-            border-radius: 10px;
-            text-align: center;
-            z-index: 950;
-            pointer-events: none;
-            animation: fade-in-out 2.5s forwards;
-        }
-        
-        .effect-indicator-title {
-            font-size: 24px;
-            margin-bottom: 5px;
-            color: gold;
-        }
-        
-        .effect-indicator-desc {
-            font-size: 16px;
-        }
-        
-        .damage-flash {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 0, 0, 0.2);
-            z-index: 950;
-            pointer-events: none;
-            animation: flash 0.3s forwards;
-        }
-        
-        .ability-highlight {
-            animation: highlight-pulse 1s infinite;
-        }
-        
-        @keyframes highlight-pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
-        }
-        
-        @keyframes fade-in-out {
-            0% { opacity: 0; transform: translate(-50%, -70%); }
-            10% { opacity: 1; transform: translate(-50%, -50%); }
-            80% { opacity: 1; transform: translate(-50%, -50%); }
-            100% { opacity: 0; transform: translate(-50%, -30%); }
-        }
-        
-        @keyframes flash {
-            0% { opacity: 1; }
-            100% { opacity: 0; }
         }
     `;
     
@@ -936,36 +547,74 @@ const AbilitySystem = (function() {
     title.className = 'character-selection-title';
     title.textContent = 'Choose Your Character';
     
-    const scrollLeft = document.createElement('div');
-    scrollLeft.className = 'scroll-indicator scroll-left';
-    scrollLeft.innerHTML = '←';
-    
-    const scrollRight = document.createElement('div');
-    scrollRight.className = 'scroll-indicator scroll-right';
-    scrollRight.innerHTML = '→';
-    
     const cardsContainer = document.createElement('div');
     cardsContainer.className = 'character-cards';
     
     let selectedCharacterId = null;
-      
-      Object.entries(characters).forEach(([id, char]) => {
+    
+    // Add scroll indicators
+    const scrollLeft = document.createElement('div');
+    scrollLeft.className = 'scroll-indicator scroll-left';
+    scrollLeft.innerHTML = '←';
+    scrollLeft.style.position = 'absolute';
+    scrollLeft.style.top = '50%';
+    scrollLeft.style.left = '20px';
+    scrollLeft.style.transform = 'translateY(-50%)';
+    scrollLeft.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+    scrollLeft.style.color = 'white';
+    scrollLeft.style.width = '30px';
+    scrollLeft.style.height = '30px';
+    scrollLeft.style.borderRadius = '50%';
+    scrollLeft.style.display = 'flex';
+    scrollLeft.style.justifyContent = 'center';
+    scrollLeft.style.alignItems = 'center';
+    scrollLeft.style.cursor = 'pointer';
+    scrollLeft.style.zIndex = '10000';
+    
+    const scrollRight = document.createElement('div');
+    scrollRight.className = 'scroll-indicator scroll-right';
+    scrollRight.innerHTML = '→';
+    scrollRight.style.position = 'absolute';
+    scrollRight.style.top = '50%';
+    scrollRight.style.right = '20px';
+    scrollRight.style.transform = 'translateY(-50%)';
+    scrollRight.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+    scrollRight.style.color = 'white';
+    scrollRight.style.width = '30px';
+    scrollRight.style.height = '30px';
+    scrollRight.style.borderRadius = '50%';
+    scrollRight.style.display = 'flex';
+    scrollRight.style.justifyContent = 'center';
+    scrollRight.style.alignItems = 'center';
+    scrollRight.style.cursor = 'pointer';
+    scrollRight.style.zIndex = '10000';
+    
+    scrollLeft.addEventListener('click', () => {
+      cardsContainer.scrollBy({ left: -240, behavior: 'smooth' });
+    });
+    
+    scrollRight.addEventListener('click', () => {
+      cardsContainer.scrollBy({ left: 240, behavior: 'smooth' });
+    });
+    
+    // Add character cards
+    Object.entries(window.characters || characters).forEach(([id, char]) => {
       const card = document.createElement('div');
       card.className = 'character-card';
       card.dataset.character = id;
       
       card.innerHTML = `
-      <div class="character-icon" style="color: ${char.color}">${char.icon}</div>
-      <div class="character-name" style="color: ${char.color}">${char.name}</div>
-      <div class="character-description">${char.description}</div>
-      <div class="character-ability">
-        <div class="character-ability-title">
-          <span class="character-ability-icon">${char.uniqueAbility.icon}</span>
-          ${char.uniqueAbility.name}
+        <div class="character-icon" style="color: ${char.color}">${char.icon}</div>
+        <div class="character-name" style="color: ${char.color}">${char.name}</div>
+        <div class="character-description">${char.description}</div>
+        <div class="character-ability">
+          <div class="character-ability-title">
+            <span class="character-ability-icon">${char.uniqueAbility.icon}</span>
+            ${char.uniqueAbility.name}
+          </div>
+          <div class="character-ability-description">${char.uniqueAbility.description}</div>
         </div>
-        <div class="character-ability-description">${char.uniqueAbility.description}</div>
-      </div>
-    `;
+      `;
       
       card.addEventListener('click', () => {
         document.querySelectorAll('.character-card').forEach(c => c.classList.remove('selected'));
@@ -975,14 +624,6 @@ const AbilitySystem = (function() {
       });
       
       cardsContainer.appendChild(card);
-    });
-    
-    scrollLeft.addEventListener('click', () => {
-      cardsContainer.scrollBy({ left: -240, behavior: 'smooth' });
-    });
-    
-    scrollRight.addEventListener('click', () => {
-      cardsContainer.scrollBy({ left: 240, behavior: 'smooth' });
     });
     
     const selectBtn = document.createElement('button');
@@ -1005,7 +646,7 @@ const AbilitySystem = (function() {
     selectionScreen.appendChild(content);
     document.body.appendChild(selectionScreen);
     
-    // Scroll indicator visibility
+    // Update scroll indicators visibility
     const updateScrollIndicators = () => {
       const scrollLeftVal = cardsContainer.scrollLeft;
       const maxScroll = cardsContainer.scrollWidth - cardsContainer.clientWidth;
@@ -1019,7 +660,7 @@ const AbilitySystem = (function() {
   }
   
   /**
-   * Create ability bar UI - UPDATED VERSION
+   * Create ability bar UI - simplified for single ability
    */
   function createAbilityBarUI() {
     // Check if ability bar already exists
@@ -1058,7 +699,7 @@ const AbilitySystem = (function() {
   }
   
   /**
-   * Create experience bar UI - UPDATED VERSION
+   * Create experience bar UI
    */
   function createExperienceBarUI() {
     // Check if experience bar already exists
@@ -1105,7 +746,7 @@ const AbilitySystem = (function() {
     characterIndicator.id = 'character-indicator';
     
     if (currentCharacter) {
-      const character = characters[currentCharacter];
+      const character = window.characters[currentCharacter] || characters[currentCharacter];
       characterIndicator.innerHTML = `
                 <div class="character-indicator-icon" style="color: ${character.color}">${character.icon}</div>
                 <div class="character-indicator-name">${character.name}</div>
@@ -1121,7 +762,7 @@ const AbilitySystem = (function() {
   function loadState() {
     try {
       const savedCharacter = localStorage.getItem('sudoku_td_character');
-      if (savedCharacter && characters.hasOwnProperty(savedCharacter)) {
+      if (savedCharacter && (window.characters?.[savedCharacter] || characters?.[savedCharacter])) {
         currentCharacter = savedCharacter;
         characterSelected = true;
       } else {
@@ -1133,7 +774,11 @@ const AbilitySystem = (function() {
       const savedLevel = parseInt(localStorage.getItem('sudoku_td_ability_level'));
       if (!isNaN(savedLevel) && savedLevel > 0) {
         playerLevel = savedLevel;
-        maxMana = characters[currentCharacter]?.baseMaxMana || 10 + Math.floor(savedLevel / 5);
+        // For new system, calculate max mana based on level
+        const characterData = window.characters?.[currentCharacter] || characters?.[currentCharacter];
+        if (characterData) {
+          maxMana = characterData.baseMaxMana + Math.floor(savedLevel / 5);
+        }
       }
       
       console.log("Ability System: Loaded saved state, character:", currentCharacter, "level:", playerLevel);
@@ -1145,11 +790,13 @@ const AbilitySystem = (function() {
   }
   
   /**
-   * Select a character - UPDATED VERSION
+   * Select a character - updated for single ability system
    * @param {string} characterId - ID of the character to select
    */
   function selectCharacter(characterId) {
-    if (!characters[characterId]) {
+    const charactersObject = window.characters || characters;
+    
+    if (!charactersObject[characterId]) {
       console.warn("Character not found:", characterId);
       return false;
     }
@@ -1159,14 +806,11 @@ const AbilitySystem = (function() {
     currentCharacter = characterId;
     characterSelected = true;
     
-    const character = characters[characterId];
+    const character = charactersObject[characterId];
     
     // Set initial mana
     maxMana = character.baseMaxMana + Math.floor(playerLevel / 5);
     currentMana = character.startingMana;
-    
-    // Set up abilities
-    setupAbilities();
     
     // Save selection
     localStorage.setItem('sudoku_td_character', characterId);
@@ -1184,7 +828,10 @@ const AbilitySystem = (function() {
     if (experienceBar) experienceBar.style.display = 'block';
     if (experienceText) experienceText.style.display = 'block';
     
-    // Update their contents
+    // Update ability bar with single unique ability
+    updateAbilityBarUI();
+    
+    // Update displays
     updateManaDisplay();
     updateExperienceBar();
     
@@ -1197,97 +844,83 @@ const AbilitySystem = (function() {
   }
   
   /**
-   * Set up abilities based on selected character
-   */
-  function setupAbilities() {
-    if (!currentCharacter) return;
-    
-    abilities = [];
-    
-    // Add character's unique ability
-    const uniqueAbility = characters[currentCharacter].uniqueAbility;
-    abilities.push(uniqueAbility);
-    
-    // Add common abilities
-    abilities = abilities.concat(commonAbilities);
-    
-    // Update ability bar UI
-    updateAbilityBarUI();
-  }
-  
-  /**
-   * Update ability bar UI with current abilities
+   * Update ability bar UI with character's unique ability
    */
   function updateAbilityBarUI() {
     const abilityBar = document.getElementById('ability-bar');
-    if (!abilityBar) return;
+    if (!abilityBar || !currentCharacter) return;
     
     // Clear existing ability slots
-    const existingSlots = abilityBar.querySelectorAll('.ability-slot');
-    existingSlots.forEach(slot => slot.remove());
+    abilityBar.innerHTML = '';
     
-    // Add ability slots
-    abilities.forEach((ability, index) => {
-      const slot = document.createElement('div');
-      slot.className = 'ability-slot';
-      slot.classList.add(currentMana >= ability.manaCost ? 'active' : 'inactive');
-      slot.dataset.abilityIndex = index;
-      
-      slot.innerHTML = `
-                <div class="ability-icon">${ability.icon}</div>
-                <div class="ability-cost">${ability.manaCost}</div>
-                <div class="ability-tooltip">${ability.name}: ${ability.description}</div>
-                <div class="ability-cooldown" style="height: ${ability.cooldown > 0 ? '100%' : '0%'}"></div>
-            `;
-      
-      // Add click handler
-      slot.addEventListener('click', function() {
-        const abilityIndex = parseInt(this.dataset.abilityIndex);
-        if (!isNaN(abilityIndex) && abilityIndex >= 0 && abilityIndex < abilities.length) {
-          useAbility(abilityIndex);
-        }
-      });
-      
-      // Add to ability bar
-      abilityBar.appendChild(slot);
+    // Get character data
+    const charactersObject = window.characters || characters;
+    const character = charactersObject[currentCharacter];
+    if (!character) return;
+    
+    // Get the unique ability
+    const ability = character.uniqueAbility;
+    
+    // Create ability slot
+    const slot = document.createElement('div');
+    slot.className = 'ability-slot';
+    slot.classList.add(currentMana >= ability.manaCost ? 'active' : 'inactive');
+    
+    slot.innerHTML = `
+      <div class="ability-icon">${ability.icon}</div>
+      <div class="ability-cost">${ability.manaCost}</div>
+      <div class="ability-tooltip">${ability.name}: ${ability.description}</div>
+      <div class="ability-cooldown" style="height: ${ability.cooldown > 0 ? '100%' : '0%'}"></div>
+    `;
+    
+    // Add click handler
+    slot.addEventListener('click', function() {
+      useAbility();
     });
+    
+    // Add to ability bar
+    abilityBar.appendChild(slot);
     
     // Update mana display
     updateManaDisplay();
   }
   
   /**
-   * Update mana display - UPDATED VERSION
+   * Update mana display
    */
- function updateManaDisplay() {
-  const manaBarFill = document.querySelector('.mana-bar-fill');
-  const manaText = document.querySelector('.mana-text');
-  
-  if (manaBarFill) {
-    manaBarFill.style.width = `${(currentMana / maxMana) * 100}%`;
-  }
-  
-  if (manaText) {
-    manaText.textContent = `Mana: ${currentMana}/${maxMana}`;
-  }
-  
-  // Update ability states
-  const abilitySlots = document.querySelectorAll('.ability-slot');
-  abilitySlots.forEach((slot, index) => {
-    if (index < abilities.length) {
-      const ability = abilities[index];
-      if (currentMana >= ability.manaCost && ability.cooldown <= 0) {
-        slot.classList.remove('inactive');
-        slot.classList.add('active');
-      } else {
-        slot.classList.remove('active');
-        slot.classList.add('inactive');
+  function updateManaDisplay() {
+    const manaBarFill = document.querySelector('.mana-bar-fill');
+    const manaText = document.querySelector('.mana-text');
+    
+    if (manaBarFill) {
+      manaBarFill.style.width = `${(currentMana / maxMana) * 100}%`;
+    }
+    
+    if (manaText) {
+      manaText.textContent = `Mana: ${currentMana}/${maxMana}`;
+    }
+    
+    // Update ability states
+    if (currentCharacter) {
+      const charactersObject = window.characters || characters;
+      const character = charactersObject[currentCharacter];
+      const ability = character?.uniqueAbility;
+      
+      if (ability) {
+        const abilitySlot = document.querySelector('.ability-slot');
+        if (abilitySlot) {
+          if (currentMana >= ability.manaCost && ability.cooldown <= 0) {
+            abilitySlot.classList.remove('inactive');
+            abilitySlot.classList.add('active');
+          } else {
+            abilitySlot.classList.remove('active');
+            abilitySlot.classList.add('inactive');
+          }
+        }
       }
     }
-  });
-}
-
-
+  }
+  
   /**
    * Reset mana to maximum (called after wave completion)
    */
@@ -1314,21 +947,22 @@ const AbilitySystem = (function() {
   }
   
   /**
-   * Update experience bar display - UPDATED VERSION
+   * Update experience bar display
    */
-function updateExperienceBar() {
-  const experienceFill = document.querySelector('.experience-fill');
-  const experienceText = document.querySelector('.experience-text');
-  
-  if (experienceFill) {
-    const percentage = (playerExperience / experienceToNextLevel) * 100;
-    experienceFill.style.width = `${percentage}%`;
+  function updateExperienceBar() {
+    const experienceFill = document.querySelector('.experience-fill');
+    const experienceText = document.querySelector('.experience-text');
+    
+    if (experienceFill) {
+      const percentage = (playerExperience / experienceToNextLevel) * 100;
+      experienceFill.style.width = `${percentage}%`;
+    }
+    
+    if (experienceText) {
+      experienceText.textContent = `Level ${playerLevel} (${playerExperience}/${experienceToNextLevel})`;
+    }
   }
   
-  if (experienceText) {
-    experienceText.textContent = `Level ${playerLevel} (${playerExperience}/${experienceToNextLevel})`;
-  }
-}
   /**
    * Level up the player
    */
@@ -1338,9 +972,6 @@ function updateExperienceBar() {
     
     // Increase experience required for next level
     experienceToNextLevel = Math.floor(500 * Math.pow(1.1, playerLevel - 1));
-    
-    //Reset mana
-    resetMana();
     
     // Increase max mana every 5 levels
     if (playerLevel % 5 === 0) {
@@ -1372,9 +1003,9 @@ function updateExperienceBar() {
       const announcement = document.createElement('div');
       announcement.className = 'effect-indicator';
       announcement.innerHTML = `
-                <div class="effect-indicator-title">Level Up!</div>
-                <div class="effect-indicator-desc">You are now level ${playerLevel}</div>
-            `;
+        <div class="effect-indicator-title">Level Up!</div>
+        <div class="effect-indicator-desc">You are now level ${playerLevel}</div>
+      `;
       
       document.body.appendChild(announcement);
       
@@ -1386,13 +1017,16 @@ function updateExperienceBar() {
   }
   
   /**
-   * Use an ability
-   * @param {number} index - Index of the ability to use
+   * Use the character's unique ability
    */
-  function useAbility(index) {
-    if (index < 0 || index >= abilities.length) return false;
+  function useAbility() {
+    if (!currentCharacter) return false;
     
-    const ability = abilities[index];
+    const charactersObject = window.characters || characters;
+    const character = charactersObject[currentCharacter];
+    if (!character) return false;
+    
+    const ability = character.uniqueAbility;
     
     // Check mana cost
     if (currentMana < ability.manaCost) {
@@ -1430,7 +1064,63 @@ function updateExperienceBar() {
   }
   
   /**
-   * Show effect indicator
+   * Set up event listeners
+   */
+  function setupEventListeners() {
+    // Cooldown timer
+    setInterval(() => {
+      if (!currentCharacter) return;
+      
+      const charactersObject = window.characters || characters;
+      const character = charactersObject[currentCharacter];
+      if (!character) return;
+      
+      const ability = character.uniqueAbility;
+      let updated = false;
+      
+      if (ability.cooldown > 0) {
+        ability.cooldown -= 0.1; // Reduce cooldown
+        if (ability.cooldown < 0) ability.cooldown = 0;
+        updated = true;
+      }
+      
+      if (updated) {
+        // Update cooldown visual
+        const cooldownElement = document.querySelector('.ability-cooldown');
+        if (cooldownElement) {
+          const percentage = ability.cooldown / (ability.cooldownDuration || 1) * 100;
+          cooldownElement.style.height = `${percentage}%`;
+        }
+        
+        // Update ability state
+        updateManaDisplay();
+      }
+    }, 100);
+    
+    // Mana regeneration
+    setInterval(() => {
+      if (!currentCharacter || currentMana >= maxMana) return;
+      
+      // Add a small amount of mana every second. currently set to 0 to avoid mana regen
+      currentMana = Math.min(maxMana, currentMana + 0);
+      updateManaDisplay();
+    }, 1000);
+    
+    // Wave completion event
+    EventSystem.subscribe(GameEvents.WAVE_COMPLETE, () => {
+      resetMana();
+    });
+    
+    // Enemy defeated event
+    EventSystem.subscribe(GameEvents.ENEMY_DEFEATED, (data) => {
+      if (data && typeof data.reward === 'number') {
+        addExperience(data.reward);
+      }
+    });
+  }
+  
+  /**
+   * Helper function to show effect indicator
    * @param {string} title - Effect title
    * @param {string} description - Effect description
    */
@@ -1438,15 +1128,15 @@ function updateExperienceBar() {
     const indicator = document.createElement('div');
     indicator.className = 'effect-indicator';
     indicator.innerHTML = `
-            <div class="effect-indicator-title">${title}</div>
-            <div class="effect-indicator-desc">${description}</div>
-        `;
+      <div class="effect-indicator-title">${title}</div>
+      <div class="effect-indicator-desc">${description}</div>
+    `;
     
     document.body.appendChild(indicator);
   }
   
   /**
-   * Show damage flash effect
+   * Helper function to show damage flash effect
    */
   function showDamageFlash() {
     const flash = document.createElement('div');
@@ -1459,93 +1149,33 @@ function updateExperienceBar() {
     }, 300);
   }
   
-  /**
-   * Update experience based on score
-   * @param {number} score - Current score
-   */
-  function updateExperienceFromScore(score) {
-    // Get last processed score
-    const lastScore = parseInt(localStorage.getItem('sudoku_td_last_processed_score') || '0');
-    
-    // If score increased, add experience
-    if (score > lastScore) {
-      const newExperience = Math.floor((score - lastScore) / 10);
-      if (newExperience > 0) {
-        addExperience(newExperience);
-      }
-      
-      // Save processed score
-      localStorage.setItem('sudoku_td_last_processed_score', score.toString());
-    }
-  }
-  
-  /**
-   * Set up event listeners
-   */
-  function setupEventListeners() {
-    // Cooldown timer
-    setInterval(() => {
-      let updated = false;
-      
-      abilities.forEach(ability => {
-        if (ability.cooldown > 0) {
-          ability.cooldown -= 0.1; // Reduce cooldown
-          if (ability.cooldown < 0) ability.cooldown = 0;
-          updated = true;
-        }
-      });
-      
-      if (updated) {
-        // Update cooldown visuals
-        const cooldownElements = document.querySelectorAll('.ability-cooldown');
-        abilities.forEach((ability, index) => {
-          if (index < cooldownElements.length) {
-            const cooldownElement = cooldownElements[index];
-            const percentage = ability.cooldown / (ability.cooldownDuration || 1) * 100;
-            cooldownElement.style.height = `${percentage}%`;
-          }
-        });
-        
-        // Update ability states
-        updateManaDisplay();
-      }
-    }, 100);
-    
-    EventSystem.subscribe(GameEvents.WAVE_COMPLETE, () => {
-      resetMana();
-    });
-    
-    EventSystem.subscribe(GameEvents.ENEMY_DEFEATED, (data) => {
-      if (data && typeof data.reward === 'number') {
-        addExperience(data.reward);
-      }
-    });
-  }
-  
-  /**
-   * Helper function to shuffle array
-   * @param {Array} array - Array to shuffle
-   */
-  function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-  }
-  
   // Public API
   return {
     init: init,
     resetMana: resetMana,
     addExperience: addExperience,
-    updateExperienceFromScore: updateExperienceFromScore,
     useAbility: useAbility,
     selectCharacter: selectCharacter,
     getCurrentCharacter: function() { return currentCharacter; },
     getPlayerLevel: function() { return playerLevel; },
-    getMana: function() { return { current: currentMana, max: maxMana }; }
+    getMana: function() { return { current: currentMana, max: maxMana }; },
+    showEffectIndicator: showEffectIndicator,
+    showDamageFlash: showDamageFlash
   };
 })();
+
+// Make sure these helper functions are available globally
+window.showEffectIndicator = function(title, description) {
+  if (AbilitySystem && typeof AbilitySystem.showEffectIndicator === 'function') {
+    AbilitySystem.showEffectIndicator(title, description);
+  }
+};
+
+window.showDamageFlash = function() {
+  if (AbilitySystem && typeof AbilitySystem.showDamageFlash === 'function') {
+    AbilitySystem.showDamageFlash();
+  }
+};
 
 // Make sure the module is available globally
 console.log("Registering AbilitySystem globally");

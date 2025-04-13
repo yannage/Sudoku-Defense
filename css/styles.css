@@ -1144,3 +1144,348 @@ button:active {
   background-color: var(--dirt-color) !important;
   cursor: default;
 }
+
+/**
+ * Character Ability Visual Effects CSS
+ * Add this to your styles.css file or include as a separate stylesheet
+ */
+
+/* === Base Effect Styles === */
+
+/* Effect Indicator (Center Screen Announcement) */
+.effect-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 15px 25px;
+  border-radius: 10px;
+  text-align: center;
+  z-index: 950;
+  pointer-events: none;
+  animation: fade-in-out 2.5s forwards;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+}
+
+.effect-indicator-title {
+  font-size: 24px;
+  margin-bottom: 5px;
+  color: gold;
+  font-weight: bold;
+}
+
+.effect-indicator-desc {
+  font-size: 16px;
+}
+
+/* General Purpose Animations */
+@keyframes fade-in-out {
+  0% { opacity: 0; transform: translate(-50%, -70%); }
+  10% { opacity: 1; transform: translate(-50%, -50%); }
+  80% { opacity: 1; transform: translate(-50%, -50%); }
+  100% { opacity: 0; transform: translate(-50%, -30%); }
+}
+
+@keyframes flash {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes highlight-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+@keyframes float-up {
+  0% { transform: translate(-50%, -100%); opacity: 1; }
+  100% { transform: translate(-50%, -200%); opacity: 0; }
+}
+
+@keyframes scale-in-out {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* === Character-Specific Ability Effects === */
+
+/* Strategist - Redirect Path */
+.path-redirect-effect {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(126, 87, 194, 0.1);
+  z-index: 800;
+  pointer-events: none;
+  animation: flash 1s forwards;
+}
+
+.path-cell {
+  animation: path-cell-glow 2s ease-in-out;
+}
+
+@keyframes path-cell-glow {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(1.5); }
+  100% { filter: brightness(1); }
+}
+
+/* Engineer - Power Surge */
+.power-surge-effect {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255, 152, 0, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+  z-index: 800;
+  pointer-events: none;
+  animation: surge-pulse 10s forwards;
+}
+
+.tower.power-surged {
+  animation: tower-power-surge 1s infinite alternate;
+}
+
+@keyframes surge-pulse {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes tower-power-surge {
+  0% { filter: brightness(1) drop-shadow(0 0 3px rgba(255, 152, 0, 0.7)); }
+  100% { filter: brightness(1.3) drop-shadow(0 0 10px rgba(255, 152, 0, 0.9)); }
+}
+
+/* Tactician - Precision Strike */
+.damage-flash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(244, 67, 54, 0.2);
+  z-index: 800;
+  pointer-events: none;
+  animation: flash 0.5s forwards;
+}
+
+.enemy.precision-hit {
+  animation: precision-hit 0.5s;
+}
+
+@keyframes precision-hit {
+  0% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.2); filter: brightness(1.5) sepia(1) hue-rotate(-50deg); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+/* Mystic - Time Warp */
+.time-warp-effect {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(156, 39, 176, 0.1);
+  z-index: 800;
+  pointer-events: none;
+  animation: time-warp-pulse 8s forwards;
+}
+
+.enemy.time-warped {
+  filter: sepia(0.3) hue-rotate(220deg) !important;
+  transition: all 0.3s !important;
+}
+
+@keyframes time-warp-pulse {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Arithmetician - Number Insight */
+.ability-highlight {
+  animation: highlight-pulse 1s infinite;
+}
+
+.number-insight-text {
+  position: absolute;
+  color: rgba(76, 175, 80, 1);
+  font-weight: bold;
+  font-size: 16px;
+  text-shadow: 0 0 5px white;
+  z-index: 900;
+  pointer-events: none;
+  animation: float-up 1.5s forwards;
+}
+
+/* Architect - Fortify Grid */
+.tower.fortified {
+  animation: fortify-pulse 1.5s;
+}
+
+.fortify-indicator {
+  position: absolute;
+  color: rgb(121, 85, 72);
+  font-weight: bold;
+  font-size: 16px;
+  text-shadow: 0 0 5px rgba(121, 85, 72, 0.5);
+  z-index: 900;
+  pointer-events: none;
+  animation: float-up 1.5s forwards;
+}
+
+@keyframes fortify-pulse {
+  0% { transform: scale(1); filter: contrast(1); }
+  50% { transform: scale(1.2); filter: contrast(1.5) brightness(1.2); }
+  100% { transform: scale(1); filter: contrast(1); }
+}
+
+/* Oracle - Future Sight */
+.wave-preview {
+  animation: scale-in-out 0.5s;
+}
+
+.oracle-vision-effect {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(63, 81, 181, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+  z-index: 800;
+  pointer-events: none;
+  animation: vision-pulse 2s forwards;
+}
+
+@keyframes vision-pulse {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Alchemist - Transmutation */
+.tower.transmuting {
+  animation: transmute 1s;
+}
+
+@keyframes transmute {
+  0% { transform: scale(1); filter: hue-rotate(0deg); }
+  50% { transform: scale(1.2); filter: hue-rotate(180deg) brightness(1.5); }
+  100% { transform: scale(1); filter: hue-rotate(0deg); }
+}
+
+/* Tinkerer - Rapid Deployment */
+.temporary-tower {
+  animation: temporary-pulse 1.5s infinite !important;
+  position: relative;
+}
+
+.temporary-tower::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px dashed rgba(96, 125, 139, 0.8);
+  border-radius: 4px;
+  animation: rotate 10s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes temporary-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(96, 125, 139, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(96, 125, 139, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(96, 125, 139, 0); }
+}
+
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Chronomancer - Time Freeze */
+.freeze-overlay {
+  background-color: rgba(135, 206, 250, 0.2);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 800;
+  pointer-events: none;
+  animation: freeze-pulse 5s forwards;
+}
+
+.frozen {
+  filter: brightness(1.5) sepia(0.5) hue-rotate(180deg) !important;
+  animation: freeze-pulse 1.5s infinite !important;
+}
+
+@keyframes freeze-pulse {
+  0% { opacity: 0; }
+  5% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes freeze-pulse {
+  0% { filter: brightness(1.5) sepia(0.5) hue-rotate(180deg); }
+  50% { filter: brightness(1.7) sepia(0.7) hue-rotate(200deg); }
+  100% { filter: brightness(1.5) sepia(0.5) hue-rotate(180deg); }
+}
+
+/* === Mobile Adjustments === */
+@media (max-width: 768px) {
+  .effect-indicator {
+    padding: 10px 20px;
+    max-width: 90%;
+  }
+  
+  .effect-indicator-title {
+    font-size: 18px;
+  }
+  
+  .effect-indicator-desc {
+    font-size: 14px;
+  }
+  
+  .wave-preview {
+    max-width: 95%;
+  }
+}
+
+/* === Animation Optimizations === */
+@media (prefers-reduced-motion: reduce) {
+  .effect-indicator,
+  .ability-highlight,
+  .tower-power-surge,
+  .temporary-pulse,
+  .freeze-pulse,
+  .damage-flash,
+  .freeze-overlay,
+  .power-surge-effect,
+  .time-warp-effect,
+  .path-redirect-effect {
+    animation-duration: 0.5s !important;
+    transition-duration: 0.5s !important;
+  }
+  
+  .enemy.time-warped,
+  .enemy.frozen,
+  .enemy.precision-hit {
+    transition: none !important;
+    animation: none !important;
+    filter: brightness(0.8) !important;
+  }
+}
