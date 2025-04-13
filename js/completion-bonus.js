@@ -1138,72 +1138,26 @@ function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
   // Get path cells to exclude from animation
   const pathCells = window.BoardManager?.getPathCells?.() || new Set();
   let validCells = [];
-  let centerCell = null;
-  
-  // Different behavior based on unit type
-  if (unitType === 'row') {
-    // Get all cells in the row
-    const cells = document.querySelectorAll(`.sudoku-cell[data-row="${unitIndex}"]`);
-    
-    // Extract valid cells (non-path cells)
-    cells.forEach(cell => {
-      const col = parseInt(cell.getAttribute('data-col'));
-      if (!pathCells.has(`${unitIndex},${col}`)) {
-        validCells.push({ cell, index: col });
-      }
-    });
-    
-    // Sort cells by column index for left-to-right wave
-    validCells.sort((a, b) => a.index - b.index);
-    
-  } else if (unitType === 'column') {
-    // Get all cells in the column
-    const cells = document.querySelectorAll(`.sudoku-cell[data-col="${unitIndex}"]`);
-    
-    // Extract valid cells (non-path cells)
-    cells.forEach(cell => {
-      const row = parseInt(cell.getAttribute('data-row'));
-      if (!pathCells.has(`${row},${unitIndex}`)) {
-        validCells.push({ cell, index: row });
-      }
-    });
-    
-    // Sort cells by row index for top-to-bottom wave
-    validCells.sort((a, b) => a.index - b.index);
-    
-  } else if (unitType === 'grid') {
-    // Parse grid key to get the starting row and column
-    const [gridRow, gridCol] = unitIndex.split('-').map(Number);
-    const startRow = gridRow * 3;
-    const startCol = gridCol * 3;
-    
-    // Collect all valid cells in the grid
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 3; c++) {
-        const row = startRow + r;
-        const col = startCol + c;
-        
-        // Skip path cells
-        if (pathCells.has(`${row},${col}`)) continue;
-        
-        const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-        if (cell) {
-          // Use spiral order for grid animation
-          const spiralIndex = getSpiralIndex(r, c, 3, 3);
-          validCells.push({ cell, index: spiralIndex });
-        }
-      }
-    }
-    
-    // Sort cells by spiral index for spiral wave
-    validCells.sort((a, b) => a.index - b.index);
-  }
-  
-  // If no valid cells were found, return
-  if (validCells.length === 0) return;
-  
-  // Choose a center cell for the message (middle cell in the sequence)
-  centerCell = validCells[Math.floor(validCells.length / 2)].cell;
+let centerCell = null;
+
+// Get playable cells from BoardManager
+const playableCells = BoardManager.getPlayableCellsInUnit(unitType, unitIndex);
+
+// Map playable cells to DOM elements and sort
+validCells = playableCells.map(([row, col]) => {
+  const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+  let index;
+  if (unitType === 'row') index = col;
+  else if (unitType === 'column') index = row;
+  else if (unitType === 'grid') index = getSpiralIndex(row % 3, col % 3, 3, 3);
+  return { cell, index };
+}).filter(item => item.cell);
+
+// Sort cells in wave order
+validCells.sort((a, b) => a.index - b.index);
+
+// Choose center cell
+centerCell = validCells[Math.floor(validCells.length / 2)]?.cell;
   
   // Add initial flash to all cells
   validCells.forEach(({ cell }) => {

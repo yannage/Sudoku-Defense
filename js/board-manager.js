@@ -121,6 +121,40 @@ const BoardManager = (function() {
         return null; // No empty cells
     }
     
+    function getPlayableCellsInUnit(unitType, unitIndex) {
+  const cells = [];
+  
+  if (unitType === 'row') {
+    for (let col = 0; col < 9; col++) {
+      if (!pathCells.has(`${unitIndex},${col}`)) {
+        cells.push([unitIndex, col]);
+      }
+    }
+  } else if (unitType === 'column') {
+    for (let row = 0; row < 9; row++) {
+      if (!pathCells.has(`${row},${unitIndex}`)) {
+        cells.push([row, unitIndex]);
+      }
+    }
+  } else if (unitType === 'grid') {
+    const [gridRow, gridCol] = unitIndex.split('-').map(Number);
+    const startRow = gridRow * 3;
+    const startCol = gridCol * 3;
+    
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        const row = startRow + i;
+        const col = startCol + j;
+        if (!pathCells.has(`${row},${col}`)) {
+          cells.push([row, col]);
+        }
+      }
+    }
+  }
+  
+  return cells;
+}
+    
     /**
      * Solve the Sudoku grid using backtracking
      * @param {number[][]} grid - The Sudoku grid to solve
@@ -1442,6 +1476,7 @@ function toggleDisplayMode(showNumbers) {
   getPossibleValues,
   checkUnitCompletion,
   isComplete,
+  getPlayableCellsInUnit,
   getCompletionStatus,
   fixBoardDiscrepancies,
   // ADD THIS LINE:
