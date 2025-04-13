@@ -840,32 +840,369 @@ if (content) {
     }
     
     // Apply bonus effects for completed units
-    function applyCompletionBonus(unitType, unitIndex) {
-        // Implementation depends on your game mechanics
-        // This is a placeholder that can be customized
-        
-        let bonusAmount = 50; // Base bonus
-        
-        // Different bonus amounts based on unit type
-        if (unitType === 'row') {
-            bonusAmount = 50;
-        } else if (unitType === 'column') {
-            bonusAmount = 75;
-        } else if (unitType === 'grid') {
-            bonusAmount = 100;
+function applyCompletionBonus(unitType, unitIndex) {
+  let bonusAmount = 50; // Base bonus
+  
+  // Different bonus amounts based on unit type
+  if (unitType === 'row') {
+    bonusAmount = 50;
+  } else if (unitType === 'column') {
+    bonusAmount = 75;
+  } else if (unitType === 'grid') {
+    bonusAmount = 100;
+  }
+  
+  // Add currency and score
+  if (window.PlayerModule) {
+    PlayerModule.addCurrency(bonusAmount);
+    PlayerModule.addScore(bonusAmount * 2);
+    
+    // Show message
+    EventSystem.publish(GameEvents.STATUS_MESSAGE,
+      `${unitType.charAt(0).toUpperCase() + unitType.slice(1)} ${unitIndex} completed! Bonus: ${bonusAmount} currency and ${bonusAmount * 2} points!`);
+  }
+  // Play completion animation based on unit type
+if (unitType === 'row') {
+  animateRowCompletion(unitIndex, bonusAmount);
+} else if (unitType === 'column') {
+  animateColumnCompletion(unitIndex, bonusAmount);
+} else if (unitType === 'grid') {
+  animateGridCompletion(unitIndex, bonusAmount);
+}
+}
+
+/**
+ * Add this to your completion-bonus.js file to add lightweight animations
+ * for row, column, and grid completions
+ */
+
+// === ADD THESE FUNCTIONS INSIDE YOUR MAIN IIFE ===
+
+// Add CSS styles for unit completion animations
+function addCompletionAnimationStyles() {
+    if (document.getElementById('completion-animation-styles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'completion-animation-styles';
+    style.textContent = `
+        /* Completion animation styles */
+        .cell-completion-glow {
+            animation: cell-glow 1.2s ease-in-out;
+            z-index: 5;
         }
         
-        // Add currency and score
-        if (window.PlayerModule) {
-            PlayerModule.addCurrency(bonusAmount);
-            PlayerModule.addScore(bonusAmount * 2);
-            
-            // Show message
-            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-                `${unitType.charAt(0).toUpperCase() + unitType.slice(1)} ${unitIndex} completed! Bonus: ${bonusAmount} currency and ${bonusAmount * 2} points!`);
+        @keyframes cell-glow {
+            0% { box-shadow: inset 0 0 5px rgba(255, 215, 0, 0.2); }
+            50% { box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.8); }
+            100% { box-shadow: inset 0 0 5px rgba(255, 215, 0, 0.2); }
+        }
+        
+        .celebration-sparkle {
+            position: absolute;
+            color: gold;
+            font-size: 16px;
+            pointer-events: none;
+            z-index: 31;
+            animation: sparkle-float 1s forwards ease-out;
+        }
+        
+        @keyframes sparkle-float {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(1) rotate(var(--rot)); opacity: 0; }
+        }
+        
+        .completion-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 215, 0, 0.15);
+            pointer-events: none;
+            z-index: 10;
+            animation: flash-fade 0.7s forwards ease-out;
+        }
+        
+        @keyframes flash-fade {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
+        .completion-message {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 100;
+            animation: message-float 1.5s forwards ease-out;
+            white-space: nowrap;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        @keyframes message-float {
+            0% { transform: translate(-50%, 0); opacity: 0; }
+            20% { transform: translate(-50%, -10px); opacity: 1; }
+            80% { transform: translate(-50%, -20px); opacity: 1; }
+            100% { transform: translate(-50%, -30px); opacity: 0; }
+        }
+    `;
+    
+    document.head.appendChild(style);
+}
+
+// Create sparkle effects
+function createSparkles(cell) {
+    const rect = cell.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    // Sparkle emojis
+    const sparkles = ['✨', '⭐', '🌟', '💫'];
+    
+    // Create 4-5 sparkles
+    for (let i = 0; i < 4 + Math.floor(Math.random() * 2); i++) {
+        const sparkle = document.createElement('div');
+        sparkle.className = 'celebration-sparkle';
+        sparkle.textContent = sparkles[i % sparkles.length];
+        
+        // Random direction
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 20 + Math.random() * 40;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        const rot = (Math.random() - 0.5) * 180;
+        
+        sparkle.style.setProperty('--tx', `${tx}px`);
+        sparkle.style.setProperty('--ty', `${ty}px`);
+        sparkle.style.setProperty('--rot', `${rot}deg`);
+        
+        sparkle.style.left = `${centerX}px`;
+        sparkle.style.top = `${centerY}px`;
+        
+        document.body.appendChild(sparkle);
+        
+        // Remove after animation completes
+        setTimeout(() => {
+            sparkle.remove();
+        }, 1000);
+    }
+}
+
+// Show completion message
+function showCompletionMessage(cell, text, bonusAmount) {
+    const rect = cell.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top - 5;
+    
+    const message = document.createElement('div');
+    message.className = 'completion-message';
+    message.innerHTML = `${text}<br>+${bonusAmount} 💰`;
+    message.style.left = `${centerX}px`;
+    message.style.top = `${centerY}px`;
+    
+    document.body.appendChild(message);
+    
+    // Remove after animation
+    setTimeout(() => {
+        message.remove();
+    }, 1500);
+}
+
+// Add flash overlay to cell
+function addFlashOverlay(cell) {
+    const flash = document.createElement('div');
+    flash.className = 'completion-flash';
+    cell.appendChild(flash);
+    
+    // Remove after animation
+    setTimeout(() => {
+        flash.remove();
+    }, 700);
+}
+
+// Play completion sound
+function playCompletionSound() {
+    // Only play one sound at a time
+    if (window._playingCompletionSound) return;
+    
+    // Create sound if it doesn't exist
+    if (!window._completionSound) {
+        try {
+            const sound = new Audio();
+            // Short success sound encoded as base64
+            sound.src = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAkJCQkJCQkJCQkJCQkJCQwMDAwMDAwMDAwMDAwMDAwMD4+Pj4+Pj4+Pj4+Pj4+Pj4//////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAQAAAAAAAAAAbBEtBs8AAAAAAAAAAAAAAAAAAAAAP/jOMAAAAAAAAAAAABJbmZvAAAADwAAAAQAAAMgAICAgICAgICAgICAgICAgMDAwMDAwMDAwMDAwMDAwMD////////////////AwMDAwMDAwMDAwMDAwMDAwP/jOMAAAAAAAAAAAABJbmZvAAAADwAAAAQAAAj0AEBAQEBAQEBAQEBAQEBAQICAgICAgICAgICAgICAgMDAwMDAwMDAwMDAwMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAABAAAAABAAACAAARERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERER/+MYxAAAAANIAAAAAExBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/jKMQAAAP5sAAAAACpuUmVkIFdhdmUgWGZlcgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MYxAAAAANIAAAAAAAAAAAAAAAAAAAAAAAAAP/jKMQAAAP5sAAAAABBibkxpdmUgRW5jb2RlcgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/zGMQAAAAAAAAAA/////////////////////////////////jKMQAAAQ5sAAAAACpodHRwOi8vd3d3LmZyZWVzcGVlY2guaWUAAAAA////////////////////////////////////////8xDEAAAAANIAAw==";
+            sound.volume = 0.4;
+            window._completionSound = sound;
+        } catch (e) {
+            console.error("Could not create completion sound:", e);
+            return;
         }
     }
     
+    // Play the sound
+    try {
+        window._playingCompletionSound = true;
+        window._completionSound.currentTime = 0;
+        window._completionSound.play()
+            .then(() => {
+                setTimeout(() => {
+                    window._playingCompletionSound = false;
+                }, 300);
+            })
+            .catch(e => {
+                window._playingCompletionSound = false;
+            });
+    } catch (e) {
+        window._playingCompletionSound = false;
+    }
+}
+
+// Animate row completion
+function animateRowCompletion(rowIndex, bonusAmount) {
+    const cells = document.querySelectorAll(`.sudoku-cell[data-row="${rowIndex}"]`);
+    const pathCells = window.BoardManager?.getPathCells?.() || new Set();
+    
+    // Choose a center cell for the message
+    let centerCell = null;
+    let validCells = [];
+    
+    cells.forEach(cell => {
+        const col = parseInt(cell.getAttribute('data-col'));
+        
+        // Skip path cells
+        if (pathCells.has(`${rowIndex},${col}`)) return;
+        
+        validCells.push(cell);
+        
+        // Apply glow effect
+        cell.classList.add('cell-completion-glow');
+        
+        // Add flash overlay
+        addFlashOverlay(cell);
+        
+        // Remove class after animation
+        setTimeout(() => {
+            cell.classList.remove('cell-completion-glow');
+        }, 1200);
+    });
+    
+    // Select a random cell for the message and sparkles
+    if (validCells.length > 0) {
+        centerCell = validCells[Math.floor(validCells.length / 2)];
+        createSparkles(centerCell);
+        showCompletionMessage(centerCell, "Row Complete!", bonusAmount);
+    }
+    
+    // Play sound
+    playCompletionSound();
+}
+
+// Animate column completion
+function animateColumnCompletion(colIndex, bonusAmount) {
+    const cells = document.querySelectorAll(`.sudoku-cell[data-col="${colIndex}"]`);
+    const pathCells = window.BoardManager?.getPathCells?.() || new Set();
+    
+    // Choose a center cell for the message
+    let centerCell = null;
+    let validCells = [];
+    
+    cells.forEach(cell => {
+        const row = parseInt(cell.getAttribute('data-row'));
+        
+        // Skip path cells
+        if (pathCells.has(`${row},${colIndex}`)) return;
+        
+        validCells.push(cell);
+        
+        // Apply glow effect
+        cell.classList.add('cell-completion-glow');
+        
+        // Add flash overlay
+        addFlashOverlay(cell);
+        
+        // Remove class after animation
+        setTimeout(() => {
+            cell.classList.remove('cell-completion-glow');
+        }, 1200);
+    });
+    
+    // Select a random cell for the message and sparkles
+    if (validCells.length > 0) {
+        centerCell = validCells[Math.floor(validCells.length / 2)];
+        createSparkles(centerCell);
+        showCompletionMessage(centerCell, "Column Complete!", bonusAmount);
+    }
+    
+    // Play sound
+    playCompletionSound();
+}
+
+// Animate grid completion
+function animateGridCompletion(gridKey, bonusAmount) {
+    const [gridRow, gridCol] = gridKey.split('-').map(Number);
+    const startRow = gridRow * 3;
+    const startCol = gridCol * 3;
+    const pathCells = window.BoardManager?.getPathCells?.() || new Set();
+    
+    let validCells = [];
+    
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+            const row = startRow + r;
+            const col = startCol + c;
+            
+            // Skip path cells
+            if (pathCells.has(`${row},${col}`)) continue;
+            
+            const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+            if (cell) {
+                validCells.push(cell);
+                
+                // Apply glow effect
+                cell.classList.add('cell-completion-glow');
+                
+                // Add flash overlay
+                addFlashOverlay(cell);
+                
+                // Remove class after animation
+                setTimeout(() => {
+                    cell.classList.remove('cell-completion-glow');
+                }, 1200);
+            }
+        }
+    }
+    
+    // Add sparkles to random cells
+    if (validCells.length > 0) {
+        // Choose a center cell for the message
+        const centerCell = validCells[Math.floor(validCells.length / 2)];
+        createSparkles(centerCell);
+        showCompletionMessage(centerCell, "Grid Complete!", bonusAmount);
+        
+        // Create additional sparkles on other cells for a more dramatic effect
+        for (let i = 0; i < Math.min(3, validCells.length); i++) {
+            const randomIndex = Math.floor(Math.random() * validCells.length);
+            if (validCells[randomIndex] !== centerCell) {
+                setTimeout(() => {
+                    createSparkles(validCells[randomIndex]);
+                }, 100 + Math.random() * 300);
+            }
+        }
+    }
+    
+    // Play sound
+    playCompletionSound();
+}
+
+// === MODIFY YOUR applyCompletionBonus FUNCTION ===
+// Replace your current applyCompletionBonus with this version:
+
+
     // Apply bonus effects to tower attacks
     function applyEffects(tower, enemy, basePoints, baseCurrency) {
         // Get the completion status from BoardManager
@@ -980,25 +1317,28 @@ if (content) {
     
     // Initialize
     function init() {
-        console.log("Initializing direct celebration system");
-        
-        // Reset celebration flag
-        hasCelebrated = false;
-        
-        // Add styles
-        addStyles();
-        
-        // Add buttons after DOM is loaded
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                addButtons();
-                hookEvents();
-            });
-        } else {
-            addButtons();
-            hookEvents();
-        }
-    }
+  console.log("Initializing direct celebration system");
+  
+  // Reset celebration flag
+  hasCelebrated = false;
+  
+  // Add styles
+  addStyles();
+  
+  // Add completion animation styles
+  addCompletionAnimationStyles(); // Add this line
+  
+  // Add buttons after DOM is loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      addButtons();
+      hookEvents();
+    });
+  } else {
+    addButtons();
+    hookEvents();
+  }
+}
     
     // Make functions globally available
     window.CompletionBonusModule = {
