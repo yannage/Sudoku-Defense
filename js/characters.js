@@ -823,67 +823,7 @@ const characters = {
     }
   }
 },
-// doesn't currently work 
-/*
-analyst: {
-  name: "Analyst",
-  description: "Highlights all valid possibilities in a chosen 3x3 grid.",
-  icon: "📊",
-  color: "#03a9f4",
-  baseMaxMana: 9,
-  startingMana: 5,
-  uniqueAbility: {
-    id: "scan_possibilities",
-    name: "Scan Possibilities",
-    description: "Highlights legal number options for each empty cell in a 3x3 grid you click.",
-    manaCost: 5,
-    icon: "🔎",
-    cooldown: 0,
-    execute: function() {
-      EventSystem.publish(GameEvents.STATUS_MESSAGE, "Click a 3x3 box to scan possibilities");
-      
-      const onClick = (e) => {
-        const cell = e.target.closest('.sudoku-cell');
-        if (!cell) return;
-        
-        const row = parseInt(cell.dataset.row);
-        const col = parseInt(cell.dataset.col);
-        const startRow = Math.floor(row / 3) * 3;
-        const startCol = Math.floor(col / 3) * 3;
-        
-        const boardManager = window.BoardManager || window.SudokuModule;
-        const board = boardManager.getBoard?.();
-        const solution = boardManager.getSolution?.();
-        
-        if (!board || !solution) return;
-        
-        for (let r = startRow; r < startRow + 3; r++) {
-          for (let c = startCol; c < startCol + 3; c++) {
-            if (board[r][c] === 0) {
-              const possibilities = boardManager.getPossibleValues?.(r, c);
-              const cellEl = document.querySelector(`.sudoku-cell[data-row="${r}"][data-col="${c}"]`);
-              if (cellEl && possibilities) {
-                cellEl.classList.add('ability-highlight');
-                cellEl.title = `Possible: ${possibilities.join(', ')}`;
-                setTimeout(() => {
-                  cellEl.classList.remove('ability-highlight');
-                  cellEl.title = '';
-                }, 6000);
-              }
-            }
-          }
-        }
-        
-        document.removeEventListener('click', onClick, true);
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Possibilities highlighted!");
-      };
-      
-      document.addEventListener('click', onClick, true);
-      return true;
-    }
-  }
-},
-*/
+
 solver: {
   name: "Solver",
   description: "Applies logic to deduce safe placements without committing.",
