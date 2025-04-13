@@ -13,14 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    // Add script tags for our new modules
-    function loadScript(src, callback) {
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = src;
-        script.onload = callback;
-        document.head.appendChild(script);
-    }
+
     
     // First, add the SaveSystem module
     const saveSystemScript = document.createElement('script');

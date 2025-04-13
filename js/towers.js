@@ -211,7 +211,7 @@ function createTower(type, row, col, options = {}) {
   }
   
   // Check if the cell is fixed or on a path
-  const boardManager = window.BoardManager || window.SudokuModule;
+  const boardManager = window.BoardManager;
   const fixedCells = boardManager.getFixedCells();
   const pathCells = boardManager.getPathCells();
   
@@ -360,7 +360,7 @@ if (!isCorrect) {
   return tower;
 }
 function manuallyCheckSudokuRules(row, col, value) {
-  const boardManager = window.BoardManager || window.SudokuModule;
+  const boardManager = window.BoardManager;
   const boardData = boardManager.getBoard();
   
   // Check row
@@ -409,7 +409,7 @@ function manuallyCheckSudokuRules(row, col, value) {
   towers = towers.filter(t => t.id !== towerId);
   
   // Remove number from Sudoku grid
-  const boardManager = window.BoardManager || window.SudokuModule;
+  const boardManager = window.BoardManager;
   if (boardManager && typeof boardManager.setCellValue === 'function') {
     boardManager.setCellValue(tower.row, tower.col, 0);
   }
@@ -942,7 +942,7 @@ function boostNearbyTowers(supportTower) {
   // Remove towers
   towersToRemove.forEach(tower => {
     // Clear cell value using BoardManager
-    const boardManager = window.BoardManager || window.SudokuModule;
+    const boardManager = window.BoardManager;
     if (boardManager && typeof boardManager.setCellValue === 'function') {
       boardManager.setCellValue(tower.row, tower.col, 0);
     }

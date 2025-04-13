@@ -64,7 +64,7 @@ const LevelsModule = (function() {
     }
     
     // Get the current path from BoardManager or SudokuModule
-    const boardManager = window.BoardManager || window.SudokuModule;
+    const boardManager = window.BoardManager;
     let currentPath = null;
     
     if (boardManager && typeof boardManager.getPathArray === 'function') {
@@ -183,11 +183,9 @@ function removeGroundArt() {
   }
   
   // Generate a new Sudoku puzzle using BoardManager (or fallback to SudokuModule)
-  if (window.BoardManager && typeof BoardManager.generatePuzzle === 'function') {
-    BoardManager.generatePuzzle();
-  } else if (window.SudokuModule && typeof SudokuModule.generatePuzzle === 'function') {
-    SudokuModule.generatePuzzle();
-  }
+if (window.BoardManager && typeof BoardManager.generatePuzzle === 'function') {
+  BoardManager.generatePuzzle();
+}
   
   EventSystem.publish(GameEvents.UI_UPDATE, {
     level: currentLevel,

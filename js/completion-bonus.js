@@ -816,7 +816,7 @@ if (content) {
     // Directly check unit (row, column, grid) completions using BoardManager
     function checkUnitCompletions() {
         // Use BoardManager with fallback to SudokuModule
-        const boardManager = window.BoardManager || window.SudokuModule;
+        const boardManager = window.BoardManager;
         if (boardManager && typeof boardManager.checkUnitCompletion === 'function') {
             boardManager.checkUnitCompletion();
         }
@@ -830,7 +830,7 @@ if (content) {
         applyCompletionBonus(unitType, unitIndex);
         
         // Check if the entire board is complete
-        const boardManager = window.BoardManager || window.SudokuModule;
+        const boardManager = window.BoardManager;
         if (boardManager && typeof boardManager.isComplete === 'function') {
             if (boardManager.isComplete()) {
                 // Trigger celebration after a short delay
@@ -1243,7 +1243,7 @@ function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
     // Apply bonus effects to tower attacks
     function applyEffects(tower, enemy, basePoints, baseCurrency) {
         // Get the completion status from BoardManager
-        const boardManager = window.BoardManager || window.SudokuModule;
+        const boardManager = window.BoardManager;
         let completionStatus = { rows: [], columns: [], grids: [] };
         
         if (boardManager && typeof boardManager.getCompletionStatus === 'function') {

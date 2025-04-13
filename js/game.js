@@ -507,11 +507,7 @@ function setupUIEventListeners() {
     // Update the board when a new puzzle is generated or path changes
     updateBoard();
   });
-  
-  // If SudokuModule events are still being used elsewhere, forward them
-  EventSystem.subscribe('board:updated', function(data) {
-    updateBoard();
-  });
+
 
 /**
  * Add a debug button to the UI (optional)
@@ -580,7 +576,7 @@ setTimeout(addDebugSolutionButton, 1000);
   console.log("Start Wave button clicked!");
   
   // Check if path data is available
-  const boardManager = window.BoardManager || window.SudokuModule;
+  const boardManager = window.BoardManager;
   if (boardManager && typeof boardManager.getPathArray === 'function') {
     const path = boardManager.getPathArray();
     console.log("Current path data:", path);
@@ -1001,7 +997,7 @@ function applyIncorrectTowerIndicators() {
     
     // Get solution for comparison
     let solution = null;
-    const boardManager = window.BoardManager || window.SudokuModule;
+    const boardManager = window.BoardManager;
     
     if (boardManager && typeof boardManager.getSolution === 'function') {
         solution = boardManager.getSolution();

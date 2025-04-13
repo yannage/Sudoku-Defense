@@ -191,7 +191,7 @@ const characters = {
       icon: "💡",
       cooldown: 0,
       execute: function() {
-        const boardManager = window.BoardManager || window.SudokuModule;
+        const boardManager = window.BoardManager;
         if (!boardManager) return false;
         
         const board = boardManager.getBoard();
@@ -273,7 +273,7 @@ const characters = {
             if (isNaN(towerValue)) return false;
             
             // Check if tower matches solution using BoardManager
-            const boardManager = window.BoardManager || window.SudokuModule;
+            const boardManager = window.BoardManager;
             if (boardManager && typeof boardManager.getSolution === 'function') {
               const solution = boardManager.getSolution();
               return solution[tower.row][tower.col] === towerValue;
@@ -411,7 +411,7 @@ const characters = {
       execute: function() {
         if (window.TowersModule && typeof TowersModule.getTowers === 'function') {
           const towers = TowersModule.getTowers();
-          const boardManager = window.BoardManager || window.SudokuModule;
+          const boardManager = window.BoardManager;
           
           if (!boardManager || typeof boardManager.getSolution !== 'function') return false;
           
@@ -499,7 +499,7 @@ const characters = {
       icon: "⚙️",
       cooldown: 0,
       execute: function() {
-        const boardManager = window.BoardManager || window.SudokuModule;
+        const boardManager = window.BoardManager;
         if (!boardManager) return false;
         
         const board = boardManager.getBoard();
@@ -749,7 +749,7 @@ const characters = {
     icon: "➕",
     cooldown: 0,
     execute: function() {
-      const boardManager = window.BoardManager || window.SudokuModule;
+      const boardManager = window.BoardManager;
       const board = boardManager.getBoard?.();
       const solution = boardManager.getSolution?.();
       
@@ -839,7 +839,7 @@ solver: {
     icon: "💡",
     cooldown: 0,
     execute: function() {
-      const boardManager = window.BoardManager || window.SudokuModule;
+      const boardManager = window.BoardManager;
       const board = boardManager.getBoard?.();
       const solution = boardManager.getSolution?.();
       const path = boardManager.getPathCells?.();

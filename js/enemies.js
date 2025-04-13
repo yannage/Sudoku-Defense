@@ -129,7 +129,7 @@ const EnemiesModule = (function() {
   
   // Get the latest path from BoardManager or SudokuModule
   if (!path || path.length === 0) {
-    const boardManager = window.BoardManager || window.SudokuModule;
+    const boardManager = window.BoardManager;
     if (boardManager && typeof boardManager.getPathArray === 'function') {
       path = boardManager.getPathArray();
       console.log("EnemiesModule: Updated path from BoardManager:", path);
@@ -841,7 +841,7 @@ window.debugEnemyPath = function() {
   console.log("========= ENEMY PATH DEBUG =========");
   console.log("EnemiesModule.path:", EnemiesModule.path);
   
-  const boardManager = window.BoardManager || window.SudokuModule;
+  const boardManager = window.BoardManager;
   if (boardManager && typeof boardManager.getPathArray === 'function') {
     console.log("BoardManager.getPathArray():", boardManager.getPathArray());
   }

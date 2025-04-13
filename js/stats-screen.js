@@ -119,7 +119,7 @@ const StatsScreen = (function() {
   }
   
   // Add Sudoku completion stats
-  const boardManager = window.BoardManager || window.SudokuModule;
+  const boardManager = window.BoardManager;
   if (boardManager && typeof boardManager.getCompletionStatus === 'function') {
     const completionStatus = boardManager.getCompletionStatus();
     stats.completedRows = completionStatus.rows.length;
