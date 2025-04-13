@@ -840,6 +840,7 @@ if (content) {
     }
     
     // Apply bonus effects for completed units
+// Replace the individual animation functions with the unified one
 function applyCompletionBonus(unitType, unitIndex) {
   let bonusAmount = 50; // Base bonus
   
@@ -861,14 +862,9 @@ function applyCompletionBonus(unitType, unitIndex) {
     EventSystem.publish(GameEvents.STATUS_MESSAGE,
       `${unitType.charAt(0).toUpperCase() + unitType.slice(1)} ${unitIndex} completed! Bonus: ${bonusAmount} currency and ${bonusAmount * 2} points!`);
   }
-  // Play completion animation based on unit type
-if (unitType === 'row') {
-  animateRowCompletion(unitIndex, bonusAmount);
-} else if (unitType === 'column') {
-  animateColumnCompletion(unitIndex, bonusAmount);
-} else if (unitType === 'grid') {
-  animateGridCompletion(unitIndex, bonusAmount);
-}
+  
+  // Animate unit completion with unified function
+  animateUnitCompletion(unitType, unitIndex, bonusAmount);
 }
 
 /**
@@ -879,12 +875,13 @@ if (unitType === 'row') {
 // === ADD THESE FUNCTIONS INSIDE YOUR MAIN IIFE ===
 
 // Add CSS styles for unit completion animations
+// Add CSS styles for unit completion animations
 function addCompletionAnimationStyles() {
-    if (document.getElementById('completion-animation-styles')) return;
-    
-    const style = document.createElement('style');
-    style.id = 'completion-animation-styles';
-    style.textContent = `
+  if (document.getElementById('completion-animation-styles')) return;
+  
+  const style = document.createElement('style');
+  style.id = 'completion-animation-styles';
+  style.textContent = `
         /* Completion animation styles */
         .cell-completion-glow {
             animation: cell-glow 1.2s ease-in-out;
@@ -895,6 +892,18 @@ function addCompletionAnimationStyles() {
             0% { box-shadow: inset 0 0 5px rgba(255, 215, 0, 0.2); }
             50% { box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.8); }
             100% { box-shadow: inset 0 0 5px rgba(255, 215, 0, 0.2); }
+        }
+        
+        /* Wave animation for cells */
+        .cell-wave-animation {
+            animation: cell-wave 0.5s ease-in-out;
+            z-index: 5;
+        }
+        
+        @keyframes cell-wave {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); background-color: rgba(255, 215, 0, 0.3); }
+            100% { transform: scale(1); }
         }
         
         .celebration-sparkle {
@@ -951,10 +960,11 @@ function addCompletionAnimationStyles() {
             100% { transform: translate(-50%, -30px); opacity: 0; }
         }
     `;
-    
-    document.head.appendChild(style);
+  
+  document.head.appendChild(style);
 }
 
+// Create sparkle effects
 // Create sparkle effects
 function createSparkles(cell) {
     const rect = cell.getBoundingClientRect();
@@ -1062,6 +1072,171 @@ function playCompletionSound() {
     }
 }
 
+/**
+ * Helper function to get spiral index for grid animations
+ * This creates a spiral pattern starting from the center
+ */
+function getSpiralIndex(row, col, height, width) {
+    // Define spiral directions: right, down, left, up
+    const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+    let dir = 0; // Start going right
+    
+    // Start at center
+    let currRow = Math.floor(height / 2);
+    let currCol = Math.floor(width / 2);
+    
+    // Spiral pattern
+    let steps = 1; // Steps in current direction
+    let stepCount = 0; // Steps taken in current direction
+    let totalSteps = 0; // Total steps taken
+    let cellMap = {}; // Map to store [row, col] -> index
+    
+    // Generate spiral pattern
+    while (totalSteps < height * width) {
+        cellMap[`${currRow},${currCol}`] = totalSteps;
+        totalSteps++;
+        
+        // Move in current direction
+        currRow += directions[dir][0];
+        currCol += directions[dir][1];
+        stepCount++;
+        
+        // Change direction if needed
+        if (stepCount === steps) {
+            stepCount = 0; // Reset step counter
+            dir = (dir + 1) % 4; // Change direction
+            
+            // Increase steps after going left or right (completing half a lap)
+            if (dir === 0 || dir === 2) {
+                steps++;
+            }
+        }
+    }
+    
+    // Return the index for the requested position
+    const key = `${row},${col}`;
+    return cellMap[key] || 0;
+}
+
+/**
+ * Enhanced unit animation function - a single function to handle all unit types
+ * This function creates wave animations for rows, columns, and grids
+ * @param {string} unitType - Type of unit ('row', 'column', or 'grid')
+ * @param {*} unitIndex - Index of the unit (row number, column number, or grid key)
+ * @param {number} bonusAmount - Currency bonus amount for unit completion
+ */
+function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
+  // Get path cells to exclude from animation
+  const pathCells = window.BoardManager?.getPathCells?.() || new Set();
+  let validCells = [];
+  let centerCell = null;
+  
+  // Different behavior based on unit type
+  if (unitType === 'row') {
+    // Get all cells in the row
+    const cells = document.querySelectorAll(`.sudoku-cell[data-row="${unitIndex}"]`);
+    
+    // Extract valid cells (non-path cells)
+    cells.forEach(cell => {
+      const col = parseInt(cell.getAttribute('data-col'));
+      if (!pathCells.has(`${unitIndex},${col}`)) {
+        validCells.push({ cell, index: col });
+      }
+    });
+    
+    // Sort cells by column index for left-to-right wave
+    validCells.sort((a, b) => a.index - b.index);
+    
+  } else if (unitType === 'column') {
+    // Get all cells in the column
+    const cells = document.querySelectorAll(`.sudoku-cell[data-col="${unitIndex}"]`);
+    
+    // Extract valid cells (non-path cells)
+    cells.forEach(cell => {
+      const row = parseInt(cell.getAttribute('data-row'));
+      if (!pathCells.has(`${row},${unitIndex}`)) {
+        validCells.push({ cell, index: row });
+      }
+    });
+    
+    // Sort cells by row index for top-to-bottom wave
+    validCells.sort((a, b) => a.index - b.index);
+    
+  } else if (unitType === 'grid') {
+    // Parse grid key to get the starting row and column
+    const [gridRow, gridCol] = unitIndex.split('-').map(Number);
+    const startRow = gridRow * 3;
+    const startCol = gridCol * 3;
+    
+    // Collect all valid cells in the grid
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const row = startRow + r;
+        const col = startCol + c;
+        
+        // Skip path cells
+        if (pathCells.has(`${row},${col}`)) continue;
+        
+        const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+        if (cell) {
+          // Use spiral order for grid animation
+          const spiralIndex = getSpiralIndex(r, c, 3, 3);
+          validCells.push({ cell, index: spiralIndex });
+        }
+      }
+    }
+    
+    // Sort cells by spiral index for spiral wave
+    validCells.sort((a, b) => a.index - b.index);
+  }
+  
+  // If no valid cells were found, return
+  if (validCells.length === 0) return;
+  
+  // Choose a center cell for the message (middle cell in the sequence)
+  centerCell = validCells[Math.floor(validCells.length / 2)].cell;
+  
+  // Add initial flash to all cells
+  validCells.forEach(({ cell }) => {
+    addFlashOverlay(cell);
+  });
+  
+  // Create wave animation with delay between cells
+  validCells.forEach(({ cell }, i) => {
+    // Apply wave animation with increasing delay
+    setTimeout(() => {
+      // Add the wave animation class
+      cell.classList.add('cell-wave-animation');
+      
+      // Remove the class after animation completes
+      setTimeout(() => {
+        cell.classList.remove('cell-wave-animation');
+      }, 500);
+      
+      // Add glow effect on all cells with slight delay
+      setTimeout(() => {
+        cell.classList.add('cell-completion-glow');
+        
+        // Remove glow after animation
+        setTimeout(() => {
+          cell.classList.remove('cell-completion-glow');
+        }, 1200);
+      }, 300);
+    }, i * 80); // 80ms between each cell in the wave
+  });
+  
+  // Show celebration sparkles on the center cell with a delay
+  setTimeout(() => {
+    createSparkles(centerCell);
+    
+    // Different messages based on unit type
+    const messageText = unitType.charAt(0).toUpperCase() + unitType.slice(1) + " Complete!";
+    showCompletionMessage(centerCell, messageText, bonusAmount);
+  }, 250);
+  
+  // Play completion sound at the start of the animation
+  playCompletionSound();
+}
 // Animate row completion
 function animateRowCompletion(rowIndex, bonusAmount) {
     const cells = document.querySelectorAll(`.sudoku-cell[data-row="${rowIndex}"]`);
@@ -1316,7 +1491,8 @@ function animateGridCompletion(gridKey, bonusAmount) {
     }
     
     // Initialize
-    function init() {
+    // Add this line to your init function
+function init() {
   console.log("Initializing direct celebration system");
   
   // Reset celebration flag
