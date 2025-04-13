@@ -186,7 +186,7 @@ const characters = {
     uniqueAbility: {
       id: "number_insight",
       name: "Number Insight",
-      description: "Reveals 3 correct cells in the puzzle",
+      description: "Reveals 1 correct cell in the puzzle",
       manaCost: 4,
       icon: "💡",
       cooldown: 0,
@@ -218,9 +218,9 @@ const characters = {
           return false;
         }
         
-        // Shuffle and take up to 3 cells
+        // Shuffle and take up to 1 cells
         shuffleArray(emptyCells);
-        const cellsToReveal = emptyCells.slice(0, Math.min(3, emptyCells.length));
+        const cellsToReveal = emptyCells.slice(0, Math.min(1, emptyCells.length));
         
         // Place towers in these cells
         cellsToReveal.forEach(cell => {
@@ -734,32 +734,330 @@ const characters = {
       }
     }
   },
-  
-  hacker: {
-    name: "Hacker",
-    description: "A tech rogue who rewrites tower systems on the fly.",
-    icon: "🖥️",
-    color: "#00bcd4",
-    baseMaxMana: 9,
-    startingMana: 5,
-    uniqueAbility: {
-      id: "system_reboot",
-      name: "System Reboot",
-      description: "Reset all tower cooldowns.",
-      manaCost: 5,
-      icon: "🔁",
-      cooldown: 0,
-      execute: function() {
-        if (TowersModule.getTowers) {
-          const towers = TowersModule.getTowers();
-          towers.forEach(tower => tower.attackCooldown = 0);
-          showEffectIndicator("System Reboot", "All tower cooldowns reset!");
-          return true;
+  completer: {
+  name: "Completer",
+  description: "Snaps close-to-complete sections into place.",
+  icon: "✅",
+  color: "#00c853",
+  baseMaxMana: 10,
+  startingMana: 5,
+  uniqueAbility: {
+    id: "auto_complete_one_missing",
+    name: "Sudoku Finisher",
+    description: "Completes any row, column, or 3x3 box missing only one number.",
+    manaCost: 6,
+    icon: "➕",
+    cooldown: 0,
+    execute: function() {
+      const boardManager = window.BoardManager || window.SudokuModule;
+      const board = boardManager.getBoard?.();
+      const solution = boardManager.getSolution?.();
+      
+      if (!board || !solution) return false;
+      
+      const highlightAndSet = (r, c, value) => {
+        TowersModule?.createTower?.(value, r, c, { free: true });
+        
+        const el = document.querySelector(`.sudoku-cell[data-row="${r}"][data-col="${c}"]`);
+        if (el) {
+          el.classList.add('ability-highlight');
+          setTimeout(() => el.classList.remove('ability-highlight'), 3000);
         }
+      };
+      
+      const completeSet = () => {
+        // Check rows
+        for (let r = 0; r < 9; r++) {
+          const rowVals = board[r];
+          const missing = rowVals.reduce((acc, val, c) => {
+            if (val === 0) acc.push(c);
+            return acc;
+          }, []);
+          if (missing.length === 1) {
+            const col = missing[0];
+            highlightAndSet(r, col, solution[r][col]);
+            return true;
+          }
+        }
+        
+        // Check columns
+        for (let c = 0; c < 9; c++) {
+          const missing = [];
+          for (let r = 0; r < 9; r++) {
+            if (board[r][c] === 0) missing.push(r);
+          }
+          if (missing.length === 1) {
+            const row = missing[0];
+            highlightAndSet(row, c, solution[row][c]);
+            return true;
+          }
+        }
+        
+        // Check boxes
+        for (let boxRow = 0; boxRow < 3; boxRow++) {
+          for (let boxCol = 0; boxCol < 3; boxCol++) {
+            const missing = [];
+            for (let r = boxRow * 3; r < boxRow * 3 + 3; r++) {
+              for (let c = boxCol * 3; c < boxCol * 3 + 3; c++) {
+                if (board[r][c] === 0) missing.push({ r, c });
+              }
+            }
+            if (missing.length === 1) {
+              const { r, c } = missing[0];
+              highlightAndSet(r, c, solution[r][c]);
+              return true;
+            }
+          }
+        }
+        
         return false;
+      };
+      
+      if (completeSet()) {
+        showEffectIndicator("Sudoku Finisher", "Filled in the missing number!");
+        return true;
       }
+      
+      EventSystem.publish(GameEvents.STATUS_MESSAGE, "No nearly complete sets found!");
+      return false;
     }
   }
+},
+// doesn't currently work 
+/*
+analyst: {
+  name: "Analyst",
+  description: "Highlights all valid possibilities in a chosen 3x3 grid.",
+  icon: "📊",
+  color: "#03a9f4",
+  baseMaxMana: 9,
+  startingMana: 5,
+  uniqueAbility: {
+    id: "scan_possibilities",
+    name: "Scan Possibilities",
+    description: "Highlights legal number options for each empty cell in a 3x3 grid you click.",
+    manaCost: 5,
+    icon: "🔎",
+    cooldown: 0,
+    execute: function() {
+      EventSystem.publish(GameEvents.STATUS_MESSAGE, "Click a 3x3 box to scan possibilities");
+      
+      const onClick = (e) => {
+        const cell = e.target.closest('.sudoku-cell');
+        if (!cell) return;
+        
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+        const startRow = Math.floor(row / 3) * 3;
+        const startCol = Math.floor(col / 3) * 3;
+        
+        const boardManager = window.BoardManager || window.SudokuModule;
+        const board = boardManager.getBoard?.();
+        const solution = boardManager.getSolution?.();
+        
+        if (!board || !solution) return;
+        
+        for (let r = startRow; r < startRow + 3; r++) {
+          for (let c = startCol; c < startCol + 3; c++) {
+            if (board[r][c] === 0) {
+              const possibilities = boardManager.getPossibleValues?.(r, c);
+              const cellEl = document.querySelector(`.sudoku-cell[data-row="${r}"][data-col="${c}"]`);
+              if (cellEl && possibilities) {
+                cellEl.classList.add('ability-highlight');
+                cellEl.title = `Possible: ${possibilities.join(', ')}`;
+                setTimeout(() => {
+                  cellEl.classList.remove('ability-highlight');
+                  cellEl.title = '';
+                }, 6000);
+              }
+            }
+          }
+        }
+        
+        document.removeEventListener('click', onClick, true);
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Possibilities highlighted!");
+      };
+      
+      document.addEventListener('click', onClick, true);
+      return true;
+    }
+  }
+},
+*/
+solver: {
+  name: "Solver",
+  description: "Applies logic to deduce safe placements without committing.",
+  icon: "🧠",
+  color: "#4db6ac",
+  baseMaxMana: 9,
+  startingMana: 5,
+  uniqueAbility: {
+    id: "hint_mode",
+    name: "Hint Mode",
+    description: "Temporarily shows 3 suggested correct values in unused cells.",
+    manaCost: 5,
+    icon: "💡",
+    cooldown: 0,
+    execute: function() {
+      const boardManager = window.BoardManager || window.SudokuModule;
+      const board = boardManager.getBoard?.();
+      const solution = boardManager.getSolution?.();
+      const path = boardManager.getPathCells?.();
+      
+      if (!board || !solution || !path) return false;
+      
+      const hints = [];
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (board[r][c] === 0 && !path.has(`${r},${c}`)) {
+            hints.push({ row: r, col: c, value: solution[r][c] });
+          }
+        }
+      }
+      
+      if (hints.length === 0) {
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "No valid hint positions found.");
+        return false;
+      }
+      
+      shuffleArray(hints);
+      const toShow = hints.slice(0, 3);
+      toShow.forEach(cell => {
+        const el = document.querySelector(`.sudoku-cell[data-row="${cell.row}"][data-col="${cell.col}"]`);
+        if (el) {
+          el.textContent = cell.value;
+          el.classList.add('ability-highlight');
+          setTimeout(() => {
+            el.textContent = '';
+            el.classList.remove('ability-highlight');
+          }, 5000);
+        }
+      });
+      
+      showEffectIndicator("Hint Mode", "Hints shown temporarily.");
+      return true;
+    }
+  }
+},
+// doesn't currently work 
+/*
+beastmaster: {
+  name: "Beastmaster",
+  description: "Summons a wild beast that charges down the enemy path.",
+  icon: "🐺",
+  color: "#8d6e63",
+  baseMaxMana: 12,
+  startingMana: 6,
+  uniqueAbility: {
+    id: "summon_beast",
+    name: "Summon Beast",
+    description: "Summons a beast that deals area damage as it charges.",
+    manaCost: 7,
+    icon: "🐾",
+    cooldown: 0,
+    execute: function() {
+  EventSystem.publish(GameEvents.STATUS_MESSAGE, "Click a location to summon a beast");
+  
+  const onClick = (e) => {
+    const cell = e.target.closest('.sudoku-cell');
+    if (!cell) return;
+    
+    document.removeEventListener('click', onClick, true);
+    
+    const row = parseInt(cell.dataset.row);
+    const col = parseInt(cell.dataset.col);
+    
+    const beast = {
+      id: `beast-${Date.now()}`,
+      row,
+      col,
+      type: 'beast',
+      hp: 50,
+      speed: 1,
+      interval: null
+    };
+    
+    const targetTower = TowersModule.getNearestTower?.(row, col);
+    if (!targetTower) {
+      EventSystem.publish(GameEvents.STATUS_MESSAGE, "No tower nearby to attack!");
+      return;
+    }
+    
+    // Add visual beast
+    const beastEl = document.createElement('div');
+    beastEl.id = beast.id;
+    beastEl.className = 'sudoku-enemy';
+    beastEl.textContent = '🐁';
+    beastEl.style.position = 'absolute';
+    beastEl.style.transition = 'top 0.3s, left 0.3s';
+    document.body.appendChild(beastEl);
+    
+    function updatePosition() {
+      const dx = targetTower.col - beast.col;
+      const dy = targetTower.row - beast.row;
+      if (Math.abs(dx) + Math.abs(dy) === 0) {
+        TowersModule.removeTower(targetTower.id);
+        showEffectIndicator("Beast Attack", "A tower was destroyed by the beast!");
+        beastEl.remove();
+        clearInterval(beast.interval);
+        return;
+      }
+      
+      beast.row += Math.sign(dy);
+      beast.col += Math.sign(dx);
+      
+      const cell = document.querySelector(`.sudoku-cell[data-row="${beast.row}"][data-col="${beast.col}"]`);
+      if (cell) {
+        const rect = cell.getBoundingClientRect();
+        beastEl.style.left = `${rect.left}px`;
+        beastEl.style.top = `${rect.top}px`;
+      }
+    }
+    
+    beast.interval = setInterval(updatePosition, 500);
+    updatePosition();
+    showEffectIndicator("Summon Beast", "The beast is hunting...");
+  };
+  
+  document.addEventListener('click', onClick, true);
+  return true;
+}
+  }
+},*/
+pyromancer: {
+  name: "Pyromancer",
+  description: "Unleashes a wave of fire that burns enemies over time.",
+  icon: "🔥",
+  color: "#ef5350",
+  baseMaxMana: 10,
+  startingMana: 4,
+  uniqueAbility: {
+    id: "fire_wave",
+    name: "Fire Wave",
+    description: "Deals burn damage (5/sec for 5s) to all enemies.",
+    manaCost: 6,
+    icon: "♨️",
+    cooldown: 0,
+    execute: function() {
+      if (!EnemiesModule || !EnemiesModule.getEnemies) return false;
+      const enemies = EnemiesModule.getEnemies();
+      let affected = 0;
+      
+      enemies.forEach(enemy => {
+        affected++;
+        const burnInterval = setInterval(() => {
+          EnemiesModule.damageEnemy(enemy.id, 5);
+        }, 1000);
+        setTimeout(() => clearInterval(burnInterval), 5000);
+      });
+      
+      showEffectIndicator("Fire Wave", `Burned ${affected} enemies over time!`);
+      return affected > 0;
+    }
+  }
+},
+
+  
   
   
 };
