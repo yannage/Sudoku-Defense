@@ -814,31 +814,40 @@ if (content) {
     }
     
     // Directly check unit (row, column, grid) completions using BoardManager
-    function checkUnitCompletions() {
-        // Use BoardManager with fallback to SudokuModule
-        const boardManager = window.BoardManager;
-        if (boardManager && typeof boardManager.checkUnitCompletion === 'function') {
-            boardManager.checkUnitCompletion();
-        }
+// Directly check unit (row, column, grid) completions using BoardManager
+function checkUnitCompletions() {
+  // Use BoardManager directly without fallback
+  if (window.BoardManager && typeof BoardManager.checkUnitCompletion === 'function') {
+    BoardManager.checkUnitCompletion();
+    return true;
+  }
+  console.warn("BoardManager.checkUnitCompletion not available");
+  return false;
+}
+
+// Handle completion of a unit (row, column, or box)
+function onUnitCompleted(unitType, unitIndex) {
+  console.log(`Unit completed: ${unitType} ${unitIndex}`);
+  
+  // Apply bonus effects for completed units
+  applyCompletionBonus(unitType, unitIndex);
+  
+  // Check if the entire board is complete using BoardManager directly
+  if (window.BoardManager && typeof BoardManager.isComplete === 'function') {
+    // Get a fresh evaluation of board completion status
+    if (BoardManager.isComplete()) {
+      console.log("BoardManager reports board is complete!");
+      // Trigger celebration after a short delay
+      setTimeout(showCelebration, 500);
+    } else {
+      console.log("Board not yet complete according to BoardManager");
     }
+  } else {
+    console.warn("BoardManager.isComplete not available for checking puzzle completion");
+  }
+}
     
-    // Handle completion of a unit (row, column, or box)
-    function onUnitCompleted(unitType, unitIndex) {
-        console.log(`Unit completed: ${unitType} ${unitIndex}`);
-        
-        // Apply bonus effects for completed units
-        applyCompletionBonus(unitType, unitIndex);
-        
-        // Check if the entire board is complete
-        const boardManager = window.BoardManager;
-        if (boardManager && typeof boardManager.isComplete === 'function') {
-            if (boardManager.isComplete()) {
-                // Trigger celebration after a short delay
-                setTimeout(showCelebration, 500);
-            }
-        }
-    }
-    
+   
     // Apply bonus effects for completed units
 // Replace the individual animation functions with the unified one
 function applyCompletionBonus(unitType, unitIndex) {
@@ -1241,46 +1250,51 @@ function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
 
 
     // Apply bonus effects to tower attacks
-    function applyEffects(tower, enemy, basePoints, baseCurrency) {
-        // Get the completion status from BoardManager
-        const boardManager = window.BoardManager;
-        let completionStatus = { rows: [], columns: [], grids: [] };
-        
-        if (boardManager && typeof boardManager.getCompletionStatus === 'function') {
-            completionStatus = boardManager.getCompletionStatus();
-        }
-        
-        // Default values (no bonuses)
-        let damage = tower.damage;
-        let points = basePoints;
-        let currency = baseCurrency;
-        
-        // Apply row completion bonus
-        if (completionStatus.rows.includes(tower.row)) {
-            damage *= 1.5; // 50% damage bonus
-        }
-        
-        // Apply column completion bonus
-        if (completionStatus.columns.includes(tower.col)) {
-            points *= 2; // Double points
-        }
-        
-        // Apply grid completion bonus
-        const gridRow = Math.floor(tower.row / 3);
-        const gridCol = Math.floor(tower.col / 3);
-        const gridKey = `${gridRow}-${gridCol}`;
-        
-        if (completionStatus.grids.includes(gridKey)) {
-            currency *= 2; // Double currency
-        }
-        
-        return {
-            damage: damage,
-            points: points,
-            currency: currency
-        };
-    }
-    
+// Apply bonus effects to tower attacks
+function applyEffects(tower, enemy, basePoints, baseCurrency) {
+  // Get the completion status directly from BoardManager (no fallback)
+  let completionStatus = { rows: [], columns: [], grids: [] };
+  
+  if (window.BoardManager && typeof BoardManager.getCompletionStatus === 'function') {
+    completionStatus = BoardManager.getCompletionStatus();
+    console.log("Retrieved completion status from BoardManager:", completionStatus);
+  } else {
+    console.warn("BoardManager.getCompletionStatus not available");
+  }
+  
+  // Default values (no bonuses)
+  let damage = tower.damage;
+  let points = basePoints;
+  let currency = baseCurrency;
+  
+  // Apply row completion bonus
+  if (completionStatus.rows.includes(tower.row)) {
+    damage *= 1.5; // 50% damage bonus
+    console.log(`Row ${tower.row} bonus applied: 50% damage boost`);
+  }
+  
+  // Apply column completion bonus
+  if (completionStatus.columns.includes(tower.col)) {
+    points *= 2; // Double points
+    console.log(`Column ${tower.col} bonus applied: 2x points`);
+  }
+  
+  // Apply grid completion bonus
+  const gridRow = Math.floor(tower.row / 3);
+  const gridCol = Math.floor(tower.col / 3);
+  const gridKey = `${gridRow}-${gridCol}`;
+  
+  if (completionStatus.grids.includes(gridKey)) {
+    currency *= 2; // Double currency
+    console.log(`Grid ${gridKey} bonus applied: 2x currency`);
+  }
+  
+  return {
+    damage: damage,
+    points: points,
+    currency: currency
+  };
+}
     // Add UI buttons
     function addButtons() {
         const gameControls = document.getElementById('game-controls');
@@ -1307,50 +1321,59 @@ function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
     }
     
     // Hook into game events
-    function hookEvents() {
-        console.log("Hooking into game events");
-        
-        // Hook into Sudoku complete event
-        if (window.EventSystem) {
-            EventSystem.subscribe(GameEvents.SUDOKU_COMPLETE, function() {
-                console.log("SUDOKU_COMPLETE event received");
-                setTimeout(showCelebration, 300);
-            });
-            
-            // Subscribe to row completion
-            EventSystem.subscribe('row:completed', function(rowIndex) {
-                onUnitCompleted('row', rowIndex);
-            });
-            
-            // Subscribe to column completion
-            EventSystem.subscribe('column:completed', function(colIndex) {
-                onUnitCompleted('column', colIndex);
-            });
-            
-            // Subscribe to grid completion
-            EventSystem.subscribe('grid:completed', function(gridKey) {
-                onUnitCompleted('grid', gridKey);
-            });
+// Hook into game events
+function hookEvents() {
+  console.log("Hooking into game events");
+  
+  // Hook into Sudoku complete event
+  if (window.EventSystem) {
+    EventSystem.subscribe(GameEvents.SUDOKU_COMPLETE, function() {
+      console.log("SUDOKU_COMPLETE event received from BoardManager");
+      setTimeout(showCelebration, 300);
+    });
+    
+    // Subscribe to unit completion events
+    EventSystem.subscribe('row:completed', function(rowIndex) {
+      console.log(`Row completion event from BoardManager: ${rowIndex}`);
+      onUnitCompleted('row', rowIndex);
+    });
+    
+    EventSystem.subscribe('column:completed', function(colIndex) {
+      console.log(`Column completion event from BoardManager: ${colIndex}`);
+      onUnitCompleted('column', colIndex);
+    });
+    
+    EventSystem.subscribe('grid:completed', function(gridKey) {
+      console.log(`Grid completion event from BoardManager: ${gridKey}`);
+      onUnitCompleted('grid', gridKey);
+    });
+  }
+  
+  // Hook into LevelsModule
+  if (window.LevelsModule && typeof LevelsModule.nextLevel === 'function') {
+    console.log("Hooking into LevelsModule.nextLevel");
+    const originalNextLevel = LevelsModule.nextLevel;
+    
+    LevelsModule.nextLevel = function() {
+      console.log("LevelsModule.nextLevel called");
+      
+      // Verify completion with BoardManager before showing celebration
+      if (window.BoardManager && typeof BoardManager.isComplete === 'function') {
+        if (BoardManager.isComplete()) {
+          showCelebration();
         }
-        
-        // Hook into LevelsModule
-        if (window.LevelsModule && typeof LevelsModule.nextLevel === 'function') {
-            console.log("Hooking into LevelsModule.nextLevel");
-            const originalNextLevel = LevelsModule.nextLevel;
-            
-            LevelsModule.nextLevel = function() {
-                console.log("LevelsModule.nextLevel called");
-                
-                // Show celebration before advancing level
-                showCelebration();
-                
-                // Delay level advancement
-                setTimeout(() => {
-                    originalNextLevel.apply(this, arguments);
-                }, 500);
-            };
-        }
-    }
+      } else {
+        // Fallback if BoardManager check not available
+        showCelebration();
+      }
+      
+      // Delay level advancement
+      setTimeout(() => {
+        originalNextLevel.apply(this, arguments);
+      }, 500);
+    };
+  }
+}
     
     // Initialize
     // Add this line to your init function
