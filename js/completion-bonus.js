@@ -826,27 +826,76 @@ function checkUnitCompletions() {
 }
 
 // Handle completion of a unit (row, column, or box)
+// Replace this in completion-bonus.js
+
+/**
+ * Handle completion of a unit (row, column, or box)
+ * Modified to ensure animations always play
+ */
 function onUnitCompleted(unitType, unitIndex) {
-  console.log(`Unit completed: ${unitType} ${unitIndex}`);
+  console.log(`Unit completed handler: ${unitType} ${unitIndex}`);
+  
+  // Prevent duplicate calls by tracking recent completions
+  const key = `${unitType}-${unitIndex}`;
+  const now = Date.now();
+  if (window._recentCompletions && (now - window._recentCompletions[key]) < 3000) {
+    console.log(`Skipping duplicate completion for ${key}`);
+    return;
+  }
+  
+  // Store the completion time
+  if (!window._recentCompletions) window._recentCompletions = {};
+  window._recentCompletions[key] = now;
   
   // Apply bonus effects for completed units
-  applyCompletionBonus(unitType, unitIndex);
+  let bonusAmount = 50; // Base bonus
   
-  // Check if the entire board is complete using BoardManager directly
+  // Different bonus amounts based on unit type
+  if (unitType === 'row') {
+    bonusAmount = 50;
+  } else if (unitType === 'column') {
+    bonusAmount = 75;
+  } else if (unitType === 'grid') {
+    bonusAmount = 100;
+  }
+  
+  // Add currency and score
+  if (window.PlayerModule) {
+    PlayerModule.addCurrency(bonusAmount);
+    PlayerModule.addScore(bonusAmount * 2);
+    
+    // Show message with the specific unit index
+    EventSystem.publish(GameEvents.STATUS_MESSAGE,
+      `${unitType.charAt(0).toUpperCase() + unitType.slice(1)} ${unitIndex} completed! Bonus: ${bonusAmount} currency and ${bonusAmount * 2} points!`);
+  }
+  
+  console.log(`Attempting to animate completion for ${unitType} ${unitIndex}`);
+  
+  // ✅ IMPORTANT: Force UI to update BEFORE running animations
+  if (window.Game && typeof Game.updateBoard === 'function') {
+    Game.updateBoard();
+  }
+  
+  // Add a small delay before animating
+  setTimeout(() => {
+    // Call the animation function directly
+    if (typeof animateUnitCompletion === 'function') {
+      console.log(`Running animateUnitCompletion for ${unitType} ${unitIndex}`);
+      animateUnitCompletion(unitType, unitIndex, bonusAmount);
+    } else {
+      console.error(`animateUnitCompletion function not found when completing ${unitType} ${unitIndex}`);
+    }
+  }, 100);
+  
+  // Check if the entire board is complete
   if (window.BoardManager && typeof BoardManager.isComplete === 'function') {
-    // Get a fresh evaluation of board completion status
     if (BoardManager.isComplete()) {
       console.log("BoardManager reports board is complete!");
       // Trigger celebration after a short delay
-      setTimeout(showCelebration, 500);
-    } else {
-      console.log("Board not yet complete according to BoardManager");
+      setTimeout(showCelebration, 1000);
     }
-  } else {
-    console.warn("BoardManager.isComplete not available for checking puzzle completion");
   }
 }
-    
    
     // Apply bonus effects for completed units
 // Replace the individual animation functions with the unified one
@@ -1134,30 +1183,53 @@ function getSpiralIndex(row, col, height, width) {
  * @param {*} unitIndex - Index of the unit (row number, column number, or grid key)
  * @param {number} bonusAmount - Currency bonus amount for unit completion
  */
+/**
+ * Enhanced unit animation function - a single function to handle all unit types
+ * This function creates wave animations for rows, columns, and grids
+ * @param {string} unitType - Type of unit ('row', 'column', or 'grid')
+ * @param {*} unitIndex - Index of the unit (row number, column number, or grid key)
+ * @param {number} bonusAmount - Currency bonus amount for unit completion
+ */
+/**
+ * Enhanced unit animation function with more reliable UI updates
+ * @param {string} unitType - Type of unit ('row', 'column', or 'grid')
+ * @param {*} unitIndex - Index of the unit (row number, column number, or grid key)
+ * @param {number} bonusAmount - Currency bonus amount for unit completion
+ */
 function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
+  console.log(`Animating completion for ${unitType} ${unitIndex}`);
+  
+  // Force an immediate UI update before any animations
+  if (window.Game && typeof Game.updateBoard === 'function') {
+    Game.updateBoard();
+  }
+  
   // Get path cells to exclude from animation
   const pathCells = window.BoardManager?.getPathCells?.() || new Set();
   let validCells = [];
-let centerCell = null;
-
-// Get playable cells from BoardManager
-const playableCells = BoardManager.getPlayableCellsInUnit(unitType, unitIndex);
-
-// Map playable cells to DOM elements and sort
-validCells = playableCells.map(([row, col]) => {
-  const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-  let index;
-  if (unitType === 'row') index = col;
-  else if (unitType === 'column') index = row;
-  else if (unitType === 'grid') index = getSpiralIndex(row % 3, col % 3, 3, 3);
-  return { cell, index };
-}).filter(item => item.cell);
-
-// Sort cells in wave order
-validCells.sort((a, b) => a.index - b.index);
-
-// Choose center cell
-centerCell = validCells[Math.floor(validCells.length / 2)]?.cell;
+  let centerCell = null;
+  
+  // Get playable cells from BoardManager
+  const playableCells = BoardManager.getPlayableCellsInUnit(unitType, unitIndex);
+  
+  // Map playable cells to DOM elements and sort
+  validCells = playableCells.map(([row, col]) => {
+    const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+    let index;
+    if (unitType === 'row') index = col;
+    else if (unitType === 'column') index = row;
+    else if (unitType === 'grid') index = getSpiralIndex(row % 3, col % 3, 3, 3);
+    return { cell, index, row, col };
+  }).filter(item => item.cell);
+  
+  // Sort cells in wave order
+  validCells.sort((a, b) => a.index - b.index);
+  
+  // Choose center cell
+  centerCell = validCells[Math.floor(validCells.length / 2)]?.cell;
+  
+  // Record values for debugging
+  console.log("Cells to animate:", validCells.map(({ row, col }) => `[${row},${col}]`).join(', '));
   
   // Add initial flash to all cells
   validCells.forEach(({ cell }) => {
@@ -1190,15 +1262,27 @@ centerCell = validCells[Math.floor(validCells.length / 2)]?.cell;
   
   // Show celebration sparkles on the center cell with a delay
   setTimeout(() => {
-    createSparkles(centerCell);
-    
-    // Different messages based on unit type
-    const messageText = unitType.charAt(0).toUpperCase() + unitType.slice(1) + " Complete!";
-    showCompletionMessage(centerCell, messageText, bonusAmount);
+    if (centerCell) {
+      createSparkles(centerCell);
+      
+      // Different messages based on unit type
+      const messageText = unitType.charAt(0).toUpperCase() + unitType.slice(1) + " Complete!";
+      showCompletionMessage(centerCell, messageText, bonusAmount);
+    }
   }, 250);
   
   // Play completion sound at the start of the animation
   playCompletionSound();
+  
+  // Series of forced UI refreshes to ensure animations don't break the display
+  const refreshTimes = [100, 500, 1000, 1500];
+  refreshTimes.forEach(time => {
+    setTimeout(() => {
+      if (window.Game && typeof Game.updateBoard === 'function') {
+        Game.updateBoard();
+      }
+    }, time);
+  });
 }
 
 
@@ -1276,58 +1360,49 @@ function applyEffects(tower, enemy, basePoints, baseCurrency) {
     
     // Hook into game events
 // Hook into game events
+// Add this to the bottom of completion-bonus.js or modify your existing function
+
+/**
+ * Hook into game events with explicit animation calls
+ */
 function hookEvents() {
-  console.log("Hooking into game events");
+  console.log("Hooking into game events with improved animation support");
   
   // Hook into Sudoku complete event
   if (window.EventSystem) {
-    EventSystem.subscribe(GameEvents.SUDOKU_COMPLETE, function() {
-      console.log("SUDOKU_COMPLETE event received from BoardManager");
-      setTimeout(showCelebration, 300);
-    });
-    
     // Subscribe to unit completion events
     EventSystem.subscribe('row:completed', function(rowIndex) {
-      console.log(`Row completion event from BoardManager: ${rowIndex}`);
+      console.log(`Row completion event received: ${rowIndex}`);
       onUnitCompleted('row', rowIndex);
     });
     
     EventSystem.subscribe('column:completed', function(colIndex) {
-      console.log(`Column completion event from BoardManager: ${colIndex}`);
+      console.log(`Column completion event received: ${colIndex}`);
       onUnitCompleted('column', colIndex);
     });
     
     EventSystem.subscribe('grid:completed', function(gridKey) {
-      console.log(`Grid completion event from BoardManager: ${gridKey}`);
+      console.log(`Grid completion event received: ${gridKey}`);
       onUnitCompleted('grid', gridKey);
+    });
+    
+    // Also allow direct handling through GameEvents
+    EventSystem.subscribe(GameEvents.SUDOKU_COMPLETE, function() {
+      console.log("SUDOKU_COMPLETE event received");
+      setTimeout(showCelebration, 1000);
     });
   }
   
-  // Hook into LevelsModule
-  if (window.LevelsModule && typeof LevelsModule.nextLevel === 'function') {
-    console.log("Hooking into LevelsModule.nextLevel");
-    const originalNextLevel = LevelsModule.nextLevel;
-    
-    LevelsModule.nextLevel = function() {
-      console.log("LevelsModule.nextLevel called");
-      
-      // Verify completion with BoardManager before showing celebration
-      if (window.BoardManager && typeof BoardManager.isComplete === 'function') {
-        if (BoardManager.isComplete()) {
-          showCelebration();
-        }
-      } else {
-        // Fallback if BoardManager check not available
-        showCelebration();
-      }
-      
-      // Delay level advancement
-      setTimeout(() => {
-        originalNextLevel.apply(this, arguments);
-      }, 500);
-    };
-  }
+  // Debug function to manually trigger a unit completion
+  window.debugTriggerUnitCompletion = function(type, index) {
+    console.log(`Manually triggering ${type} ${index} completion`);
+    onUnitCompleted(type, index);
+    return "Animation triggered - check console for details";
+  };
 }
+
+// Make sure to call this function after defining it
+setTimeout(hookEvents, 500);
     
     // Initialize
     // Add this line to your init function

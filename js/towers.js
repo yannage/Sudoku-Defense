@@ -187,12 +187,16 @@ const towerTypes = {
  * @param {number} col - Column index on the grid
  * @returns {Object|null} The created tower or null if creation failed
  */
+/**
+ * Create a new tower with improved validation and UI updates
+ * @param {number|string} type - Tower type
+ * @param {number} row - Row index on the grid
+ * @param {number} col - Column index on the grid
+ * @returns {Object|null} The created tower or null if creation failed
+ */
 function createTower(type, row, col, options = {}) {
   const { free = false } = options;
-  console.log("%c TOWER CREATION STARTED ", "background: yellow; color: black;");
-  console.log(`Tower Details:
-    Type: ${type}
-    Position: (${row}, ${col})`);
+  console.log(`Creating tower: Type=${type}, Position=(${row},${col})`);
   
   const typeData = towerTypes[type];
   
@@ -204,14 +208,26 @@ function createTower(type, row, col, options = {}) {
   
   // Check if player has enough currency
   const playerState = PlayerModule.getState();
-  if (playerState.currency < typeData.cost) {
+  if (!free && playerState.currency < typeData.cost) {
     console.log("Not enough currency to build tower");
     EventSystem.publish(GameEvents.STATUS_MESSAGE, `Not enough currency to build this tower! Need ${typeData.cost}`);
     return null;
   }
   
+  // Check if there's already a tower at this position
+  if (getTowerAt(row, col)) {
+    console.log(`Tower already exists at position (${row},${col})`);
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, "There's already a tower in this cell!");
+    return null;
+  }
+  
   // Check if the cell is fixed or on a path
   const boardManager = window.BoardManager;
+  if (!boardManager) {
+    console.error("BoardManager not available");
+    return null;
+  }
+  
   const fixedCells = boardManager.getFixedCells();
   const pathCells = boardManager.getPathCells();
   
@@ -225,64 +241,11 @@ function createTower(type, row, col, options = {}) {
     return null;
   }
   
-  // Check if there's already a tower at this position
-  if (getTowerAt(row, col)) {
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "There's already a tower in this cell!");
-    return null;
-  }
-  
-  // IMPORTANT: Check if the tower value matches the solution value
-  let matchesSolution = false;
-  let solutionValue = null;
-  const numberValue = parseInt(type);
-  
-  // Only check for number towers (not special towers)
-  if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9 && type !== 'special') {
-    if (boardManager && typeof boardManager.getSolution === 'function') {
-      const solution = boardManager.getSolution();
-      if (solution && solution[row] && solution[row][col]) {
-        solutionValue = solution[row][col];
-        matchesSolution = (numberValue === solutionValue);
-        
-        console.log("%c SOLUTION MATCHING CHECK ", "background: green; color: white;", {
-          position: `(${row},${col})`,
-          towerType: numberValue,
-          solutionValue: solutionValue,
-          matchesSolution: matchesSolution
-        });
-      } else {
-        console.warn("Could not retrieve solution value", {
-          solution: !!solution,
-          rowExists: solution && solution[row],
-          cellExists: solution && solution[row] && solution[row][col]
-        });
-      }
-    } else {
-      console.error("No method to get solution!");
-    }
-  }
-  
-  // Check if placement is valid according to Sudoku rules
-  let isCorrect = true;
-  if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9 && type !== 'special') {
-    if (boardManager && typeof boardManager.isValidMove === 'function') {
-      isCorrect = boardManager.isValidMove(row, col, numberValue);
-    } else {
-      // Fallback if isValidMove isn't available: manually check Sudoku rules
-      isCorrect = manuallyCheckSudokuRules(row, col, numberValue);
-    }
-    
-    // Show warning if tower violates Sudoku rules
-    if (!isCorrect) {
-      EventSystem.publish(GameEvents.STATUS_MESSAGE,
-        `Warning: This tower violates Sudoku rules. It will be removed after the wave with 50% refund.`);
-    }
-  }
-  
   // Calculate tower position
   const x = col * cellSize + cellSize / 2;
   const y = row * cellSize + cellSize / 2;
   
+  // Create tower instance
   const tower = {
     id: `tower_${++towerId}`,
     type: type,
@@ -296,66 +259,42 @@ function createTower(type, row, col, options = {}) {
     col: col,
     x: x,
     y: y,
-    target: null,
-    isCorrect: isCorrect,
-    matchesSolution: matchesSolution,
-    solutionValue: solutionValue
+    target: null
   };
   
-  
-if (!free) {
-  if (playerState.currency < typeData.cost) {
-    console.log("Not enough currency to build tower");
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, `Not enough currency to build this tower! Need ${typeData.cost}`);
-    return null;
+  // Spend currency if applicable
+  if (!free) {
+    PlayerModule.spendCurrency(typeData.cost);
   }
   
-  PlayerModule.spendCurrency(typeData.cost);
-}
-  
-
+  // Update the board first via BoardManager
+  if (boardManager && typeof boardManager.setCellValue === 'function') {
+    const numberValue = parseInt(type);
+    if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9) {
+      const success = boardManager.setCellValue(row, col, numberValue);
+      if (!success) {
+        console.error(`Failed to set cell value ${numberValue} at (${row},${col})`);
+        // Refund currency if placement fails
+        if (!free) {
+          PlayerModule.addCurrency(typeData.cost);
+        }
+        return null;
+      }
+    }
+  }
   
   // Add to towers array
   towers.push(tower);
   
-  // For number towers, set the board value in the Sudoku board
-  if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9) {
-    // Use BoardManager to update the board (or fallback to SudokuModule)
-    if (boardManager && typeof boardManager.setCellValue === 'function') {
-      boardManager.setCellValue(row, col, numberValue);
-    } else {
-      // Fallback to direct setting if setCellValue is not available
-      const boardData = boardManager.getBoard();
-      if (boardData && boardData[row]) {
-        boardData[row][col] = numberValue;
-      }
-    }
-    
-// MODIFIED: Explicitly handle incorrect towers
-console.log("%c TOWER INCORRECTNESS CHECK ", "background: red; color: white;", {
-  isCorrect: isCorrect,
-  matchesSolution: matchesSolution
-});
-
-// Only mark as incorrect if it breaks Sudoku rules (not if it just mismatches the solution)
-if (!isCorrect) {
-  incorrectTowers.add(tower.id);
-  console.log(`%c ADDED TOWER TO INCORRECT LIST `, "background: red; color: white;", tower.id);
-}
-  }
-  
   // Publish tower placed event
   EventSystem.publish(GameEvents.TOWER_PLACED, tower);
   
-  // Apply incorrect indicators with more aggressive timing
-  setTimeout(function() {
+  // Force UI update
+  setTimeout(() => {
     if (window.Game && typeof Game.updateBoard === 'function') {
       Game.updateBoard();
     }
-    if (window.Game && typeof Game.applyIncorrectTowerIndicators === 'function') {
-      Game.applyIncorrectTowerIndicators();
-    }
-  }, 100);
+  }, 10);
   
   return tower;
 }

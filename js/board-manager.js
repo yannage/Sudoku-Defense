@@ -869,19 +869,39 @@ function isValidMoveForTest(puzzle, row, col, value) {
       
         return true;
     }
-    function setCellValue(row, col, value) {
+    /**
+ * Set the value of a cell
+ * @param {number} row - Row index
+ * @param {number} col - Column index
+ * @param {number} value - Value to set
+ * @returns {boolean} Whether the move was valid
+ */
+function setCellValue(row, col, value) {
   if (row < 0 || row > 8 || col < 0 || col > 8) return false;
   if (fixedCells[row][col]) return false;
   if (pathCells.has(`${row},${col}`)) return false;
   
+  // Check if there's already a tower at this position
+  // This helps avoid the "double-click" issue
+  if (value > 0 && board[row][col] === value) {
+    console.log(`Cell already contains value ${value} at [${row},${col}]`);
+    return false;
+  }
+  
   if (value === 0) {
     board[row][col] = 0;
+    // Force immediate UI update before status checks
+    forceUIUpdate();
     checkUnitCompletion();
     EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
     return true;
   }
   
+  // Set the value immediately
   board[row][col] = value;
+  
+  // Force immediate UI update - FIRST UPDATE before validations
+  forceUIUpdate();
   
   if (!isValidMove(row, col, value)) {
     EventSystem.publish(GameEvents.SUDOKU_CELL_INVALID, { row, col, value });
@@ -894,18 +914,199 @@ function isValidMoveForTest(puzzle, row, col, value) {
     EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
   }
   
-  checkUnitCompletion();
+  // Check unit completion AFTER UI shows the value
+  setTimeout(() => {
+    checkUnitCompletion();
   
-  if (isComplete()) {
-    EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
-  }
+    if (isComplete()) {
+      EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
+    }
+    
+    // Final UI refresh to ensure completion effects are shown
+    forceUIUpdate();
+  }, 50);
   
-  // ✅ Force a UI refresh
+  return true;
+}
+
+/**
+ * Helper function to force UI updates
+ * This ensures the board visually reflects the current state
+ */
+function forceUIUpdate() {
   if (window.Game && typeof Game.updateBoard === 'function') {
     Game.updateBoard();
   }
+}
+
+/**
+ * Check unit completion with debounce to prevent double notifications
+ */
+let lastUnitCompletionCheck = 0;
+/**
+ * Check for completed units (rows, columns, 3x3 grids)
+ * Improved version with animation timing and UI update management
+ */
+function checkUnitCompletion() {
+  console.log("Checking unit completions");
   
-  return true;
+  // Prevent multiple rapid checks with debounce
+  const now = Date.now();
+  if (now - lastUnitCompletionCheck < 200) {
+    return;
+  }
+  lastUnitCompletionCheck = now;
+  
+  // Track newly completed units for animations
+  const newlyCompletedRows = [];
+  const newlyCompletedColumns = [];
+  const newlyCompletedGrids = [];
+  
+  // Force immediate UI update before checking completions
+  forceUIUpdate();
+  
+  // Check rows
+  for (let row = 0; row < 9; row++) {
+    let numberSet = new Set();
+    let filledCellCount = 0;
+    let fixedCellCount = 0;
+    
+    for (let col = 0; col < 9; col++) {
+      if (pathCells.has(`${row},${col}`)) continue;
+      const val = board[row][col];
+      if (val > 0) {
+        filledCellCount++;
+        numberSet.add(val);
+      }
+      if (fixedCells[row][col]) fixedCellCount++;
+    }
+    
+    const isComplete = filledCellCount === 9 && numberSet.size === 9;
+    const playerContributed = filledCellCount > fixedCellCount;
+    
+    if (isComplete && !completedRows.has(row)) {
+      completedRows.add(row);
+      if (playerContributed) {
+        newlyCompletedRows.push(row);
+      }
+    } else if (!isComplete && completedRows.has(row)) {
+      completedRows.delete(row);
+    }
+  }
+  
+  // Check columns
+  for (let col = 0; col < 9; col++) {
+    let numberSet = new Set();
+    let filledCellCount = 0;
+    let fixedCellCount = 0;
+    
+    for (let row = 0; row < 9; row++) {
+      if (pathCells.has(`${row},${col}`)) continue;
+      const val = board[row][col];
+      if (val > 0) {
+        filledCellCount++;
+        numberSet.add(val);
+      }
+      if (fixedCells[row][col]) fixedCellCount++;
+    }
+    
+    const isComplete = filledCellCount === 9 && numberSet.size === 9;
+    const playerContributed = filledCellCount > fixedCellCount;
+    
+    if (isComplete && !completedColumns.has(col)) {
+      completedColumns.add(col);
+      if (playerContributed) {
+        newlyCompletedColumns.push(col);
+      }
+    } else if (!isComplete && completedColumns.has(col)) {
+      completedColumns.delete(col);
+    }
+  }
+  
+  // Check grids (3x3 boxes)
+  for (let gridRow = 0; gridRow < 3; gridRow++) {
+    for (let gridCol = 0; gridCol < 3; gridCol++) {
+      let numberSet = new Set();
+      let filledCellCount = 0;
+      let fixedCellCount = 0;
+      
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          const row = gridRow * 3 + i;
+          const col = gridCol * 3 + j;
+          if (pathCells.has(`${row},${col}`)) continue;
+          const val = board[row][col];
+          if (val > 0) {
+            filledCellCount++;
+            numberSet.add(val);
+          }
+          if (fixedCells[row][col]) fixedCellCount++;
+        }
+      }
+      
+      const isComplete = filledCellCount === 9 && numberSet.size === 9;
+      const playerContributed = filledCellCount > fixedCellCount;
+      const gridKey = `${gridRow}-${gridCol}`;
+      
+      if (isComplete && !completedGrids.has(gridKey)) {
+        completedGrids.add(gridKey);
+        if (playerContributed) {
+          newlyCompletedGrids.push(gridKey);
+        }
+      } else if (!isComplete && completedGrids.has(gridKey)) {
+        completedGrids.delete(gridKey);
+      }
+    }
+  }
+  
+  // One more UI update before triggering animations
+  forceUIUpdate();
+  
+  // Process newly completed units with proper timing delays
+  if (newlyCompletedRows.length > 0 || newlyCompletedColumns.length > 0 || newlyCompletedGrids.length > 0) {
+    console.log(`New completions found: Rows: ${newlyCompletedRows.length}, Cols: ${newlyCompletedColumns.length}, Grids: ${newlyCompletedGrids.length}`);
+  }
+  
+  // Trigger events and animations for newly completed units
+  newlyCompletedRows.forEach((row, index) => {
+    setTimeout(() => {
+      console.log(`Publishing row:completed for row ${row}`);
+      EventSystem.publish('row:completed', row);
+      
+      if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
+        console.log(`Directly calling CompletionBonusModule.onUnitCompleted for row ${row}`);
+        CompletionBonusModule.onUnitCompleted('row', row);
+      }
+    }, 100 * (index + 1)); // Stagger animations if multiple rows completed
+  });
+  
+  newlyCompletedColumns.forEach((col, index) => {
+    setTimeout(() => {
+      console.log(`Publishing column:completed for column ${col}`);
+      EventSystem.publish('column:completed', col);
+      
+      if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
+        CompletionBonusModule.onUnitCompleted('column', col);
+      }
+    }, 100 * (index + 1) + 200); // Delay columns after rows
+  });
+  
+  newlyCompletedGrids.forEach((grid, index) => {
+    setTimeout(() => {
+      console.log(`Publishing grid:completed for grid ${grid}`);
+      EventSystem.publish('grid:completed', grid);
+      
+      if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
+        CompletionBonusModule.onUnitCompleted('grid', grid);
+      }
+    }, 100 * (index + 1) + 400); // Delay grids after columns
+  });
+  
+  // Schedule final UI update after all animations should be triggered
+  const totalCompletions = newlyCompletedRows.length + newlyCompletedColumns.length + newlyCompletedGrids.length;
+  if (totalCompletions > 0) {
+    setTimeout(forceUIUpdate, 500 + 100 * totalCompletions);
+  }
 }
     /**
      * Set the value of a cell
@@ -952,105 +1153,7 @@ function isValidMoveForTest(puzzle, row, col, value) {
         return possibleValues;
     }
     
-    /**
-     * Check for completed units (rows, columns, 3x3 grids)
-     * Triggers completion bonus events for newly completed units
-     */
-    function checkUnitCompletion() {
-  // Rows
-  for (let row = 0; row < 9; row++) {
-    let numberSet = new Set();
-    let filledCellCount = 0;
-    let fixedCellCount = 0;
     
-    for (let col = 0; col < 9; col++) {
-      if (pathCells.has(`${row},${col}`)) continue;
-      const val = board[row][col];
-      if (val > 0) {
-        filledCellCount++;
-        numberSet.add(val);
-      }
-      if (fixedCells[row][col]) fixedCellCount++;
-    }
-    
-    const isComplete = filledCellCount === 9 && numberSet.size === 9;
-    const playerContributed = filledCellCount > fixedCellCount;
-    
-    if (isComplete && !completedRows.has(row)) {
-      completedRows.add(row);
-      if (playerContributed) {
-        CompletionBonusModule?.onUnitCompleted?.('row', row);
-      }
-    } else if (!isComplete && completedRows.has(row)) {
-      completedRows.delete(row);
-    }
-  }
-  
-  // Columns
-  for (let col = 0; col < 9; col++) {
-    let numberSet = new Set();
-    let filledCellCount = 0;
-    let fixedCellCount = 0;
-    
-    for (let row = 0; row < 9; row++) {
-      if (pathCells.has(`${row},${col}`)) continue;
-      const val = board[row][col];
-      if (val > 0) {
-        filledCellCount++;
-        numberSet.add(val);
-      }
-      if (fixedCells[row][col]) fixedCellCount++;
-    }
-    
-    const isComplete = filledCellCount === 9 && numberSet.size === 9;
-    const playerContributed = filledCellCount > fixedCellCount;
-    
-    if (isComplete && !completedColumns.has(col)) {
-      completedColumns.add(col);
-      if (playerContributed) {
-        CompletionBonusModule?.onUnitCompleted?.('column', col);
-      }
-    } else if (!isComplete && completedColumns.has(col)) {
-      completedColumns.delete(col);
-    }
-  }
-  
-  // Grids
-  for (let gridRow = 0; gridRow < 3; gridRow++) {
-    for (let gridCol = 0; gridCol < 3; gridCol++) {
-      let numberSet = new Set();
-      let filledCellCount = 0;
-      let fixedCellCount = 0;
-      
-      for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-          const row = gridRow * 3 + i;
-          const col = gridCol * 3 + j;
-          if (pathCells.has(`${row},${col}`)) continue;
-          const val = board[row][col];
-          if (val > 0) {
-            filledCellCount++;
-            numberSet.add(val);
-          }
-          if (fixedCells[row][col]) fixedCellCount++;
-        }
-      }
-      
-      const isComplete = filledCellCount === 9 && numberSet.size === 9;
-      const playerContributed = filledCellCount > fixedCellCount;
-      const gridKey = `${gridRow}-${gridCol}`;
-      
-      if (isComplete && !completedGrids.has(gridKey)) {
-        completedGrids.add(gridKey);
-        if (playerContributed) {
-          CompletionBonusModule?.onUnitCompleted?.('grid', gridKey);
-        }
-      } else if (!isComplete && completedGrids.has(gridKey)) {
-        completedGrids.delete(gridKey);
-      }
-    }
-  }
-}
     /**
      * Check if the Sudoku is complete and correct
      * This is the robust implementation from enhanced-sudoku-fix.js
