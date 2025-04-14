@@ -194,6 +194,12 @@ const towerTypes = {
  * @param {number} col - Column index on the grid
  * @returns {Object|null} The created tower or null if creation failed
  */
+/**
+ * Add this code to your TowersModule to fix incorrect tower removal
+ * Place these functions inside the TowersModule IIFE
+ */
+
+// Replace or update your createTower function with this version
 function createTower(type, row, col, options = {}) {
   const { free = false } = options;
   console.log(`Creating tower: Type=${type}, Position=(${row},${col})`);
@@ -262,6 +268,24 @@ function createTower(type, row, col, options = {}) {
     target: null
   };
   
+  // Check if the tower matches the solution
+  const solution = boardManager.getSolution();
+  if (solution && type !== 'special') {
+    const typeValue = parseInt(type);
+    if (!isNaN(typeValue) && solution[row][col] !== typeValue) {
+      // Mark as incorrect
+      tower.isCorrect = false;
+      tower.matchesSolution = false;
+      incorrectTowers.add(tower.id);
+      
+      console.log(`Tower at (${row},${col}) is incorrect. Solution value: ${solution[row][col]}, Tower type: ${type}`);
+      EventSystem.publish(GameEvents.STATUS_MESSAGE, `Warning: This tower does not match the solution and will be removed after the wave.`);
+    } else {
+      tower.isCorrect = true;
+      tower.matchesSolution = true;
+    }
+  }
+  
   // Spend currency if applicable
   if (!free) {
     PlayerModule.spendCurrency(typeData.cost);
@@ -298,6 +322,155 @@ function createTower(type, row, col, options = {}) {
   
   return tower;
 }
+
+// Replace your removeIncorrectTowers function with this version
+function removeIncorrectTowers() {
+  console.log("Checking for incorrect towers to remove...");
+  console.log(`Currently tracking ${incorrectTowers.size} incorrect towers`);
+  
+  if (incorrectTowers.size === 0) {
+    // If the set is empty, let's try to identify towers that don't match the solution
+    const boardManager = window.BoardManager;
+    if (!boardManager || typeof boardManager.getSolution !== 'function') {
+      console.error("Cannot check for incorrect towers: BoardManager not available or getSolution method missing");
+      return;
+    }
+    
+    const solution = boardManager.getSolution();
+    
+    // Search through towers to find any that don't match the solution
+    towers.forEach(tower => {
+      if (tower.type === 'special') return; // Skip special towers
+      
+      const typeValue = parseInt(tower.type);
+      if (!isNaN(typeValue) && solution[tower.row][tower.col] !== typeValue) {
+        console.log(`Found incorrect tower at (${tower.row},${tower.col}): ${tower.type} vs solution ${solution[tower.row][tower.col]}`);
+        incorrectTowers.add(tower.id);
+        
+        // Also mark the tower object itself
+        tower.isCorrect = false;
+        tower.matchesSolution = false;
+      }
+    });
+    
+    console.log(`Identified ${incorrectTowers.size} incorrect towers during cleanup check`);
+  }
+  
+  if (incorrectTowers.size === 0) return;
+  
+  let refundAmount = 0;
+  const towersToRemove = [];
+  
+  // Identify towers to remove and calculate refund
+  towers.forEach(tower => {
+    if (incorrectTowers.has(tower.id)) {
+      console.log(`Removing incorrect tower:
+        Tower ID: ${tower.id}
+        Type: ${tower.type}
+        Position: (${tower.row},${tower.col})`);
+      
+      towersToRemove.push(tower);
+      
+      // Calculate 50% refund
+      const towerData = towerTypes[tower.type];
+      if (towerData) {
+        const baseRefund = Math.floor(towerData.cost * 0.5);
+        const upgradeRefund = Math.floor(baseRefund * (tower.level - 1) * 0.75);
+        refundAmount += baseRefund + upgradeRefund;
+      }
+    }
+  });
+  
+  // Process refund
+  if (refundAmount > 0 && towersToRemove.length > 0) {
+    PlayerModule.addCurrency(refundAmount);
+    EventSystem.publish(GameEvents.STATUS_MESSAGE,
+      `${towersToRemove.length} incorrect towers removed. Refunded ${refundAmount} currency.`);
+  }
+  
+  // Remove towers
+  towersToRemove.forEach(tower => {
+    // Clear cell value using BoardManager
+    const boardManager = window.BoardManager;
+    if (boardManager && typeof boardManager.setCellValue === 'function') {
+      boardManager.setCellValue(tower.row, tower.col, 0);
+    }
+    
+    // Remove tower from array
+    towers = towers.filter(t => t.id !== tower.id);
+    
+    // Publish tower removed event
+    EventSystem.publish(GameEvents.TOWER_REMOVED, tower);
+  });
+  
+  // Clear tracking set
+  incorrectTowers.clear();
+  
+  // Update board display
+  if (window.Game && typeof Game.updateBoard === 'function') {
+    Game.updateBoard();
+  }
+}
+
+// Add this to your initEventListeners function or create it if it doesn't exist
+function initEventListeners() {
+  // Listen for game initialization
+  EventSystem.subscribe(GameEvents.GAME_INIT, function(options) {
+    init(options);
+  });
+  
+  // Listen for new game
+  EventSystem.subscribe(GameEvents.GAME_START, function() {
+    init();
+  });
+  
+  // Listen for wave completion to remove incorrect towers
+  EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
+    console.log("Wave complete - checking for incorrect towers to remove");
+    removeIncorrectTowers();
+  });
+  
+  // Listen for BoardManager initialization
+  if (window.BoardManager) {
+    EventSystem.subscribe('boardmanager:initialized', function() {
+      console.log("TowersModule: BoardManager initialized, synchronizing state");
+      // Fix any discrepancies between towers and board
+      if (typeof BoardManager.fixBoardDiscrepancies === 'function') {
+        BoardManager.fixBoardDiscrepancies();
+      }
+    });
+  }
+}
+
+// Add this to your Event Subscription for better visual indicators
+EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
+  if (tower && tower.id && incorrectTowers.has(tower.id)) {
+    // Add visual indicator for incorrect towers
+    setTimeout(() => {
+      const cellElement = document.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+      if (cellElement) {
+        cellElement.classList.add('incorrect-tower');
+        
+        // Add X mark if not already present
+        if (!cellElement.querySelector('.incorrect-marker')) {
+          const xMark = document.createElement('div');
+          xMark.className = 'incorrect-marker';
+          xMark.textContent = '❌';
+          cellElement.appendChild(xMark);
+        }
+      }
+    }, 100);
+  }
+});
+
+// Make incorrectTowers available for debugging
+window.debugIncorrectTowers = function() {
+  return {
+    count: incorrectTowers.size,
+    ids: Array.from(incorrectTowers),
+    towers: towers.filter(t => incorrectTowers.has(t.id))
+  };
+};
 function manuallyCheckSudokuRules(row, col, value) {
   const boardManager = window.BoardManager;
   const boardData = boardManager.getBoard();
