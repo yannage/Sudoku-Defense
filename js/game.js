@@ -692,10 +692,24 @@ setTimeout(addDebugSolutionButton, 1000);
     }, 5000);
   });
   
-  EventSystem.subscribe(GameEvents.GAME_OVER, function(data) {
+/**
+ * Modify the GameEvents.GAME_OVER subscription in game.js
+ * Replace the existing handler with this one in the setupEventListeners function
+ */
+
+
+EventSystem.subscribe(GameEvents.GAME_OVER, function(data) {
+  console.log("Game over event received with score:", data.score);
+  
+  // Use PhaseManager to handle game over if available
+  if (window.PhaseManager && typeof PhaseManager.transitionTo === 'function') {
+    PhaseManager.transitionTo(PhaseManager.PHASES.GAME_OVER);
+  } else {
+    // Fallback to simple alert if PhaseManager is not available
     alert(`Game Over! Final Score: ${data.score}`);
     reset();
-  });
+  }
+});
   
   EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function(data) {
     // Update the board when a new puzzle is generated or path changes

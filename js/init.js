@@ -362,3 +362,18 @@ setTimeout(() => {
   }
 }, 1000);
 });
+
+/**
+ * Add this code to the end of your init.js file, before the final closing brace
+ * This initializes the phase manager and fixes the game flow
+ */
+
+// Initialize the Phase Manager 
+setTimeout(function() {
+  if (window.PhaseManager && typeof PhaseManager.init === 'function') {
+    console.log("Initializing Phase Manager from init.js");
+    PhaseManager.init();
+  } else {
+    console.warn("PhaseManager not found, structured game flow will not be available");
+  }
+}, 800); // Initialize after other systems

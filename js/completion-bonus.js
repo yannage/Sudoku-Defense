@@ -565,43 +565,43 @@ let hasCelebrated = false;
   }
   
   // Reset game and prompt for new character
-  function resetGameAfterCelebration() {
-    closeCelebration();
-    
-    // Reset hasCelebrated flag to allow future celebrations
-    hasCelebrated = false;
-    
-    console.log("Completely restarting game after celebration");
-    
-    // Clear any stored character
+  /**
+ * Updates to completion-bonus.js to integrate with PhaseManager
+ * Find these functions in your completion-bonus.js file and modify them
+ */
+
+// Update this function to work with PhaseManager
+function resetGameAfterCelebration() {
+  closeCelebration();
+  
+  // Reset hasCelebrated flag to allow future celebrations
+  hasCelebrated = false;
+  
+  console.log("Restarting game after celebration");
+  
+  // Use PhaseManager if available
+  if (window.PhaseManager && typeof PhaseManager.startNewGame === 'function') {
+    PhaseManager.startNewGame();
+  } else {
+    // Fall back to original implementation
     localStorage.removeItem('sudoku_td_character');
-    
-    // Add game end indicator
     showGameEndIndicator();
     
-    // Force a complete refresh of the game
     setTimeout(() => {
-      // Reset game
       if (window.Game && typeof Game.reset === 'function') {
         Game.reset();
       }
       
-      // Force character selection screen to appear with full visibility
       setTimeout(() => {
         if (window.AbilitySystem && typeof AbilitySystem.init === 'function') {
-          // First make sure any existing character UI is cleaned up
           const existingCharacterSelection = document.getElementById('character-selection');
           if (existingCharacterSelection) {
             existingCharacterSelection.remove();
           }
           
-          //removes the continue button
           window.skipContinuePrompt = true;
-          
-          // Reinitialize ability system to trigger character selection
           AbilitySystem.init();
           
-          // Ensure character selection is visible
           const newCharacterSelection = document.getElementById('character-selection');
           if (newCharacterSelection) {
             newCharacterSelection.style.display = 'flex';
@@ -611,7 +611,9 @@ let hasCelebrated = false;
       }, 600);
     }, 200);
   }
-  
+}
+
+
   // Show game end indicator
   function showGameEndIndicator() {
     let indicator = document.getElementById('game-end-indicator');

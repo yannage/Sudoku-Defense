@@ -840,6 +840,13 @@ const AbilitySystem = (function() {
     if (existingIndicator) existingIndicator.remove();
     createCharacterIndicatorUI();
     
+    // Add this to the AbilitySystem.selectCharacter function in ability-system.js
+// Place at the end of the function before the "return true;" line:
+if (window.EventSystem) {
+  EventSystem.publish('character:selected', characterId);
+}
+  
+    
     return true;
   }
   
