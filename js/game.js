@@ -34,7 +34,7 @@ const Game = (function() {
     if (window.BoardManager && typeof BoardManager.init === 'function') {
         BoardManager.init(gameSettings);
     } else {
-        // Fall back to SudokuModule if BoardManager isn't available
+        // Fall back to BoardManager if BoardManager isn't available
         EventSystem.publish(GameEvents.GAME_INIT, gameSettings);
     }
     
@@ -140,32 +140,43 @@ const Game = (function() {
     /**
      * Reset the game
      */
-    function reset() {
-        console.log("Game reset started");
-        
-        // Stop the game loop
-        stop();
-        
-        // Clear the board
-        clearBoard();
-        
-        // Reset all modules explicitly
-        PlayerModule.reset();
-        SudokuModule.generatePuzzle();
-        EnemiesModule.init();
-        TowersModule.init();
-        
-        // Force full re-initialization
-        isInitialized = false;
-        init();
-        
-        // Update UI with initial values
-        updateUI();
-        
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, "New game started!");
-        
-        console.log("Game reset completed");
+    /**
+ * Fix for the reset() function in game.js
+ * This is causing the "SudokuModule is not defined" error
+ */
+function reset() {
+    console.log("Game reset started");
+    
+    // Stop the game loop
+    stop();
+    
+    // Clear the board
+    clearBoard();
+    
+    // Reset all modules explicitly
+    PlayerModule.reset();
+    
+    // Use BoardManager instead of SudokuModule
+    if (window.BoardManager && typeof BoardManager.generatePuzzle === 'function') {
+        BoardManager.generatePuzzle();
+    } else {
+        console.warn("BoardManager not available for puzzle generation!");
     }
+    
+    EnemiesModule.init();
+    TowersModule.init();
+    
+    // Force full re-initialization
+    isInitialized = false;
+    init();
+    
+    // Update UI with initial values
+    updateUI();
+    
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, "New game started!");
+    
+    console.log("Game reset completed");
+}
     
     /**
      * Main game loop
@@ -603,10 +614,18 @@ setTimeout(addDebugSolutionButton, 1000);
     }
   });
   
-  document.getElementById('new-game').addEventListener('click', function() {
-    console.log("New Game button clicked");
-    reset();
-  });
+
+document.getElementById('new-game').addEventListener('click', function() {
+    console.log("New Game button clicked - Starting fresh game");
+    
+    // Use PhaseManager to restart the game from the beginning
+    if (window.PhaseManager && typeof PhaseManager.startNewGame === 'function') {
+        PhaseManager.startNewGame();
+    } else {
+        // Fallback to regular reset if PhaseManager not available
+        reset();
+    }
+});
   
   // Font selector
   const fontSelector = document.getElementById('font-selector');

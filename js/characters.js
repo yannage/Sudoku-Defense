@@ -33,8 +33,8 @@ const characters = {
           }
           
           return true;
-        } else if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
-          SudokuModule.generateEnemyPath();
+        } else if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
+          BoardManager.generateEnemyPath();
           EventSystem.publish(GameEvents.STATUS_MESSAGE, "Enemy path redirected!");
           return true;
         }

@@ -45,9 +45,9 @@ const EnemiesModule = (function() {
   if (window.BoardManager && typeof BoardManager.getPathArray === 'function') {
     path = BoardManager.getPathArray();
     console.log("EnemiesModule initialized with path from BoardManager:", path);
-  } else if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
-    path = SudokuModule.getPathArray();
-    console.log("EnemiesModule initialized with path from SudokuModule:", path);
+  } else if (window.BoardManager && typeof BoardManager.getPathArray === 'function') {
+    path = BoardManager.getPathArray();
+    console.log("EnemiesModule initialized with path from BoardManager:", path);
   } else {
     console.warn("EnemiesModule: No path provider available!");
     path = [];
@@ -127,15 +127,15 @@ const EnemiesModule = (function() {
     return;
   }
   
-  // Get the latest path from BoardManager or SudokuModule
+  // Get the latest path from BoardManager or BoardManager
   if (!path || path.length === 0) {
     const boardManager = window.BoardManager;
     if (boardManager && typeof boardManager.getPathArray === 'function') {
       path = boardManager.getPathArray();
       console.log("EnemiesModule: Updated path from BoardManager:", path);
-    } else if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
-      path = SudokuModule.getPathArray();
-      console.log("EnemiesModule: Updated path from SudokuModule:", path);
+    } else if (window.BoardManager && typeof BoardManager.getPathArray === 'function') {
+      path = BoardManager.getPathArray();
+      console.log("EnemiesModule: Updated path from BoardManager:", path);
     }
   }
   
@@ -241,8 +241,8 @@ window.debugEnemyPath = function() {
     BoardManager.getPathArray() :
     null;
   
-  let sudokuModulePath = window.SudokuModule && typeof SudokuModule.getPathArray === 'function' ?
-    SudokuModule.getPathArray() :
+  let BoardManagerPath = window.BoardManager && typeof BoardManager.getPathArray === 'function' ?
+    BoardManager.getPathArray() :
     null;
   
   let currentEnemiesPath = window.EnemiesModule && EnemiesModule.path ?
@@ -250,7 +250,7 @@ window.debugEnemyPath = function() {
     null;
   
   console.log("Path from BoardManager:", boardManagerPath);
-  console.log("Path from SudokuModule:", sudokuModulePath);
+  console.log("Path from BoardManager:", BoardManagerPath);
   console.log("Current path in EnemiesModule:", currentEnemiesPath);
   
   // Add explicit check to see if the path is usable
@@ -437,7 +437,7 @@ function moveEnemy(enemy, deltaTime) {
     
     // Generate new path for the next wave immediately
     setTimeout(() => {
-        // Use BoardManager if available, otherwise fallback to SudokuModule
+        // Use BoardManager if available, otherwise fallback to BoardManager
         if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
             const newPath = BoardManager.generateEnemyPath();
             path = newPath;
@@ -450,15 +450,15 @@ function moveEnemy(enemy, deltaTime) {
             // Also publish a specific event for path updates
             EventSystem.publish('path:updated', newPath);
         }
-        else if (window.SudokuModule && typeof SudokuModule.generateEnemyPath === 'function') {
+        else if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
             // Clear existing path
-            const pathCells = SudokuModule.getPathCells();
+            const pathCells = BoardManager.getPathCells();
             if (pathCells && typeof pathCells.clear === 'function') {
                 pathCells.clear();
             }
             
             // Generate new path
-            SudokuModule.generateEnemyPath();
+            BoardManager.generateEnemyPath();
             console.log("New path generated after wave completion");
             
             // Update the board to show the new path
@@ -467,8 +467,8 @@ function moveEnemy(enemy, deltaTime) {
             }
             
             // Notify other modules of the path change
-            if (typeof SudokuModule.getPathArray === 'function') {
-                const newPath = SudokuModule.getPathArray();
+            if (typeof BoardManager.getPathArray === 'function') {
+                const newPath = BoardManager.getPathArray();
                 EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
                     pathCells: newPath
                 });
@@ -846,8 +846,8 @@ window.debugEnemyPath = function() {
     console.log("BoardManager.getPathArray():", boardManager.getPathArray());
   }
   
-  if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
-    console.log("SudokuModule.getPathArray():", SudokuModule.getPathArray());
+  if (window.BoardManager && typeof BoardManager.getPathArray === 'function') {
+    console.log("BoardManager.getPathArray():", BoardManager.getPathArray());
   }
   
   if (EnemiesModule.path && EnemiesModule.path.length > 0) {

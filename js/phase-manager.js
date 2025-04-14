@@ -364,29 +364,66 @@ const PhaseManager = (function() {
         }
     }
     
-    function startNewGame() {
-        // First save the score
-        if (window.SaveSystem && typeof SaveSystem.saveScore === 'function') {
-            SaveSystem.saveScore();
-        }
-        
-        // Clear character selection to force re-selection
-        localStorage.removeItem('sudoku_td_character');
-        
-        // Transition to intro phase
-        transitionTo(PHASES.INTRO);
-        
-        // Reset game state
-        setTimeout(() => {
-            if (window.Game && typeof Game.reset === 'function') {
-                Game.reset();
-            } else {
-                // Fallback reload
-                window.location.reload();
-            }
-        }, 100);
+    /**
+ * Enhancement to the startNewGame function in phase-manager.js
+ * Replace the existing startNewGame function with this improved version
+ */
+
+function startNewGame() {
+  console.log("PhaseManager: Starting completely new game");
+  
+  // First save the score if needed
+  if (window.SaveSystem && typeof SaveSystem.saveScore === 'function') {
+    SaveSystem.saveScore();
+  }
+  
+  // Clear character selection to force re-selection
+  localStorage.removeItem('sudoku_td_character');
+  
+  // Transition to intro phase BEFORE resetting the game
+  // This ensures the character selection screen will be visible
+  transitionTo(PHASES.INTRO);
+  
+  // Reset game state after a short delay
+  // This gives the phase transition time to complete
+  setTimeout(() => {
+    // Clear any existing game over or celebration screens
+    const gameOverScreen = document.getElementById('game-over-screen');
+    if (gameOverScreen) {
+      gameOverScreen.remove();
     }
     
+    const celebrationContainer = document.getElementById('celebration-container');
+    if (celebrationContainer) {
+      celebrationContainer.classList.remove('active');
+      setTimeout(() => {
+        if (celebrationContainer.parentNode) {
+          celebrationContainer.parentNode.removeChild(celebrationContainer);
+        }
+      }, 300);
+    }
+    
+    // Reset game state
+    if (window.Game && typeof Game.reset === 'function') {
+      Game.reset();
+    }
+    
+    // Make sure the character selection is visible
+    setTimeout(() => {
+      const characterSelection = document.getElementById('character-selection');
+      if (!characterSelection) {
+        // If character selection doesn't exist, reinitialize the ability system
+        if (window.AbilitySystem && typeof AbilitySystem.init === 'function') {
+          AbilitySystem.init();
+        }
+      } else {
+        // Make sure it's visible
+        characterSelection.style.display = 'flex';
+        characterSelection.style.zIndex = '10000';
+      }
+    }, 300);
+  }, 100);
+}
     /**
      * Update the phase indicator
      * @param {string} phase - Current phase to display

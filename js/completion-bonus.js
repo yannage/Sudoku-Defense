@@ -304,7 +304,7 @@ let hasCelebrated = false;
       let level = 1;
       let score = 0;
       
-      // Get board data from BoardManager with fallback to SudokuModule
+      // Get board data from BoardManager with fallback to BoardManager
       const boardManager = window.BoardManager;
       if (boardManager) {
         if (typeof boardManager.getBoard === 'function') {
@@ -405,7 +405,7 @@ let hasCelebrated = false;
     // Clear container
     container.innerHTML = '';
     
-    // If data wasn't provided, try to get it from BoardManager or SudokuModule
+    // If data wasn't provided, try to get it from BoardManager or BoardManager
     if (!board) {
       const boardManager = window.BoardManager;
       if (boardManager) {

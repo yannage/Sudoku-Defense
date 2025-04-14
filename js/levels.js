@@ -44,11 +44,11 @@ const LevelsModule = (function() {
     currentWave = options.wave || 1;
     difficulty = options.difficulty || 'medium';
     
-    // Set difficulty in BoardManager (or fallback to SudokuModule)
+    // Set difficulty in BoardManager (or fallback to BoardManager)
     if (window.BoardManager && typeof BoardManager.setDifficulty === 'function') {
         BoardManager.setDifficulty(difficulty);
-    } else if (window.SudokuModule && typeof SudokuModule.setDifficulty === 'function') {
-        SudokuModule.setDifficulty(difficulty);
+    } else if (window.BoardManager && typeof BoardManager.setDifficulty === 'function') {
+        BoardManager.setDifficulty(difficulty);
     }
 }
 
@@ -63,7 +63,7 @@ const LevelsModule = (function() {
         return;
     }
     
-    // Get the current path from BoardManager or SudokuModule
+    // Get the current path from BoardManager or BoardManager
     const boardManager = window.BoardManager;
     let currentPath = null;
     
@@ -115,7 +115,7 @@ const LevelsModule = (function() {
     function setDifficulty(newDifficulty) {
         if (difficultySettings[newDifficulty]) {
             difficulty = newDifficulty;
-            SudokuModule.setDifficulty(difficulty);
+            BoardManager.setDifficulty(difficulty);
         }
     }
     
@@ -182,7 +182,7 @@ function removeGroundArt() {
     EnemiesModule.setWaveNumber(currentWave);
   }
   
-  // Generate a new Sudoku puzzle using BoardManager (or fallback to SudokuModule)
+  // Generate a new Sudoku puzzle using BoardManager (or fallback to BoardManager)
 if (window.BoardManager && typeof BoardManager.generatePuzzle === 'function') {
   BoardManager.generatePuzzle();
 }

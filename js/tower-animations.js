@@ -153,8 +153,8 @@ function calculateEnemyPosition(enemy) {
             
             // Get path data if available
             let path = null;
-            if (window.SudokuModule && typeof SudokuModule.getPathArray === 'function') {
-                path = SudokuModule.getPathArray();
+            if (window.BoardManager && typeof BoardManager.getPathArray === 'function') {
+                path = BoardManager.getPathArray();
                 
                 if (path && path.length > pathIndex) {
                     const pathCell = path[pathIndex];
