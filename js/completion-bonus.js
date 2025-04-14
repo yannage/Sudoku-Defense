@@ -1470,20 +1470,41 @@ function hookEvents() {
   
   // Hook into Sudoku complete event
   if (window.EventSystem) {
+    // First unsubscribe any existing handlers to prevent duplicates
+    try {
+      EventSystem.clear('row:completed');
+      EventSystem.clear('column:completed');
+      EventSystem.clear('grid:completed');
+    } catch (e) {
+      console.log("Note: Could not clear existing subscriptions");
+    }
+    
     // Subscribe to unit completion events
     EventSystem.subscribe('row:completed', function(rowIndex) {
       console.log(`Row completion event received: ${rowIndex}`);
-      onUnitCompleted('row', rowIndex);
+      if (typeof onUnitCompleted === 'function') {
+        onUnitCompleted('row', rowIndex);
+      } else if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
+        CompletionBonusModule.onUnitCompleted('row', rowIndex);
+      }
     });
     
     EventSystem.subscribe('column:completed', function(colIndex) {
       console.log(`Column completion event received: ${colIndex}`);
-      onUnitCompleted('column', colIndex);
+      if (typeof onUnitCompleted === 'function') {
+        onUnitCompleted('column', colIndex);
+      } else if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
+        CompletionBonusModule.onUnitCompleted('column', colIndex);
+      }
     });
     
     EventSystem.subscribe('grid:completed', function(gridKey) {
       console.log(`Grid completion event received: ${gridKey}`);
-      onUnitCompleted('grid', gridKey);
+      if (typeof onUnitCompleted === 'function') {
+        onUnitCompleted('grid', gridKey);
+      } else if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
+        CompletionBonusModule.onUnitCompleted('grid', gridKey);
+      }
     });
     
     // Also allow direct handling through GameEvents
@@ -1491,18 +1512,30 @@ function hookEvents() {
       console.log("SUDOKU_COMPLETE event received");
       setTimeout(showCelebration, 1000);
     });
+    
+    console.log("Successfully subscribed to completion events");
+  } else {
+    console.error("EventSystem not available, completion events won't work!");
   }
   
   // Debug function to manually trigger a unit completion
   window.debugTriggerUnitCompletion = function(type, index) {
     console.log(`Manually triggering ${type} ${index} completion`);
-    onUnitCompleted(type, index);
+    if (typeof onUnitCompleted === 'function') {
+      onUnitCompleted(type, index);
+    } else if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
+      CompletionBonusModule.onUnitCompleted(type, index);
+    } else {
+      console.error("Cannot find onUnitCompleted function");
+    }
     return "Animation triggered - check console for details";
   };
 }
 
-// Make sure to call this function after defining it
-setTimeout(hookEvents, 500);
+// Make sure this function is called after everything is initialized
+setTimeout(hookEvents, 1000);
+
+
     
     // Initialize
     // Add this line to your init function
