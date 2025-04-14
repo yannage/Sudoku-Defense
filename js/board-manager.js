@@ -948,6 +948,14 @@ let lastUnitCompletionCheck = 0;
  * Check for completed units (rows, columns, 3x3 grids)
  * Improved version with animation timing and UI update management
  */
+/**
+ * Check for completed units (rows, columns, 3x3 grids)
+ * Fixed version that correctly accounts for path cells in columns
+ */
+/**
+ * Check for completed units (rows, columns, 3x3 grids)
+ * Completely revised version that properly handles path cells and unique value requirements
+ */
 function checkUnitCompletion() {
   console.log("Checking unit completions");
   
@@ -968,24 +976,39 @@ function checkUnitCompletion() {
   
   // Check rows
   for (let row = 0; row < 9; row++) {
-    let numberSet = new Set();
-    let filledCellCount = 0;
-    let fixedCellCount = 0;
+    // Get all playable cells in this row
+    const playableCells = [];
+    const values = [];
     
     for (let col = 0; col < 9; col++) {
-      if (pathCells.has(`${row},${col}`)) continue;
-      const val = board[row][col];
-      if (val > 0) {
-        filledCellCount++;
-        numberSet.add(val);
+      if (!pathCells.has(`${row},${col}`)) {
+        playableCells.push([row, col]);
+        const value = board[row][col];
+        if (value > 0) {
+          values.push(value);
+        }
       }
-      if (fixedCells[row][col]) fixedCellCount++;
     }
     
-    const isComplete = filledCellCount === 9 && numberSet.size === 9;
-    const playerContributed = filledCellCount > fixedCellCount;
+    // Skip rows that have only path cells
+    if (playableCells.length === 0) continue;
+    
+    // Check if this row is complete - all playable cells must have values and all values must be unique
+    const isComplete = values.length === playableCells.length && new Set(values).size === playableCells.length;
+    
+    // Count player-placed cells (non-fixed)
+    let playerCellCount = 0;
+    playableCells.forEach(([r, c]) => {
+      if (!fixedCells[r][c] && board[r][c] > 0) {
+        playerCellCount++;
+      }
+    });
+    
+    // Player must have contributed at least one cell
+    const playerContributed = playerCellCount > 0;
     
     if (isComplete && !completedRows.has(row)) {
+      console.log(`Row ${row} complete: ${playableCells.length} cells, ${values.length} values, ${new Set(values).size} unique`);
       completedRows.add(row);
       if (playerContributed) {
         newlyCompletedRows.push(row);
@@ -997,24 +1020,39 @@ function checkUnitCompletion() {
   
   // Check columns
   for (let col = 0; col < 9; col++) {
-    let numberSet = new Set();
-    let filledCellCount = 0;
-    let fixedCellCount = 0;
+    // Get all playable cells in this column
+    const playableCells = [];
+    const values = [];
     
     for (let row = 0; row < 9; row++) {
-      if (pathCells.has(`${row},${col}`)) continue;
-      const val = board[row][col];
-      if (val > 0) {
-        filledCellCount++;
-        numberSet.add(val);
+      if (!pathCells.has(`${row},${col}`)) {
+        playableCells.push([row, col]);
+        const value = board[row][col];
+        if (value > 0) {
+          values.push(value);
+        }
       }
-      if (fixedCells[row][col]) fixedCellCount++;
     }
     
-    const isComplete = filledCellCount === 9 && numberSet.size === 9;
-    const playerContributed = filledCellCount > fixedCellCount;
+    // Skip columns that have only path cells
+    if (playableCells.length === 0) continue;
+    
+    // Check if this column is complete - all playable cells must have values and all values must be unique
+    const isComplete = values.length === playableCells.length && new Set(values).size === playableCells.length;
+    
+    // Count player-placed cells (non-fixed)
+    let playerCellCount = 0;
+    playableCells.forEach(([r, c]) => {
+      if (!fixedCells[r][c] && board[r][c] > 0) {
+        playerCellCount++;
+      }
+    });
+    
+    // Player must have contributed at least one cell
+    const playerContributed = playerCellCount > 0;
     
     if (isComplete && !completedColumns.has(col)) {
+      console.log(`Column ${col} complete: ${playableCells.length} cells, ${values.length} values, ${new Set(values).size} unique`);
       completedColumns.add(col);
       if (playerContributed) {
         newlyCompletedColumns.push(col);
@@ -1027,29 +1065,46 @@ function checkUnitCompletion() {
   // Check grids (3x3 boxes)
   for (let gridRow = 0; gridRow < 3; gridRow++) {
     for (let gridCol = 0; gridCol < 3; gridCol++) {
-      let numberSet = new Set();
-      let filledCellCount = 0;
-      let fixedCellCount = 0;
+      // Get all playable cells in this grid
+      const playableCells = [];
+      const values = [];
       
       for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 3; j++) {
           const row = gridRow * 3 + i;
           const col = gridCol * 3 + j;
-          if (pathCells.has(`${row},${col}`)) continue;
-          const val = board[row][col];
-          if (val > 0) {
-            filledCellCount++;
-            numberSet.add(val);
+          
+          if (!pathCells.has(`${row},${col}`)) {
+            playableCells.push([row, col]);
+            const value = board[row][col];
+            if (value > 0) {
+              values.push(value);
+            }
           }
-          if (fixedCells[row][col]) fixedCellCount++;
         }
       }
       
-      const isComplete = filledCellCount === 9 && numberSet.size === 9;
-      const playerContributed = filledCellCount > fixedCellCount;
+      // Skip grids that have only path cells
+      if (playableCells.length === 0) continue;
+      
+      // A grid is complete when all playable cells have values and all values are unique
+      const isComplete = values.length === playableCells.length && new Set(values).size === playableCells.length;
+      
+      // Count player-placed cells (non-fixed)
+      let playerCellCount = 0;
+      playableCells.forEach(([r, c]) => {
+        if (!fixedCells[r][c] && board[r][c] > 0) {
+          playerCellCount++;
+        }
+      });
+      
+      // Player must have contributed at least one cell
+      const playerContributed = playerCellCount > 0;
+      
       const gridKey = `${gridRow}-${gridCol}`;
       
       if (isComplete && !completedGrids.has(gridKey)) {
+        console.log(`Grid ${gridKey} complete: ${playableCells.length} cells, ${values.length} values, ${new Set(values).size} unique`);
         completedGrids.add(gridKey);
         if (playerContributed) {
           newlyCompletedGrids.push(gridKey);
@@ -1075,7 +1130,6 @@ function checkUnitCompletion() {
       EventSystem.publish('row:completed', row);
       
       if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
-        console.log(`Directly calling CompletionBonusModule.onUnitCompleted for row ${row}`);
         CompletionBonusModule.onUnitCompleted('row', row);
       }
     }, 100 * (index + 1)); // Stagger animations if multiple rows completed
@@ -1109,13 +1163,6 @@ function checkUnitCompletion() {
     setTimeout(forceUIUpdate, 500 + 100 * totalCompletions);
   }
 }
-    /**
-     * Set the value of a cell
-     * @param {number} row - Row index
-     * @param {number} col - Column index
-     * @param {number} value - Value to set
-     * @returns {boolean} Whether the move was valid
-     */
     
 
     function isTowerIncorrect(row, col, value) {
@@ -1160,7 +1207,17 @@ function checkUnitCompletion() {
      * This is the robust implementation from enhanced-sudoku-fix.js
      * @returns {boolean} Whether the Sudoku is complete
      */
-    function isComplete() {
+    /**
+ * Check if the Sudoku is complete and correct
+ * Fixed version that properly accounts for path cells
+ * @returns {boolean} Whether the Sudoku is complete
+ */
+/**
+ * Check if the Sudoku is complete and correct
+ * Completely revised version that properly handles path cells
+ * @returns {boolean} Whether the Sudoku is complete
+ */
+function isComplete() {
   console.log("BoardManager: Checking if Sudoku is complete");
   
   if (!solution || solution.length !== 9) {
@@ -1172,76 +1229,104 @@ function checkUnitCompletion() {
   const newlyCompletedColumns = [];
   const newlyCompletedGrids = [];
   
+  // Check that all playable cells (non-path cells) match the solution
   for (let row = 0; row < 9; row++) {
-    let rowComplete = true;
-    
     for (let col = 0; col < 9; col++) {
-      const actual = board[row][col];
-      const expected = solution[row][col];
-      
-      if (actual !== expected) {
-        return false;
+      // Skip path cells
+      if (pathCells.has(`${row},${col}`)) {
+        continue;
       }
       
-      if (actual < 1 || actual > 9) {
+      // Check that this cell matches the solution
+      if (board[row][col] !== solution[row][col]) {
         return false;
       }
     }
+  }
+  
+  // At this point, all non-path cells match the solution
+  
+  // Update completion tracking for rows
+  for (let row = 0; row < 9; row++) {
+    const playableCells = [];
+    const filledCells = [];
     
-    // Row is complete
-    if (!completedRows.has(row)) {
+    for (let col = 0; col < 9; col++) {
+      if (!pathCells.has(`${row},${col}`)) {
+        playableCells.push([row, col]);
+        if (board[row][col] > 0) {
+          filledCells.push([row, col]);
+        }
+      }
+    }
+    
+    // Skip rows that are all path cells
+    if (playableCells.length === 0) continue;
+    
+    // Row is complete if all playable cells are filled
+    if (filledCells.length === playableCells.length && !completedRows.has(row)) {
       completedRows.add(row);
       newlyCompletedRows.push(row);
     }
   }
   
+  // Update completion tracking for columns
   for (let col = 0; col < 9; col++) {
-    let colComplete = true;
+    const playableCells = [];
+    const filledCells = [];
     
     for (let row = 0; row < 9; row++) {
-      const actual = board[row][col];
-      const expected = solution[row][col];
-      
-      if (actual !== expected) {
-        colComplete = false;
-        break;
+      if (!pathCells.has(`${row},${col}`)) {
+        playableCells.push([row, col]);
+        if (board[row][col] > 0) {
+          filledCells.push([row, col]);
+        }
       }
     }
     
-    if (colComplete && !completedColumns.has(col)) {
+    // Skip columns that are all path cells
+    if (playableCells.length === 0) continue;
+    
+    // Column is complete if all playable cells are filled
+    if (filledCells.length === playableCells.length && !completedColumns.has(col)) {
       completedColumns.add(col);
       newlyCompletedColumns.push(col);
     }
   }
   
-  for (let boxRow = 0; boxRow < 3; boxRow++) {
-    for (let boxCol = 0; boxCol < 3; boxCol++) {
-      let gridComplete = true;
-      const gridKey = `${boxRow}-${boxCol}`;
+  // Update completion tracking for grids
+  for (let gridRow = 0; gridRow < 3; gridRow++) {
+    for (let gridCol = 0; gridCol < 3; gridCol++) {
+      const playableCells = [];
+      const filledCells = [];
+      const gridKey = `${gridRow}-${gridCol}`;
       
       for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 3; j++) {
-          const row = boxRow * 3 + i;
-          const col = boxCol * 3 + j;
-          const actual = board[row][col];
-          const expected = solution[row][col];
+          const row = gridRow * 3 + i;
+          const col = gridCol * 3 + j;
           
-          if (actual !== expected) {
-            gridComplete = false;
-            break;
+          if (!pathCells.has(`${row},${col}`)) {
+            playableCells.push([row, col]);
+            if (board[row][col] > 0) {
+              filledCells.push([row, col]);
+            }
           }
         }
-        if (!gridComplete) break;
       }
       
-      if (gridComplete && !completedGrids.has(gridKey)) {
+      // Skip grids that are all path cells
+      if (playableCells.length === 0) continue;
+      
+      // Grid is complete if all playable cells are filled
+      if (filledCells.length === playableCells.length && !completedGrids.has(gridKey)) {
         completedGrids.add(gridKey);
         newlyCompletedGrids.push(gridKey);
       }
     }
   }
   
-  // Fire completion events
+  // Fire completion events for any newly completed units
   for (const row of newlyCompletedRows) {
     EventSystem.publish('row:completed', row);
   }
@@ -1262,6 +1347,8 @@ function checkUnitCompletion() {
   
   return true;
 }
+
+
 /**
  * Debug function to print the full solution grid
  * Add this to board-manager.js
