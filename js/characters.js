@@ -225,7 +225,7 @@ const characters = {
         // Place towers in these cells
         cellsToReveal.forEach(cell => {
           if (window.TowersModule && typeof TowersModule.createTower === 'function') {
-            TowersModule.createTower(cell.value, cell.row, cell.col, { free: true });
+            placeTowerWithBoardSync(cell.value, cell.row, cell.col, { free: true });
           } else {
             // Fallback - update the board directly
             boardManager.setCellValue(cell.row, cell.col, cell.value);
@@ -534,7 +534,7 @@ const characters = {
         // Place temporary towers
         cellsToUse.forEach(cell => {
           if (window.TowersModule && typeof TowersModule.createTower === 'function') {
-            const tower = TowersModule.createTower(cell.value, cell.row, cell.col, { free: true });
+            const tower = placeTowerWithBoardSync(cell.value, cell.row, cell.col, { free: true });
             if (tower) {
               tower.isTemporary = true;
               tower.duration = 15; // seconds

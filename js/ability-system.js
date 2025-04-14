@@ -1063,6 +1063,19 @@ const AbilitySystem = (function() {
     return false;
   }
   
+  function placeTowerWithBoardSync(value, row, col, options = {}) {
+  const boardManager = window.BoardManager;
+  const towersModule = window.TowersModule;
+  
+  // Place tower in TowersModule (for defense)
+  const tower = towersModule?.createTower?.(value, row, col, options);
+  
+  // Update the board (for Sudoku logic)
+  boardManager?.setCellValue?.(row, col, value);
+  
+  return tower;
+}
+  
   /**
    * Set up event listeners
    */
