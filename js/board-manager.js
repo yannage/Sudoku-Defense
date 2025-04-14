@@ -241,178 +241,92 @@ function getPlayableCellsInUnit(unitType, unitIndex) {
      * Generate a path for enemies to follow
      * Creates a non-overlapping path from a starting point to an end point
      */
-    function generateEnemyPath() {
-        console.log("BoardManager: Generating enemy path");
-        pathCells.clear();
-        
-        // Only use horizontal and vertical movements to avoid diagonal overlaps
-        const directions = [
-            [-1, 0], // up
-            [1, 0],  // down
-            [0, 1]   // right - only move right, never left to prevent overlaps
-        ];
-        
-        // Start at a random position on the left edge
-        let startRow = Math.floor(Math.random() * 9);
-        let currentRow = startRow;
-        let currentCol = 0;
-        
-        // Choose an end row for the right edge
-        let endRow = Math.floor(Math.random() * 9);
-        
-        // Mark the starting position
-        pathCells.add(`${currentRow},${currentCol}`);
-        
-        // Keep track of visited columns to ensure we always make progress
-        const visitedColumns = new Set([0]);
-        
-        // Generate path until we reach the last column
-        while (currentCol < 8) {
-            let possibleMoves = [];
-            
-            // Check each direction
-            for (let [dr, dc] of directions) {
-                let newRow = currentRow + dr;
-                let newCol = currentCol + dc;
-                
-                // Check if the new position is valid
-                if (
-                    newRow >= 0 && newRow < 9 && 
-                    newCol >= 0 && newCol < 9 && 
-                    !pathCells.has(`${newRow},${newCol}`)
-                ) {
-                    // If we're already at the target column, only allow vertical moves
-                    if (currentCol === 7 && newCol > currentCol) {
-                        // We've reached column 7, only allow moving to endRow
-                        if (newRow === endRow) {
-                            possibleMoves = [[dr, dc]];
-                            break;
-                        }
-                    } else {
-                        // Otherwise, consider this move
-                        possibleMoves.push([dr, dc]);
-                    }
-                }
-            }
-            
-            // If no valid moves, force a move right
-            if (possibleMoves.length === 0) {
-                // Try to move right
-                let newRow = currentRow;
-                let newCol = currentCol + 1;
-                
-                if (newCol < 9 && !pathCells.has(`${newRow},${newCol}`)) {
-                    currentRow = newRow;
-                    currentCol = newCol;
-                    pathCells.add(`${currentRow},${currentCol}`);
-                    visitedColumns.add(currentCol);
-                    continue;
-                } else {
-                    // If we can't move right, try to find any non-visited cell
-                    let found = false;
-                    for (let r = 0; r < 9; r++) {
-                        for (let c = currentCol; c < 9; c++) {
-                            if (!pathCells.has(`${r},${c}`)) {
-                                // Check if we can connect to this cell without crossing the path
-                                if (canConnect(currentRow, currentCol, r, c, pathCells)) {
-                                    // Add connecting cells
-                                    const connectingCells = getConnectingCells(currentRow, currentCol, r, c);
-                                    for (const cell of connectingCells) {
-                                        pathCells.add(cell);
-                                    }
-                                    currentRow = r;
-                                    currentCol = c;
-                                    found = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (found) break;
-                    }
-                    
-                    if (!found) {
-                        // If still no valid moves, break and use what we have
-                        break;
-                    }
-                    continue;
-                }
-            }
-            
-            // Prefer moving toward the end
-            let bestMoves = [];
-            
-            // If we're not in the last column, prioritize moving right
-            if (currentCol < 7) {
-                // Prefer moving right
-                const rightMoves = possibleMoves.filter(([dr, dc]) => dc > 0);
-                if (rightMoves.length > 0) {
-                    bestMoves = rightMoves;
-                } else {
-                    // If we can't move right, prefer moving vertically toward endRow
-                    const verticalMoves = possibleMoves.filter(([dr, dc]) => dc === 0);
-                    if (verticalMoves.length > 0) {
-                        const movesTowardEnd = verticalMoves.filter(([dr, dc]) => 
-                            (dr > 0 && currentRow < endRow) || (dr < 0 && currentRow > endRow)
-                        );
-                        
-                        bestMoves = movesTowardEnd.length > 0 ? movesTowardEnd : verticalMoves;
-                    } else {
-                        bestMoves = possibleMoves;
-                    }
-                }
-            } else {
-                // In the last column, prioritize getting to endRow
-                const verticalMoves = possibleMoves.filter(([dr, dc]) => dc === 0);
-                if (verticalMoves.length > 0) {
-                    const movesTowardEnd = verticalMoves.filter(([dr, dc]) => 
-                        (dr > 0 && currentRow < endRow) || (dr < 0 && currentRow > endRow)
-                    );
-                    
-                    bestMoves = movesTowardEnd.length > 0 ? movesTowardEnd : verticalMoves;
-                } else {
-                    bestMoves = possibleMoves;
-                }
-            }
-            
-            // Choose a move
-            const [dr, dc] = bestMoves[Math.floor(Math.random() * bestMoves.length)];
-            
-            // Move to the new position
-            currentRow += dr;
-            currentCol += dc;
-            pathCells.add(`${currentRow},${currentCol}`);
-            
-            // Track visited columns
-            visitedColumns.add(currentCol);
-        }
-        
-        // If we haven't reached the end row in the last column, add a straight path to it
-        if (currentCol === 8 && currentRow !== endRow) {
-            // Add a path from current position to the end position
-            const step = currentRow < endRow ? 1 : -1;
-            for (let r = currentRow + step; step > 0 ? r <= endRow : r >= endRow; r += step) {
-                if (!pathCells.has(`${r},${currentCol}`)) {
-                    pathCells.add(`${r},${currentCol}`);
-                }
-            }
-        }
-        
-        // Reset completion tracking when path changes
-        completedRows.clear();
-        completedColumns.clear();
-        completedGrids.clear();
-        
-        // Convert the path to an array for compatibility with existing code
-        const pathArray = Array.from(pathCells).map(pos => pos.split(',').map(Number));
-        
-        console.log(`BoardManager: Generated enemy path with ${pathArray.length} cells`);
-        
-        // Publish path update event
-        EventSystem.publish('path:updated', pathArray);
-        
-        // Return the path array
-        return pathArray;
+    function generateEnemyPath(maxLength = 13) {
+  console.log("BoardManager: Generating enemy path");
+  pathCells.clear();
+  
+  const directions = [
+    [-1, 0], // up
+    [1, 0], // down
+    [0, 1] // right
+  ];
+  
+  let currentRow = Math.floor(Math.random() * 9);
+  let currentCol = 0;
+  const endRow = Math.floor(Math.random() * 9);
+  
+  pathCells.add(`${currentRow},${currentCol}`);
+  
+  while (pathCells.size < maxLength && currentCol < 8) {
+    let possibleMoves = [];
+    
+    for (let [dr, dc] of directions) {
+      const newRow = currentRow + dr;
+      const newCol = currentCol + dc;
+      const key = `${newRow},${newCol}`;
+      
+      if (
+        newRow >= 0 && newRow < 9 &&
+        newCol >= 0 && newCol < 9 &&
+        !pathCells.has(key)
+      ) {
+        possibleMoves.push([dr, dc]);
+      }
     }
+    
+    if (possibleMoves.length === 0) {
+      // Try force-right if stuck
+      const forcedCol = currentCol + 1;
+      const key = `${currentRow},${forcedCol}`;
+      if (forcedCol < 9 && !pathCells.has(key)) {
+        currentCol = forcedCol;
+        pathCells.add(key);
+        continue;
+      }
+      console.warn("generateEnemyPath: stuck, breaking early");
+      break;
+    }
+    
+    const rightMoves = possibleMoves.filter(([_, dc]) => dc > 0);
+    const verticalMoves = possibleMoves.filter(([_, dc]) => dc === 0);
+    const movesTowardEnd = verticalMoves.filter(([dr]) =>
+      (dr > 0 && currentRow < endRow) || (dr < 0 && currentRow > endRow)
+    );
+    
+    const bestMoves = rightMoves.length > 0 ?
+      rightMoves :
+      (movesTowardEnd.length > 0 ? movesTowardEnd : verticalMoves.length > 0 ? verticalMoves : possibleMoves);
+    
+    const [dr, dc] = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+    currentRow += dr;
+    currentCol += dc;
+    pathCells.add(`${currentRow},${currentCol}`);
+  }
+  
+  // Extend to right edge if needed
+  while (currentCol < 8) {
+    currentCol++;
+    pathCells.add(`${currentRow},${currentCol}`);
+  }
+  
+  // If not at target row on right edge, go there
+  if (currentRow !== endRow) {
+    const step = currentRow < endRow ? 1 : -1;
+    for (let r = currentRow + step; r !== endRow + step; r += step) {
+      pathCells.add(`${r},${currentCol}`);
+    }
+  }
+  
+  // Reset completion tracking
+  completedRows.clear();
+  completedColumns.clear();
+  completedGrids.clear();
+  
+  const pathArray = Array.from(pathCells).map(pos => pos.split(',').map(Number));
+  console.log(`BoardManager: Generated enemy path with ${pathArray.length} cells`);
+  EventSystem.publish(GameEvents.PATH_CHANGED, pathArray);
+  return pathArray;
+}
 
     // Export a new method for direct path access
     function exportPath() {
@@ -581,124 +495,6 @@ function generatePuzzle() {
     return board;
 }
 
-/**
- * Generate a path with a controlled length
- * @param {number} maxLength - Maximum number of cells in the path
- * @returns {Array} Array of path coordinates
- */
-function generateEnemyPath(maxLength = 13) {
-    console.log("BoardManager: Generating enemy path");
-    pathCells.clear();
-    
-    // Only use horizontal and vertical movements to avoid diagonal overlaps
-    const directions = [
-        [-1, 0], // up
-        [1, 0],  // down
-        [0, 1]   // right - only move right, never left to prevent overlaps
-    ];
-    
-    // Start at a random position on the left edge
-    let startRow = Math.floor(Math.random() * 9);
-    let currentRow = startRow;
-    let currentCol = 0;
-    
-    // Choose an end row for the right edge
-    let endRow = Math.floor(Math.random() * 9);
-    
-    // Mark the starting position
-    pathCells.add(`${currentRow},${currentCol}`);
-    
-    // Generate path until we reach max length or the right edge
-    while (pathCells.size < maxLength && currentCol < 8) {
-        let possibleMoves = [];
-        
-        // Check each direction
-        for (let [dr, dc] of directions) {
-            let newRow = currentRow + dr;
-            let newCol = currentCol + dc;
-            
-            // Check if the new position is valid
-            if (
-                newRow >= 0 && newRow < 9 && 
-                newCol >= 0 && newCol < 9 && 
-                !pathCells.has(`${newRow},${newCol}`)
-            ) {
-                // Prioritize horizontal movement where possible
-                if (dc > 0) {
-                    possibleMoves = [[dr, dc]];
-                    break;
-                } else {
-                    possibleMoves.push([dr, dc]);
-                }
-            }
-        }
-        
-        // If no valid moves, force a move right if possible
-        if (possibleMoves.length === 0) {
-            let newRow = currentRow;
-            let newCol = currentCol + 1;
-            
-            if (newCol < 9 && !pathCells.has(`${newRow},${newCol}`)) {
-                currentRow = newRow;
-                currentCol = newCol;
-                pathCells.add(`${currentRow},${currentCol}`);
-                continue;
-            } else {
-                // If we can't move right, we're stuck - break out
-                break;
-            }
-        }
-        
-        // Choose a move, preferring right movement
-        const [dr, dc] = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-        
-        // Move to the new position
-        currentRow += dr;
-        currentCol += dc;
-        pathCells.add(`${currentRow},${currentCol}`);
-    }
-    
-    // Ensure the path reaches the right edge
-    if (currentCol < 8) {
-        // Add a straight line to the right edge
-        for (let col = currentCol + 1; col <= 8; col++) {
-            pathCells.add(`${currentRow},${col}`);
-        }
-    }
-    
-    // Calculate how many cells per 3x3 block are used by the path
-    // This is for debugging to ensure path distribution is reasonable
-    const blocksStats = {};
-    for (let blockRow = 0; blockRow < 3; blockRow++) {
-        for (let blockCol = 0; blockCol < 3; blockCol++) {
-            let count = 0;
-            for (let i = 0; i < 3; i++) {
-                for (let j = 0; j < 3; j++) {
-                    const row = blockRow * 3 + i;
-                    const col = blockCol * 3 + j;
-                    if (pathCells.has(`${row},${col}`)) {
-                        count++;
-                    }
-                }
-            }
-            blocksStats[`${blockRow},${blockCol}`] = count;
-        }
-    }
-    
-    console.log("Path distribution per block:", blocksStats);
-    
-    // Reset completion tracking when path changes
-    completedRows.clear();
-    completedColumns.clear();
-    completedGrids.clear();
-    
-    // Convert the path to an array for compatibility with existing code
-    const pathArray = Array.from(pathCells).map(pos => pos.split(',').map(Number));
-    
-    console.log(`BoardManager: Generated enemy path with ${pathArray.length} cells`);
-    
-    return pathArray;
-}
 
 /**
  * Check if a given Sudoku puzzle is solvable using backtracking
