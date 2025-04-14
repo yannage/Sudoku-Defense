@@ -1139,7 +1139,7 @@ console.log("placeTowerWithBoardSync function updated to trigger completion chec
       if (!currentCharacter || currentMana >= maxMana) return;
       
       // Add a small amount of mana every second. currently set to 0 to avoid mana regen
-      currentMana = Math.min(maxMana, currentMana + 0);
+      currentMana = Math.min(maxMana, currentMana + 0.10);
       updateManaDisplay();
     }, 1000);
     

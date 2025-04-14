@@ -879,6 +879,708 @@ solver: {
     }
   }
 },
+// Speed Solver Character - Rewards fast Sudoku solving with tower damage boosts
+// Speed Solver Character - Rewards fast Sudoku solving with tower damage boosts
+// Updated to keep damage multiplier visible after timer ends
+// Speed Solver Character - With compact top-middle damage indicator
+speedSolver: {
+  name: "Speed Solver",
+  description: "Gains power from quickly solving sections of the puzzle.",
+  icon: "⏱️",
+  color: "#ff7043",
+  baseMaxMana: 9,
+  startingMana: 5,
+  uniqueAbility: {
+    id: "time_challenge",
+    name: "Time Challenge",
+    description: "Start a 20-second challenge to solve cells. Each correct placement increases tower damage.",
+    manaCost: 5,
+    icon: "🏃",
+    cooldown: 0,
+    execute: function() {
+      const challengeDuration = 20; // seconds
+      let correctPlacements = 0;
+      let challengeActive = true;
+      
+      // Remove any existing damage boost indicator before starting a new challenge
+      const existingIndicator = document.getElementById('damage-boost-indicator');
+      if (existingIndicator) {
+        existingIndicator.remove();
+      }
+      
+      // Add the CSS for the speed challenge
+      if (!document.getElementById('speed-solver-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'speed-solver-styles';
+        styles.textContent = `
+          .speed-challenge-timer {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 64px;
+            color: #ff7043;
+            z-index: 100;
+            opacity: 0.7;
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
+            pointer-events: none;
+            transition: transform 0.2s;
+          }
+          
+          .speed-challenge-timer.warning {
+            color: #f44336;
+            animation: pulse 0.5s infinite alternate;
+          }
+          
+          @keyframes pulse {
+            from { transform: translate(-50%, -50%) scale(1); }
+            to { transform: translate(-50%, -50%) scale(1.1); }
+          }
+          
+          .speed-solve-correct {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: #4caf50;
+            pointer-events: none;
+            animation: correct-mark 0.5s forwards;
+            z-index: 10;
+          }
+          
+          @keyframes correct-mark {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.5); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+          }
+          
+          .speed-solve-stats {
+            position: fixed;
+            top: 30%;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            z-index: 99;
+            pointer-events: none;
+            font-size: 14px;
+          }
+          
+          .tower-damage-boosted {
+            animation: damage-boost-pulse 2s infinite alternate;
+          }
+          
+          @keyframes damage-boost-pulse {
+            from { filter: drop-shadow(0 0 3px rgba(255, 112, 67, 0.5)); }
+            to { filter: drop-shadow(0 0 8px rgba(255, 112, 67, 0.9)); }
+          }
+          
+          .damage-boost-indicator {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            z-index: 95;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+          }
+          
+          .damage-boost-indicator .boost-icon {
+            color: #ff7043;
+            margin-right: 5px;
+            font-size: 14px;
+          }
+          
+          .damage-boost-indicator .boost-value {
+            color: #ff7043;
+            font-weight: bold;
+          }
+          
+          .damage-boost-indicator .boost-time {
+            margin-left: 5px;
+            opacity: 0.8;
+            font-size: 11px;
+            font-weight: normal;
+          }
+          
+          .damage-boost-indicator.active {
+            border: 1px solid rgba(255, 112, 67, 0.3);
+          }
+          
+          .damage-boost-indicator.active .boost-icon {
+            animation: icon-pulse 1s infinite alternate;
+          }
+          
+          @keyframes icon-pulse {
+            from { opacity: 0.7; }
+            to { opacity: 1; transform: scale(1.1); }
+          }
+        `;
+        document.head.appendChild(styles);
+      }
+      
+      // Create countdown timer UI
+      const timerElement = document.createElement('div');
+      timerElement.className = 'speed-challenge-timer';
+      timerElement.textContent = challengeDuration;
+      document.body.appendChild(timerElement);
+      
+      // Create stats display
+      const statsElement = document.createElement('div');
+      statsElement.className = 'speed-solve-stats';
+      statsElement.innerHTML = `<div>Correct Placements: <span id="correct-count">0</span></div>
+                              <div>Damage Boost: <span id="damage-boost">0%</span></div>`;
+      document.body.appendChild(statsElement);
+      
+      // Start the challenge
+      let timeRemaining = challengeDuration;
+      showEffectIndicator("Speed Challenge Started", "Place as many correct towers as possible in 20 seconds!");
+      EventSystem.publish(GameEvents.STATUS_MESSAGE, "Speed Challenge: Place Sudoku numbers as fast as you can!");
+      
+      // Update timer every second
+      const timerInterval = setInterval(() => {
+        timeRemaining--;
+        timerElement.textContent = timeRemaining;
+        
+        // Add warning animation for last 5 seconds
+        if (timeRemaining <= 5) {
+          timerElement.classList.add('warning');
+        }
+        
+        if (timeRemaining <= 0) {
+          clearInterval(timerInterval);
+          endChallenge();
+        }
+      }, 1000);
+      
+      // Track tower placements during challenge
+      const placementHandler = function(tower) {
+        if (!challengeActive) return;
+        
+        // Get board solution from BoardManager
+        const solution = BoardManager.getSolution();
+        if (!solution) return;
+        
+        // Check if placement matches solution
+        if (solution[tower.row][tower.col] === parseInt(tower.type)) {
+          correctPlacements++;
+          
+          // Update stats display
+          const correctCountElement = document.getElementById('correct-count');
+          if (correctCountElement) {
+            correctCountElement.textContent = correctPlacements;
+          }
+          
+          const damageBoostElement = document.getElementById('damage-boost');
+          if (damageBoostElement) {
+            damageBoostElement.textContent = `${Math.round(correctPlacements * 5)}%`;
+          }
+          
+          // Visual feedback
+          const cellElement = document.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+          if (cellElement) {
+            const mark = document.createElement('div');
+            mark.className = 'speed-solve-correct';
+            mark.textContent = '✓';
+            cellElement.appendChild(mark);
+            
+            // Remove after animation
+            setTimeout(() => {
+              if (mark.parentNode === cellElement) {
+                cellElement.removeChild(mark);
+              }
+            }, 500);
+          }
+        }
+      };
+      
+      // Subscribe to tower placement event
+      EventSystem.subscribe(GameEvents.TOWER_PLACED, placementHandler);
+      
+      function endChallenge() {
+        challengeActive = false;
+        
+        // Remove timer and stats elements
+        if (timerElement.parentNode) {
+          timerElement.parentNode.removeChild(timerElement);
+        }
+        
+        if (statsElement.parentNode) {
+          statsElement.parentNode.removeChild(statsElement);
+        }
+        
+        // Apply tower damage boost based on performance
+        const damageBoost = 1 + (correctPlacements * 0.05); // 5% per correct placement
+        const boostPercentage = Math.round((damageBoost-1)*100);
+        
+        if (correctPlacements > 0) {
+          const towers = TowersModule.getTowers();
+          towers.forEach(tower => {
+            // Store original damage if not already stored
+            tower.originalDamage = tower.originalDamage || tower.damage;
+            // Apply damage boost
+            tower.damage = Math.floor(tower.originalDamage * damageBoost);
+            
+            // Add visual indicator to boosted towers
+            const towerElement = document.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+            if (towerElement) {
+              towerElement.classList.add('tower-damage-boosted');
+            }
+          });
+          
+          // Create compact damage boost indicator
+          const boostIndicator = document.createElement('div');
+          boostIndicator.id = 'damage-boost-indicator';
+          boostIndicator.className = 'damage-boost-indicator active';
+          boostIndicator.innerHTML = `
+            <span class="boost-icon">⚡</span>
+            Damage <span class="boost-value">+${boostPercentage}%</span>
+            <span class="boost-time">30s</span>
+          `;
+          document.body.appendChild(boostIndicator);
+          
+          // Show challenge results
+          showEffectIndicator("Challenge Complete", 
+            `${correctPlacements} correct placements! Towers deal +${boostPercentage}% damage for 30s!`);
+          
+          // Update the countdown timer in the indicator
+          let boostTimeRemaining = 30;
+          const boostTimerInterval = setInterval(() => {
+            boostTimeRemaining--;
+            
+            // Update time display
+            const timeElement = boostIndicator.querySelector('.boost-time');
+            if (timeElement) {
+              timeElement.textContent = `${boostTimeRemaining}s`;
+            }
+            
+            if (boostTimeRemaining <= 0) {
+              clearInterval(boostTimerInterval);
+              
+              // Don't remove indicator, just update it and remove active state
+              boostIndicator.classList.remove('active');
+              boostIndicator.innerHTML = `
+                <span class="boost-icon">⚡</span>
+                Damage <span class="boost-value">+${boostPercentage}%</span>
+              `;
+              
+              // Reset towers damage
+              const currentTowers = TowersModule.getTowers();
+              currentTowers.forEach(tower => {
+                if (tower.originalDamage) {
+                  tower.damage = tower.originalDamage;
+                  delete tower.originalDamage;
+                  
+                  // Remove visual indicator
+                  const towerElement = document.querySelector(`.sudoku-cell[data-row="${tower.row}"][data-col="${tower.col}"]`);
+                  if (towerElement) {
+                    towerElement.classList.remove('tower-damage-boosted');
+                  }
+                }
+              });
+              
+              EventSystem.publish(GameEvents.STATUS_MESSAGE, "Speed Solver damage boost ended");
+            }
+          }, 1000);
+        } else {
+          showEffectIndicator("Challenge Failed", "No correct placements made!");
+          
+          // Create minimal indicator showing 0% boost
+          const boostIndicator = document.createElement('div');
+          boostIndicator.id = 'damage-boost-indicator';
+          boostIndicator.className = 'damage-boost-indicator';
+          boostIndicator.innerHTML = `
+            <span class="boost-icon">⚡</span>
+            Damage <span class="boost-value">+0%</span>
+          `;
+          document.body.appendChild(boostIndicator);
+        }
+        
+        return true;
+      }
+      
+      return true;
+    }
+  }
+},
+// Visualizer Character - Shows heat maps of rows, columns, or grids with few cells left
+visualizer: {
+  name: "Visualizer",
+  description: "Uses pattern recognition to identify nearly completed sections.",
+  icon: "👁️‍🗨️",
+  color: "#4db6ac",
+  baseMaxMana: 8,
+  startingMana: 4,
+  uniqueAbility: {
+    id: "heat_vision",
+    name: "Heat Vision",
+    description: "Highlights up to 3 rows, columns, or grids that are closest to completion.",
+    manaCost: 4,
+    icon: "🔍",
+    cooldown: 0,
+    execute: function() {
+      // Add the CSS for heat vision if not already added
+      if (!document.getElementById('visualizer-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'visualizer-styles';
+        styles.textContent = `
+          .heat-vision-highlight-1 {
+            background-color: rgba(76, 175, 80, 0.3) !important;
+            position: relative;
+          }
+          
+          .heat-vision-highlight-2 {
+            background-color: rgba(255, 193, 7, 0.3) !important;
+            position: relative;
+          }
+          
+          .heat-vision-highlight-3 {
+            background-color: rgba(244, 67, 54, 0.3) !important;
+            position: relative;
+          }
+          
+          .heat-vision-highlight-1::after,
+          .heat-vision-highlight-2::after,
+          .heat-vision-highlight-3::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            animation: heat-pulse 2s infinite;
+            pointer-events: none;
+            z-index: 4;
+          }
+          
+          .heat-vision-highlight-1::after {
+            box-shadow: inset 0 0 8px rgba(76, 175, 80, 0.7);
+          }
+          
+          .heat-vision-highlight-2::after {
+            box-shadow: inset 0 0 8px rgba(255, 193, 7, 0.7);
+          }
+          
+          .heat-vision-highlight-3::after {
+            box-shadow: inset 0 0 8px rgba(244, 67, 54, 0.7);
+          }
+          
+          @keyframes heat-pulse {
+            0% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+            100% { opacity: 0.3; }
+          }
+          
+          .cells-remaining {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 1px 3px;
+            border-radius: 3px;
+            font-size: 10px;
+            z-index: 5;
+          }
+          
+          .heat-vision-legend {
+            position: fixed;
+            top: 20%;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            z-index: 99;
+            font-size: 12px;
+          }
+          
+          .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+          }
+          
+          .legend-color {
+            width: 15px;
+            height: 15px;
+            margin-right: 5px;
+            border-radius: 3px;
+          }
+          
+          .legend-color-1 {
+            background-color: rgba(76, 175, 80, 0.7);
+          }
+          
+          .legend-color-2 {
+            background-color: rgba(255, 193, 7, 0.7);
+          }
+          
+          .legend-color-3 {
+            background-color: rgba(244, 67, 54, 0.7);
+          }
+        `;
+        document.head.appendChild(styles);
+      }
+      
+      // Get board data from BoardManager
+      const board = BoardManager.getBoard();
+      const pathCells = BoardManager.getPathCells();
+      
+      if (!board) {
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot analyze board data!");
+        return false;
+      }
+      
+      // Analyze completion status of rows, columns, and grids
+      const unitStatus = {
+        rows: Array(9).fill().map((_, i) => analyzeUnit('row', i)),
+        columns: Array(9).fill().map((_, i) => analyzeUnit('column', i)),
+        grids: []
+      };
+      
+      // Analyze 3x3 grids
+      for (let gridRow = 0; gridRow < 3; gridRow++) {
+        for (let gridCol = 0; gridCol < 3; gridCol++) {
+          unitStatus.grids.push({
+            type: 'grid',
+            index: `${gridRow}-${gridCol}`,
+            ...analyzeGrid(gridRow, gridCol)
+          });
+        }
+      }
+      
+      // Find most promising units (closest to completion but not complete)
+      const allUnits = [
+        ...unitStatus.rows.map(row => ({ ...row, type: 'row' })),
+        ...unitStatus.columns.map(col => ({ ...col, type: 'column' })),
+        ...unitStatus.grids
+      ].filter(unit => unit.emptyCells > 0); // Only look at incomplete units
+      
+      // Sort by number of empty cells (ascending)
+      allUnits.sort((a, b) => a.emptyCells - b.emptyCells);
+      
+      // Take up to 3 units that are closest to completion
+      const topUnits = allUnits.slice(0, 3);
+      
+      if (topUnits.length === 0) {
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "No incomplete sections found!");
+        return false;
+      }
+      
+      // Create legend
+      const legendElement = document.createElement('div');
+      legendElement.className = 'heat-vision-legend';
+      legendElement.innerHTML = `
+        <div style="text-align: center; margin-bottom: 8px; font-weight: bold;">Heat Vision</div>
+        ${topUnits.map((unit, i) => `
+          <div class="legend-item">
+            <div class="legend-color legend-color-${i+1}"></div>
+            <div>${unit.type.charAt(0).toUpperCase() + unit.type.slice(1)} ${unit.index}: ${unit.emptyCells} empty</div>
+          </div>
+        `).join('')}
+        <div style="font-size: 10px; margin-top: 8px;">Heat vision active for 15 seconds</div>
+      `;
+      document.body.appendChild(legendElement);
+      
+      // Highlight units
+      topUnits.forEach((unit, i) => {
+        highlightUnit(unit.type, unit.index, i + 1, unit.emptyCells);
+      });
+      
+      showEffectIndicator("Heat Vision", `Highlighted ${topUnits.length} near-complete sections!`);
+      
+      // Remove highlights after 15 seconds
+      setTimeout(() => {
+        // Remove all highlight classes
+        document.querySelectorAll('[class*=heat-vision-highlight]').forEach(el => {
+          el.classList.remove('heat-vision-highlight-1', 'heat-vision-highlight-2', 'heat-vision-highlight-3');
+          const cellsRemaining = el.querySelector('.cells-remaining');
+          if (cellsRemaining) {
+            cellsRemaining.remove();
+          }
+        });
+        
+        // Remove legend
+        if (legendElement.parentNode) {
+          legendElement.parentNode.removeChild(legendElement);
+        }
+        
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Heat vision ended");
+      }, 15000);
+      
+      return true;
+      
+      // Helper function to analyze a row or column
+      function analyzeUnit(type, index) {
+        let emptyCells = 0;
+        let filledCells = 0;
+        let emptyCellPositions = [];
+        
+        if (type === 'row') {
+          // Analyze a row
+          for (let col = 0; col < 9; col++) {
+            if (pathCells && pathCells.has(`${index},${col}`)) {
+              // Skip path cells
+              continue;
+            }
+            
+            if (board[index][col] === 0) {
+              emptyCells++;
+              emptyCellPositions.push([index, col]);
+            } else {
+              filledCells++;
+            }
+          }
+        } else {
+          // Analyze a column
+          for (let row = 0; row < 9; row++) {
+            if (pathCells && pathCells.has(`${row},${index}`)) {
+              // Skip path cells
+              continue;
+            }
+            
+            if (board[row][index] === 0) {
+              emptyCells++;
+              emptyCellPositions.push([row, index]);
+            } else {
+              filledCells++;
+            }
+          }
+        }
+        
+        return {
+          index,
+          emptyCells,
+          filledCells,
+          emptyCellPositions
+        };
+      }
+      
+      // Helper function to analyze a 3x3 grid
+      function analyzeGrid(gridRow, gridCol) {
+        let emptyCells = 0;
+        let filledCells = 0;
+        let emptyCellPositions = [];
+        
+        for (let r = 0; r < 3; r++) {
+          for (let c = 0; c < 3; c++) {
+            const row = gridRow * 3 + r;
+            const col = gridCol * 3 + c;
+            
+            if (pathCells && pathCells.has(`${row},${col}`)) {
+              // Skip path cells
+              continue;
+            }
+            
+            if (board[row][col] === 0) {
+              emptyCells++;
+              emptyCellPositions.push([row, col]);
+            } else {
+              filledCells++;
+            }
+          }
+        }
+        
+        return {
+          emptyCells,
+          filledCells,
+          emptyCellPositions
+        };
+      }
+      
+      // Helper function to highlight a unit
+      function highlightUnit(type, index, highlightLevel, emptyCells) {
+        if (type === 'row') {
+          // Highlight cells in a row
+          for (let col = 0; col < 9; col++) {
+            if (pathCells && pathCells.has(`${index},${col}`)) {
+              // Skip path cells
+              continue;
+            }
+            
+            const cell = document.querySelector(`.sudoku-cell[data-row="${index}"][data-col="${col}"]`);
+            if (cell) {
+              cell.classList.add(`heat-vision-highlight-${highlightLevel}`);
+              
+              // Only add counter to one cell in the unit
+              if (col === 0) {
+                const counter = document.createElement('div');
+                counter.className = 'cells-remaining';
+                counter.textContent = emptyCells;
+                cell.appendChild(counter);
+              }
+            }
+          }
+        } else if (type === 'column') {
+          // Highlight cells in a column
+          for (let row = 0; row < 9; row++) {
+            if (pathCells && pathCells.has(`${row},${index}`)) {
+              // Skip path cells
+              continue;
+            }
+            
+            const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${index}"]`);
+            if (cell) {
+              cell.classList.add(`heat-vision-highlight-${highlightLevel}`);
+              
+              // Only add counter to one cell in the unit
+              if (row === 0) {
+                const counter = document.createElement('div');
+                counter.className = 'cells-remaining';
+                counter.textContent = emptyCells;
+                cell.appendChild(counter);
+              }
+            }
+          }
+        } else if (type === 'grid') {
+          // Parse grid index
+          const [gridRow, gridCol] = index.split('-').map(Number);
+          
+          // Highlight cells in a 3x3 grid
+          for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+              const row = gridRow * 3 + r;
+              const col = gridCol * 3 + c;
+              
+              if (pathCells && pathCells.has(`${row},${col}`)) {
+                // Skip path cells
+                continue;
+              }
+              
+              const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+              if (cell) {
+                cell.classList.add(`heat-vision-highlight-${highlightLevel}`);
+                
+                // Only add counter to top-left cell in the grid
+                if (r === 0 && c === 0) {
+                  const counter = document.createElement('div');
+                  counter.className = 'cells-remaining';
+                  counter.textContent = emptyCells;
+                  cell.appendChild(counter);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+},
 // Enhanced Beastmaster character ability with multiple animal types
 beastmaster: {
   name: "Beastmaster",
