@@ -978,122 +978,50 @@ function isComplete() {
   // Check that all non-path cells match the solution
   for (let row = 0; row < 9; row++) {
     for (let col = 0; col < 9; col++) {
-      // Skip path cells
-      if (pathCells.has(`${row},${col}`)) {
-        continue;
-      }
-      
-      // Check that this cell matches the solution
-      if (board[row][col] !== solution[row][col]) {
-        return false;
-      }
+      if (pathCells.has(`${row},${col}`)) continue;
+      if (board[row][col] !== solution[row][col]) return false;
     }
   }
   
-  // Update completion tracking for rows, columns, and grids
-  // (Similar to checkUnitCompletion but focused on verification)
-  
-  // For rows
+  // Update completed tracking
   for (let row = 0; row < 9; row++) {
-    const playableCells = [];
-    const values = new Set();
-    
-    for (let col = 0; col < 9; col++) {
-      if (!pathCells.has(`${row},${col}`)) {
-        playableCells.push([row, col]);
-        const value = board[row][col];
-        if (value > 0) {
-          values.add(value);
-        }
-      }
-    }
-    
-    // Skip rows with only path cells
-    if (playableCells.length === 0) continue;
-    
-    // Row should be complete by this point
-    const filledCellCount = playableCells.filter(([r, c]) => board[r][c] > 0).length;
-    if (filledCellCount !== playableCells.length || values.size !== playableCells.length) {
-      return false;
-    }
-    
-    // Ensure the row is marked as completed
-    if (!completedRows.has(row)) {
+    if (![...Array(9)].some((_, col) => !pathCells.has(`${row},${col}`) && board[row][col] === 0)) {
       completedRows.add(row);
     }
   }
   
-  // For columns
   for (let col = 0; col < 9; col++) {
-    const playableCells = [];
-    const values = new Set();
-    
-    for (let row = 0; row < 9; row++) {
-      if (!pathCells.has(`${row},${col}`)) {
-        playableCells.push([row, col]);
-        const value = board[row][col];
-        if (value > 0) {
-          values.add(value);
-        }
-      }
-    }
-    
-    // Skip columns with only path cells
-    if (playableCells.length === 0) continue;
-    
-    // Column should be complete by this point
-    const filledCellCount = playableCells.filter(([r, c]) => board[r][c] > 0).length;
-    if (filledCellCount !== playableCells.length || values.size !== playableCells.length) {
-      return false;
-    }
-    
-    // Ensure the column is marked as completed
-    if (!completedColumns.has(col)) {
+    if (![...Array(9)].some((_, row) => !pathCells.has(`${row},${col}`) && board[row][col] === 0)) {
       completedColumns.add(col);
     }
   }
   
-  // For 3x3 grids
   for (let gridRow = 0; gridRow < 3; gridRow++) {
     for (let gridCol = 0; gridCol < 3; gridCol++) {
-      const playableCells = [];
-      const values = new Set();
-      const gridKey = `${gridRow}-${gridCol}`;
-      
+      let complete = true;
       for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 3; j++) {
           const row = gridRow * 3 + i;
           const col = gridCol * 3 + j;
-          
-          if (!pathCells.has(`${row},${col}`)) {
-            playableCells.push([row, col]);
-            const value = board[row][col];
-            if (value > 0) {
-              values.add(value);
-            }
+          if (!pathCells.has(`${row},${col}`) && board[row][col] === 0) {
+            complete = false;
           }
         }
       }
-      
-      // Skip grids with only path cells
-      if (playableCells.length === 0) continue;
-      
-      // Grid should be complete by this point
-      const filledCellCount = playableCells.filter(([r, c]) => board[r][c] > 0).length;
-      if (filledCellCount !== playableCells.length || values.size !== playableCells.length) {
-        return false;
-      }
-      
-      // Ensure the grid is marked as completed
-      if (!completedGrids.has(gridKey)) {
-        completedGrids.add(gridKey);
-      }
+      if (complete) completedGrids.add(`${gridRow}-${gridCol}`);
     }
+  }
+  
+  // Mark timestamp if you want this for reward timing
+  if (!window._lastCompletionTime || (Date.now() - window._lastCompletionTime > 5000)) {
+    window._lastCompletionTime = Date.now();
   }
   
   console.log("BoardManager: Sudoku puzzle is COMPLETE!");
   return true;
 }
+
+
     function isTowerIncorrect(row, col, value) {
       // Check if it matches the solution
       if (solution[row][col] !== value) {
@@ -1146,124 +1074,6 @@ function isComplete() {
  * Completely revised version that properly handles path cells
  * @returns {boolean} Whether the Sudoku is complete
  */
-function isComplete() {
-  console.log("BoardManager: Checking if Sudoku is complete");
-  
-  if (!solution || solution.length !== 9) {
-    console.warn("BoardManager: Solution is not available or malformed.");
-    return false;
-  }
-  
-  const newlyCompletedRows = [];
-  const newlyCompletedColumns = [];
-  const newlyCompletedGrids = [];
-  
-  // Check that all playable cells (non-path cells) match the solution
-  for (let row = 0; row < 9; row++) {
-    for (let col = 0; col < 9; col++) {
-      // Skip path cells
-      if (pathCells.has(`${row},${col}`)) {
-        continue;
-      }
-      
-      // Check that this cell matches the solution
-      if (board[row][col] !== solution[row][col]) {
-        return false;
-      }
-    }
-  }
-  
-  // At this point, all non-path cells match the solution
-  
-  // Update completion tracking for rows
-  for (let row = 0; row < 9; row++) {
-    const playableCells = [];
-    const filledCells = [];
-    
-    for (let col = 0; col < 9; col++) {
-      if (!pathCells.has(`${row},${col}`)) {
-        playableCells.push([row, col]);
-        if (board[row][col] > 0) {
-          filledCells.push([row, col]);
-        }
-      }
-    }
-    
-    // Skip rows that are all path cells
-    if (playableCells.length === 0) continue;
-    
-    // Row is complete if all playable cells are filled
-    if (filledCells.length === playableCells.length && !completedRows.has(row)) {
-      completedRows.add(row);
-      newlyCompletedRows.push(row);
-    }
-  }
-  
-  // Update completion tracking for columns
-  for (let col = 0; col < 9; col++) {
-    const playableCells = [];
-    const filledCells = [];
-    
-    for (let row = 0; row < 9; row++) {
-      if (!pathCells.has(`${row},${col}`)) {
-        playableCells.push([row, col]);
-        if (board[row][col] > 0) {
-          filledCells.push([row, col]);
-        }
-      }
-    }
-    
-    // Skip columns that are all path cells
-    if (playableCells.length === 0) continue;
-    
-    // Column is complete if all playable cells are filled
-    if (filledCells.length === playableCells.length && !completedColumns.has(col)) {
-      completedColumns.add(col);
-      newlyCompletedColumns.push(col);
-    }
-  }
-  
-  // Update completion tracking for grids
-  for (let gridRow = 0; gridRow < 3; gridRow++) {
-    for (let gridCol = 0; gridCol < 3; gridCol++) {
-      const playableCells = [];
-      const filledCells = [];
-      const gridKey = `${gridRow}-${gridCol}`;
-      
-      for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-          const row = gridRow * 3 + i;
-          const col = gridCol * 3 + j;
-          
-          if (!pathCells.has(`${row},${col}`)) {
-            playableCells.push([row, col]);
-            if (board[row][col] > 0) {
-              filledCells.push([row, col]);
-            }
-          }
-        }
-      }
-      
-      // Skip grids that are all path cells
-      if (playableCells.length === 0) continue;
-      
-      // Grid is complete if all playable cells are filled
-      if (filledCells.length === playableCells.length && !completedGrids.has(gridKey)) {
-        completedGrids.add(gridKey);
-        newlyCompletedGrids.push(gridKey);
-      }
-    }
-  }
-  
-  console.log("BoardManager: Sudoku puzzle is COMPLETE!");
-  
-  if (!window._lastCompletionTime || (Date.now() - window._lastCompletionTime > 5000)) {
-    window._lastCompletionTime = Date.now();
-  }
-  
-  return true;
-}
-
 
 /**
  * Debug function to print the full solution grid
