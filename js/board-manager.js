@@ -780,15 +780,13 @@ function checkUnitCompletion() {
     const playableCells = [];
     const values = new Set(); // Use Set to ensure uniqueness check
     
-    for (let col = 0; col < 9; col++) {
-      if (!pathCells.has(`${row},${col}`)) {
-        playableCells.push([row, col]);
-        const value = board[row][col];
-        if (value > 0) {
-          values.add(value);
-        }
-      }
-    }
+for (let col = 0; col < 9; col++) {
+  playableCells.push([row, col]);
+  const value = board[row][col];
+  if (value > 0) {
+    values.add(value);
+  }
+}
     
     // Skip rows that have only path cells
     if (playableCells.length === 0) continue;
@@ -831,14 +829,12 @@ function checkUnitCompletion() {
     const values = new Set(); // Use Set to ensure uniqueness check
     
     for (let row = 0; row < 9; row++) {
-      if (!pathCells.has(`${row},${col}`)) {
-        playableCells.push([row, col]);
-        const value = board[row][col];
-        if (value > 0) {
-          values.add(value);
-        }
-      }
-    }
+  playableCells.push([row, col]);
+  const value = board[row][col];
+  if (value > 0) {
+    values.add(value);
+  }
+}
     
     // Skip columns that have only path cells
     if (playableCells.length === 0) continue;
@@ -878,19 +874,17 @@ function checkUnitCompletion() {
       const values = new Set(); // Use Set to ensure uniqueness check
       
       for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-          const row = gridRow * 3 + i;
-          const col = gridCol * 3 + j;
-          
-          if (!pathCells.has(`${row},${col}`)) {
-            playableCells.push([row, col]);
-            const value = board[row][col];
-            if (value > 0) {
-              values.add(value);
-            }
-          }
-        }
-      }
+  for (let j = 0; j < 3; j++) {
+    const row = gridRow * 3 + i;
+    const col = gridCol * 3 + j;
+    
+    playableCells.push([row, col]);
+    const value = board[row][col];
+    if (value > 0) {
+      values.add(value);
+    }
+  }
+}
       
       // Skip grids that have only path cells
       if (playableCells.length === 0) continue;
@@ -997,21 +991,20 @@ function isComplete() {
   }
   
   for (let gridRow = 0; gridRow < 3; gridRow++) {
-    for (let gridCol = 0; gridCol < 3; gridCol++) {
-      let complete = true;
-      for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-          const row = gridRow * 3 + i;
-          const col = gridCol * 3 + j;
-          if (!pathCells.has(`${row},${col}`) && board[row][col] === 0) {
-            complete = false;
-          }
+  for (let gridCol = 0; gridCol < 3; gridCol++) {
+    let complete = true;
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        const row = gridRow * 3 + i;
+        const col = gridCol * 3 + j;
+        if (board[row][col] === 0) {
+          complete = false;
         }
       }
-      if (complete) completedGrids.add(`${gridRow}-${gridCol}`);
     }
+    if (complete) completedGrids.add(`${gridRow}-${gridCol}`);
   }
-  
+}
   // Mark timestamp if you want this for reward timing
   if (!window._lastCompletionTime || (Date.now() - window._lastCompletionTime > 5000)) {
     window._lastCompletionTime = Date.now();
