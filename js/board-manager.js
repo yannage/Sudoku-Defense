@@ -1129,9 +1129,7 @@ function checkUnitCompletion() {
       console.log(`Publishing row:completed for row ${row}`);
       EventSystem.publish('row:completed', row);
       
-      if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
-        CompletionBonusModule.onUnitCompleted('row', row);
-      }
+      
     }, 100 * (index + 1)); // Stagger animations if multiple rows completed
   });
   
@@ -1140,9 +1138,6 @@ function checkUnitCompletion() {
       console.log(`Publishing column:completed for column ${col}`);
       EventSystem.publish('column:completed', col);
       
-      if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
-        CompletionBonusModule.onUnitCompleted('column', col);
-      }
     }, 100 * (index + 1) + 200); // Delay columns after rows
   });
   
@@ -1151,9 +1146,6 @@ function checkUnitCompletion() {
       console.log(`Publishing grid:completed for grid ${grid}`);
       EventSystem.publish('grid:completed', grid);
       
-      if (window.CompletionBonusModule && typeof CompletionBonusModule.onUnitCompleted === 'function') {
-        CompletionBonusModule.onUnitCompleted('grid', grid);
-      }
     }, 100 * (index + 1) + 400); // Delay grids after columns
   });
   
@@ -1324,19 +1316,6 @@ function isComplete() {
         newlyCompletedGrids.push(gridKey);
       }
     }
-  }
-  
-  // Fire completion events for any newly completed units
-  for (const row of newlyCompletedRows) {
-    EventSystem.publish('row:completed', row);
-  }
-  
-  for (const col of newlyCompletedColumns) {
-    EventSystem.publish('column:completed', col);
-  }
-  
-  for (const grid of newlyCompletedGrids) {
-    EventSystem.publish('grid:completed', grid);
   }
   
   console.log("BoardManager: Sudoku puzzle is COMPLETE!");

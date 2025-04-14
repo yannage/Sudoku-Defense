@@ -56,8 +56,8 @@ let hasCelebrated = false;
                 pointer-events: auto;
             }
             
-           .celebration - content {
-    background - color: #1a1a1a;
+           .celebration-content {
+    background-color: #1a1a1a;
     color: white;
     border-radius: 10px;
     padding: 20px;
@@ -815,15 +815,7 @@ if (content) {
     
     // Directly check unit (row, column, grid) completions using BoardManager
 // Directly check unit (row, column, grid) completions using BoardManager
-function checkUnitCompletions() {
-  // Use BoardManager directly without fallback
-  if (window.BoardManager && typeof BoardManager.checkUnitCompletion === 'function') {
-    BoardManager.checkUnitCompletion();
-    return true;
-  }
-  console.warn("BoardManager.checkUnitCompletion not available");
-  return false;
-}
+function checkUnitCompletions() {}
 
 // Handle completion of a unit (row, column, or box)
 // Replace this in completion-bonus.js
@@ -835,19 +827,31 @@ function checkUnitCompletions() {
 /**
  * Handle completion of a unit (row, column, or grid)
  * Applies bonus effects and triggers animations with deduplication
- */
-function onUnitCompleted(unitType, unitIndex) {
-  console.log(`Unit completed handler: ${unitType} ${unitIndex}`);
-  
-  // Prevent duplicate triggers within 3 seconds
+ */function onUnitCompleted(unitType, unitIndex) {
   const key = `${unitType}-${unitIndex}`;
   const now = Date.now();
+  
+  // Initialize recentCompletions and permanentCompletions
   if (!window._recentCompletions) window._recentCompletions = {};
-  if ((now - (window._recentCompletions[key] || 0)) < 3000) {
-    console.log(`Skipping duplicate completion for ${key}`);
+  if (!window._completedUnitSet) window._completedUnitSet = new Set();
+  
+  // Skip if already animated before (permanent suppression)
+  if (window._completedUnitSet.has(key)) {
+    console.log(`Already animated before, skipping: ${key}`);
     return;
   }
+  
+  // Prevent duplicate triggers within short window (throttling)
+  if ((now - (window._recentCompletions[key] || 0)) < 3000) {
+    console.log(`Throttled duplicate completion for ${key}`);
+    return;
+  }
+  
+  // Update both tracking mechanisms
   window._recentCompletions[key] = now;
+  window._completedUnitSet.add(key);
+  
+  console.log(`Unit completed handler: ${key}`);
   
   // Determine bonus amount by unit type
   let bonusAmount = 50;
@@ -858,7 +862,6 @@ function onUnitCompleted(unitType, unitIndex) {
   if (window.PlayerModule) {
     PlayerModule.addCurrency(bonusAmount);
     PlayerModule.addScore(bonusAmount * 2);
-    
     EventSystem.publish(GameEvents.STATUS_MESSAGE,
       `${unitType.charAt(0).toUpperCase() + unitType.slice(1)} ${unitIndex} completed! Bonus: ${bonusAmount} currency and ${bonusAmount * 2} points!`);
   }
@@ -873,7 +876,6 @@ function onUnitCompleted(unitType, unitIndex) {
     animateUnitCompletion(unitType, unitIndex, bonusAmount);
   }, 50);
 }
-   
     // Apply bonus effects for completed units
 // Replace the individual animation functions with the unified one
 function applyCompletionBonus(unitType, unitIndex) {
