@@ -1062,8 +1062,15 @@ const AbilitySystem = (function() {
     
     return false;
   }
-  
-  function placeTowerWithBoardSync(value, row, col, options = {}) {
+  /**
+ * Simple fix for abilities not triggering completion bonuses
+ * 
+ * Just update the placeTowerWithBoardSync function to explicitly check
+ * for completions after placing a tower.
+ */
+
+// Replace the existing placeTowerWithBoardSync function with this improved version
+function placeTowerWithBoardSync(value, row, col, options = {}) {
   const boardManager = window.BoardManager;
   const towersModule = window.TowersModule;
   
@@ -1073,8 +1080,25 @@ const AbilitySystem = (function() {
   // Update the board (for Sudoku logic)
   boardManager?.setCellValue?.(row, col, value);
   
+  // Force a check for unit completions
+  setTimeout(() => {
+    if (boardManager && typeof boardManager.checkUnitCompletion === 'function') {
+      boardManager.checkUnitCompletion();
+    }
+    
+    // Force UI update to show completion effects
+    if (window.Game && typeof Game.updateBoard === 'function') {
+      Game.updateBoard();
+    }
+  }, 100);
+  
   return tower;
 }
+
+// Make it globally available to override the existing function
+window.placeTowerWithBoardSync = placeTowerWithBoardSync;
+
+console.log("placeTowerWithBoardSync function updated to trigger completion checks");
   
   /**
    * Set up event listeners

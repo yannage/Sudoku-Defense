@@ -1098,6 +1098,8 @@ function showWavePreview(wavePreview) {
     container.appendChild(waveElement);
   });
   
+  
+  
   // Add close button
   const closeButton = document.createElement('button');
   closeButton.textContent = 'Close';
