@@ -121,7 +121,8 @@ const BoardManager = (function() {
         return null; // No empty cells
     }
     
-    function getPlayableCellsInUnit(unitType, unitIndex) {
+    
+function getPlayableCellsInUnit(unitType, unitIndex) {
   const cells = [];
   
   if (unitType === 'row') {

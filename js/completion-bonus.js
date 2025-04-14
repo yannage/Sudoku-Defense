@@ -832,69 +832,46 @@ function checkUnitCompletions() {
  * Handle completion of a unit (row, column, or box)
  * Modified to ensure animations always play
  */
+/**
+ * Handle completion of a unit (row, column, or grid)
+ * Applies bonus effects and triggers animations with deduplication
+ */
 function onUnitCompleted(unitType, unitIndex) {
   console.log(`Unit completed handler: ${unitType} ${unitIndex}`);
   
-  // Prevent duplicate calls by tracking recent completions
+  // Prevent duplicate triggers within 3 seconds
   const key = `${unitType}-${unitIndex}`;
   const now = Date.now();
-  if (window._recentCompletions && (now - window._recentCompletions[key]) < 3000) {
+  if (!window._recentCompletions) window._recentCompletions = {};
+  if ((now - (window._recentCompletions[key] || 0)) < 3000) {
     console.log(`Skipping duplicate completion for ${key}`);
     return;
   }
-  
-  // Store the completion time
-  if (!window._recentCompletions) window._recentCompletions = {};
   window._recentCompletions[key] = now;
   
-  // Apply bonus effects for completed units
-  let bonusAmount = 50; // Base bonus
+  // Determine bonus amount by unit type
+  let bonusAmount = 50;
+  if (unitType === 'column') bonusAmount = 75;
+  else if (unitType === 'grid') bonusAmount = 100;
   
-  // Different bonus amounts based on unit type
-  if (unitType === 'row') {
-    bonusAmount = 50;
-  } else if (unitType === 'column') {
-    bonusAmount = 75;
-  } else if (unitType === 'grid') {
-    bonusAmount = 100;
-  }
-  
-  // Add currency and score
+  // Apply bonus points and currency
   if (window.PlayerModule) {
     PlayerModule.addCurrency(bonusAmount);
     PlayerModule.addScore(bonusAmount * 2);
     
-    // Show message with the specific unit index
     EventSystem.publish(GameEvents.STATUS_MESSAGE,
       `${unitType.charAt(0).toUpperCase() + unitType.slice(1)} ${unitIndex} completed! Bonus: ${bonusAmount} currency and ${bonusAmount * 2} points!`);
   }
   
-  console.log(`Attempting to animate completion for ${unitType} ${unitIndex}`);
-  
-  // ✅ IMPORTANT: Force UI to update BEFORE running animations
+  // Force board update before animation
   if (window.Game && typeof Game.updateBoard === 'function') {
     Game.updateBoard();
   }
   
-  // Add a small delay before animating
+  // Run animation shortly after applying logic
   setTimeout(() => {
-    // Call the animation function directly
-    if (typeof animateUnitCompletion === 'function') {
-      console.log(`Running animateUnitCompletion for ${unitType} ${unitIndex}`);
-      animateUnitCompletion(unitType, unitIndex, bonusAmount);
-    } else {
-      console.error(`animateUnitCompletion function not found when completing ${unitType} ${unitIndex}`);
-    }
-  }, 100);
-  
-  // Check if the entire board is complete
-  if (window.BoardManager && typeof BoardManager.isComplete === 'function') {
-    if (BoardManager.isComplete()) {
-      console.log("BoardManager reports board is complete!");
-      // Trigger celebration after a short delay
-      setTimeout(showCelebration, 1000);
-    }
-  }
+    animateUnitCompletion(unitType, unitIndex, bonusAmount);
+  }, 50);
 }
    
     // Apply bonus effects for completed units
@@ -1196,94 +1173,215 @@ function getSpiralIndex(row, col, height, width) {
  * @param {*} unitIndex - Index of the unit (row number, column number, or grid key)
  * @param {number} bonusAmount - Currency bonus amount for unit completion
  */
+/**
+ * Enhanced unit animation function with better cell finding and error handling
+ * Replace this function in your completion-bonus.js file
+ */
 function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
-  console.log(`Animating completion for ${unitType} ${unitIndex}`);
-  
-  // Force an immediate UI update before any animations
-  if (window.Game && typeof Game.updateBoard === 'function') {
-    Game.updateBoard();
-  }
+  console.log(`Animating completion for ${unitType} ${unitIndex} with ${bonusAmount} bonus`);
   
   // Get path cells to exclude from animation
   const pathCells = window.BoardManager?.getPathCells?.() || new Set();
   let validCells = [];
   let centerCell = null;
   
-  // Get playable cells from BoardManager
-  const playableCells = BoardManager.getPlayableCellsInUnit(unitType, unitIndex);
+  // Different behavior based on unit type
+  if (unitType === 'row') {
+    // Get all cells in the row
+    for (let col = 0; col < 9; col++) {
+      if (!pathCells.has(`${unitIndex},${col}`)) {
+        const cell = document.querySelector(`.sudoku-cell[data-row="${unitIndex}"][data-col="${col}"]`);
+        if (cell) {
+          validCells.push({ cell, index: col });
+        }
+      }
+    }
+    
+    // Sort cells by column index for left-to-right wave
+    validCells.sort((a, b) => a.index - b.index);
+    
+  } else if (unitType === 'column') {
+    // Get all cells in the column
+    for (let row = 0; row < 9; row++) {
+      if (!pathCells.has(`${row},${unitIndex}`)) {
+        const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${unitIndex}"]`);
+        if (cell) {
+          validCells.push({ cell, index: row });
+        }
+      }
+    }
+    
+    // Sort cells by row index for top-to-bottom wave
+    validCells.sort((a, b) => a.index - b.index);
+    
+  } else if (unitType === 'grid') {
+    // Parse grid key to get the starting row and column
+    const [gridRow, gridCol] = unitIndex.split('-').map(Number);
+    const startRow = gridRow * 3;
+    const startCol = gridCol * 3;
+    
+    // Collect all valid cells in the grid
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const row = startRow + r;
+        const col = startCol + c;
+        
+        // Skip path cells
+        if (pathCells.has(`${row},${col}`)) continue;
+        
+        const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+        if (cell) {
+          // Use spiral order for grid animation
+          const spiralIndex = getSpiralIndex(r, c, 3, 3);
+          validCells.push({ cell, index: spiralIndex });
+        }
+      }
+    }
+    
+    // Sort cells by spiral index for spiral wave
+    validCells.sort((a, b) => a.index - b.index);
+  }
   
-  // Map playable cells to DOM elements and sort
-  validCells = playableCells.map(([row, col]) => {
-    const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-    let index;
-    if (unitType === 'row') index = col;
-    else if (unitType === 'column') index = row;
-    else if (unitType === 'grid') index = getSpiralIndex(row % 3, col % 3, 3, 3);
-    return { cell, index, row, col };
-  }).filter(item => item.cell);
+  // If no valid cells were found, log and return
+  if (validCells.length === 0) {
+    console.error(`No valid cells found for ${unitType} ${unitIndex} animation`);
+    return;
+  }
   
-  // Sort cells in wave order
-  validCells.sort((a, b) => a.index - b.index);
+  console.log(`Found ${validCells.length} cells to animate for ${unitType} ${unitIndex}`);
   
-  // Choose center cell
-  centerCell = validCells[Math.floor(validCells.length / 2)]?.cell;
-  
-  // Record values for debugging
-  console.log("Cells to animate:", validCells.map(({ row, col }) => `[${row},${col}]`).join(', '));
+  // Choose a center cell for the message (middle cell in the sequence)
+  centerCell = validCells[Math.floor(validCells.length / 2)].cell;
   
   // Add initial flash to all cells
   validCells.forEach(({ cell }) => {
-    addFlashOverlay(cell);
+    try {
+      addFlashOverlay(cell);
+    } catch (e) {
+      console.error("Error adding flash overlay:", e);
+    }
   });
   
   // Create wave animation with delay between cells
   validCells.forEach(({ cell }, i) => {
     // Apply wave animation with increasing delay
     setTimeout(() => {
-      // Add the wave animation class
-      cell.classList.add('cell-wave-animation');
-      
-      // Remove the class after animation completes
-      setTimeout(() => {
-        cell.classList.remove('cell-wave-animation');
-      }, 500);
-      
-      // Add glow effect on all cells with slight delay
-      setTimeout(() => {
-        cell.classList.add('cell-completion-glow');
+      try {
+        // Add the wave animation class
+        cell.classList.add('cell-wave-animation');
         
-        // Remove glow after animation
+        // Remove the class after animation completes
         setTimeout(() => {
-          cell.classList.remove('cell-completion-glow');
-        }, 1200);
-      }, 300);
+          cell.classList.remove('cell-wave-animation');
+        }, 500);
+        
+        // Add glow effect on all cells with slight delay
+        setTimeout(() => {
+          cell.classList.add('cell-completion-glow');
+          
+          // Remove glow after animation
+          setTimeout(() => {
+            cell.classList.remove('cell-completion-glow');
+          }, 1200);
+        }, 300);
+      } catch (e) {
+        console.error("Error animating cell:", e);
+      }
     }, i * 80); // 80ms between each cell in the wave
   });
   
   // Show celebration sparkles on the center cell with a delay
   setTimeout(() => {
-    if (centerCell) {
-      createSparkles(centerCell);
-      
-      // Different messages based on unit type
-      const messageText = unitType.charAt(0).toUpperCase() + unitType.slice(1) + " Complete!";
-      showCompletionMessage(centerCell, messageText, bonusAmount);
+    try {
+      if (centerCell) {
+        createSparkles(centerCell);
+        
+        // Different messages based on unit type
+        const messageText = unitType.charAt(0).toUpperCase() + unitType.slice(1) + " Complete!";
+        showCompletionMessage(centerCell, messageText, bonusAmount);
+      }
+    } catch (e) {
+      console.error("Error creating sparkle effects:", e);
     }
   }, 250);
   
   // Play completion sound at the start of the animation
-  playCompletionSound();
-  
-  // Series of forced UI refreshes to ensure animations don't break the display
-  const refreshTimes = [100, 500, 1000, 1500];
-  refreshTimes.forEach(time => {
-    setTimeout(() => {
-      if (window.Game && typeof Game.updateBoard === 'function') {
-        Game.updateBoard();
-      }
-    }, time);
-  });
+  try {
+    playCompletionSound();
+  } catch (e) {
+    console.error("Error playing completion sound:", e);
+  }
 }
+
+/**
+ * This function should be updated in the completion-bonus.js file
+ * It directly uses DOM queries rather than relying on BoardManager.getPlayableCellsInUnit
+ */
+
+// The function to add sparkle effects around a cell
+function createSparkles(cell) {
+  if (!cell) {
+    console.error("Cannot create sparkles: cell is null or undefined");
+    return;
+  }
+  
+  const rect = cell.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  
+  // Sparkle emojis
+  const sparkles = ['✨', '⭐', '🌟', '💫'];
+  
+  // Create 4-5 sparkles
+  for (let i = 0; i < 4 + Math.floor(Math.random() * 2); i++) {
+    const sparkle = document.createElement('div');
+    sparkle.className = 'celebration-sparkle';
+    sparkle.textContent = sparkles[i % sparkles.length];
+    
+    // Random direction
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 20 + Math.random() * 40;
+    const tx = Math.cos(angle) * distance;
+    const ty = Math.sin(angle) * distance;
+    const rot = (Math.random() - 0.5) * 180;
+    
+    sparkle.style.setProperty('--tx', `${tx}px`);
+    sparkle.style.setProperty('--ty', `${ty}px`);
+    sparkle.style.setProperty('--rot', `${rot}deg`);
+    
+    sparkle.style.left = `${centerX}px`;
+    sparkle.style.top = `${centerY}px`;
+    
+    document.body.appendChild(sparkle);
+    
+    // Remove after animation completes
+    setTimeout(() => {
+      if (sparkle.parentNode) {
+        sparkle.parentNode.removeChild(sparkle);
+      }
+    }, 1000);
+  }
+}
+
+// Helper function to add a flash overlay to the cell
+function addFlashOverlay(cell) {
+  if (!cell) {
+    console.error("Cannot add flash overlay: cell is null or undefined");
+    return;
+  }
+  
+  const flash = document.createElement('div');
+  flash.className = 'completion-flash';
+  cell.appendChild(flash);
+  
+  // Remove after animation
+  setTimeout(() => {
+    if (flash.parentNode === cell) {
+      flash.remove();
+    }
+  }, 700);
+}
+
 
 
 
