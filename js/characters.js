@@ -879,91 +879,313 @@ solver: {
     }
   }
 },
-// doesn't currently work 
-/*
+// Enhanced Beastmaster character ability with multiple animal types
 beastmaster: {
   name: "Beastmaster",
-  description: "Summons a wild beast that charges down the enemy path.",
+  description: "Summons a random beast that attacks enemies on the path.",
   icon: "🐺",
   color: "#8d6e63",
   baseMaxMana: 12,
-  startingMana: 6,
+  startingMana: 8,
   uniqueAbility: {
     id: "summon_beast",
     name: "Summon Beast",
-    description: "Summons a beast that deals area damage as it charges.",
-    manaCost: 7,
+    description: "Summons a random beast (snail, goat, crocodile, or cat) to fight enemies",
+    manaCost: 6,
     icon: "🐾",
     cooldown: 0,
     execute: function() {
-  EventSystem.publish(GameEvents.STATUS_MESSAGE, "Click a location to summon a beast");
-  
-  const onClick = (e) => {
-    const cell = e.target.closest('.sudoku-cell');
-    if (!cell) return;
-    
-    document.removeEventListener('click', onClick, true);
-    
-    const row = parseInt(cell.dataset.row);
-    const col = parseInt(cell.dataset.col);
-    
-    const beast = {
-      id: `beast-${Date.now()}`,
-      row,
-      col,
-      type: 'beast',
-      hp: 50,
-      speed: 1,
-      interval: null
-    };
-    
-    const targetTower = TowersModule.getNearestTower?.(row, col);
-    if (!targetTower) {
-      EventSystem.publish(GameEvents.STATUS_MESSAGE, "No tower nearby to attack!");
-      return;
-    }
-    
-    // Add visual beast
-    const beastEl = document.createElement('div');
-    beastEl.id = beast.id;
-    beastEl.className = 'sudoku-enemy';
-    beastEl.textContent = '🐁';
-    beastEl.style.position = 'absolute';
-    beastEl.style.transition = 'top 0.3s, left 0.3s';
-    document.body.appendChild(beastEl);
-    
-    function updatePosition() {
-      const dx = targetTower.col - beast.col;
-      const dy = targetTower.row - beast.row;
-      if (Math.abs(dx) + Math.abs(dy) === 0) {
-        TowersModule.removeTower(targetTower.id);
-        showEffectIndicator("Beast Attack", "A tower was destroyed by the beast!");
-        beastEl.remove();
-        clearInterval(beast.interval);
-        return;
+      // Define animal types with their properties
+      const animalTypes = [
+        { emoji: "🐌", name: "Snail", damage: 1, speed: 1500, weight: 50 },
+        { emoji: "🐐", name: "Goat", damage: 5, speed: 1000, weight: 30 },
+        { emoji: "🐊", name: "Crocodile", damage: 10, speed: 800, weight: 15 },
+        { emoji: "🐈", name: "Cat", damage: 20, speed: 600, weight: 5 }
+      ];
+      
+      // Weighted random selection function
+      function selectRandomAnimal(animals) {
+        const totalWeight = animals.reduce((sum, animal) => sum + animal.weight, 0);
+        let random = Math.random() * totalWeight;
+        
+        for (const animal of animals) {
+          random -= animal.weight;
+          if (random <= 0) {
+            return animal;
+          }
+        }
+        
+        // Fallback (should never happen)
+        return animals[0];
       }
       
-      beast.row += Math.sign(dy);
-      beast.col += Math.sign(dx);
+      // Get the path that enemies follow
+      const path = BoardManager.getPathArray();
       
-      const cell = document.querySelector(`.sudoku-cell[data-row="${beast.row}"][data-col="${beast.col}"]`);
-      if (cell) {
-        const rect = cell.getBoundingClientRect();
-        beastEl.style.left = `${rect.left}px`;
-        beastEl.style.top = `${rect.top}px`;
+      if (!path || !path.length) {
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "No path found for beast to follow!");
+        return false;
       }
+      
+      // Choose starting position (last cell of the path)
+      const startCell = path[path.length - 1];
+      if (!startCell || startCell.length < 2) {
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Invalid path for beast to follow!");
+        return false;
+      }
+      
+      // Select a random animal based on weighted probabilities
+      const selectedAnimal = selectRandomAnimal(animalTypes);
+      
+      // Create the beast
+      const beast = {
+        id: `beast-${Date.now()}`,
+        row: startCell[0],
+        col: startCell[1],
+        health: 100,
+        maxHealth: 100,
+        damage: selectedAnimal.damage,
+        pathIndex: path.length - 1,
+        movingBackwards: true,
+        animal: selectedAnimal
+      };
+      
+      // Show effect indicator
+      showEffectIndicator("Beast Summoned", 
+        `A ${selectedAnimal.name} appears! (${selectedAnimal.damage} damage)`);
+      
+      // Create beast visual element
+      const boardElement = document.getElementById('sudoku-board');
+      const cellSize = boardElement.clientWidth / 9;
+      
+      const beastElement = document.createElement('div');
+      beastElement.id = beast.id;
+      beastElement.className = 'beast-entity';
+      beastElement.innerHTML = selectedAnimal.emoji;
+      beastElement.style.position = 'absolute';
+      beastElement.style.width = `${cellSize}px`;
+      beastElement.style.height = `${cellSize}px`;
+      beastElement.style.fontSize = `${cellSize * 0.6}px`;
+      beastElement.style.display = 'flex';
+      beastElement.style.justifyContent = 'center';
+      beastElement.style.alignItems = 'center';
+      beastElement.style.transition = `top ${selectedAnimal.speed/1000}s, left ${selectedAnimal.speed/1000}s`;
+      beastElement.style.zIndex = '15';
+      beastElement.style.filter = 'drop-shadow(0 0 5px gold)';
+      
+      // Add damage indicator
+      const damageIndicator = document.createElement('div');
+      damageIndicator.className = 'beast-damage-indicator';
+      damageIndicator.textContent = selectedAnimal.damage;
+      damageIndicator.style.position = 'absolute';
+      damageIndicator.style.top = '2px';
+      damageIndicator.style.right = '2px';
+      damageIndicator.style.fontSize = '10px';
+      damageIndicator.style.background = 'rgba(0,0,0,0.6)';
+      damageIndicator.style.color = 'white';
+      damageIndicator.style.padding = '1px 3px';
+      damageIndicator.style.borderRadius = '3px';
+      beastElement.appendChild(damageIndicator);
+      
+      // Position the beast
+      const left = beast.col * cellSize;
+      const top = beast.row * cellSize;
+      beastElement.style.left = `${left}px`;
+      beastElement.style.top = `${top}px`;
+      
+      // Add to board
+      boardElement.appendChild(beastElement);
+      
+      // Create attack animation
+      const attackAnimation = document.createElement('style');
+      attackAnimation.textContent = `
+        @keyframes beast-attack {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.3); filter: brightness(1.5) hue-rotate(15deg); }
+          100% { transform: scale(1); }
+        }
+        
+        .beast-attacking {
+          animation: beast-attack 0.5s ease-in-out;
+        }
+        
+        @keyframes damage-pulse {
+          0% { filter: brightness(1); }
+          50% { filter: brightness(1.5) sepia(0.5); }
+          100% { filter: brightness(1); }
+        }
+      `;
+      document.head.appendChild(attackAnimation);
+      
+      // Movement and attack logic
+      let moveInterval;
+      
+      function moveBeast() {
+        // Check if beast element still exists
+        if (!document.getElementById(beast.id)) {
+          clearInterval(moveInterval);
+          return;
+        }
+        
+        // Move backward through the path (from end to start)
+        if (beast.movingBackwards) {
+          beast.pathIndex--;
+          
+          // If reached start of path, start moving south off the grid
+          if (beast.pathIndex < 0) {
+            beast.pathIndex = 0;
+            beast.movingBackwards = false;
+            beast.movingSouth = true;
+            beast.row = path[0][0]; // Start at the row of the first path cell
+            beast.col = path[0][1]; // Start at the column of the first path cell
+            
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+              `The ${selectedAnimal.name} is leaving the board!`);
+          } else {
+            // Get new position from path
+            const newPosition = path[beast.pathIndex];
+            beast.row = newPosition[0];
+            beast.col = newPosition[1];
+          }
+        } else if (beast.movingSouth) {
+          // Moving south (increasing row number)
+          beast.row++;
+          
+          // If reached beyond the board boundary (row > 8), remove the beast
+          if (beast.row > 8) {
+            clearInterval(moveInterval);
+            
+            // Fade out animation
+            beastElement.style.transition = 'all 1s';
+            beastElement.style.opacity = '0';
+            beastElement.style.transform = 'scale(0.5)';
+            
+            setTimeout(() => {
+              if (beastElement.parentNode) {
+                beastElement.parentNode.removeChild(beastElement);
+              }
+            }, 1000);
+            
+            return;
+          }
+        }
+        
+        // Update visual position
+        const left = beast.col * cellSize;
+        const top = beast.row * cellSize;
+        beastElement.style.left = `${left}px`;
+        beastElement.style.top = `${top}px`;
+        
+        // Check for enemies at this position and attack
+        attackNearbyEnemies();
+      }
+      
+      function attackNearbyEnemies() {
+        // Get all active enemies
+        const enemies = EnemiesModule.getEnemies();
+        let attacked = false;
+        
+        // Check each enemy position
+        enemies.forEach(enemy => {
+          // Calculate distance (using Manhattan distance for grid-based game)
+          const rowDist = Math.abs(enemy.row - beast.row);
+          const colDist = Math.abs(enemy.col - beast.col);
+          const distance = rowDist + colDist;
+          
+          // Attack if in range (adjacent cell or same cell)
+          if (distance <= 1) {
+            // Visual attack effect
+            beastElement.classList.add('beast-attacking');
+            setTimeout(() => {
+              beastElement.classList.remove('beast-attacking');
+            }, 500);
+            
+            // Deal damage to enemy
+            EnemiesModule.damageEnemy(enemy.id, beast.damage);
+            attacked = true;
+            
+            // Visual damage number
+            showDamageNumber(enemy, beast.damage);
+          }
+        });
+        
+        return attacked;
+      }
+      
+      function showDamageNumber(enemy, damage) {
+        const enemyElement = document.getElementById(enemy.id);
+        if (!enemyElement) return;
+        
+        const damageText = document.createElement('div');
+        damageText.className = 'floating-text';
+        damageText.textContent = damage;
+        
+        // Color based on damage amount
+        if (damage >= 20) {
+          damageText.style.color = '#f44336'; // Red for high damage
+          damageText.style.fontSize = '20px';
+        } else if (damage >= 10) {
+          damageText.style.color = '#ff9800'; // Orange for medium damage
+          damageText.style.fontSize = '18px';
+        } else if (damage >= 5) {
+          damageText.style.color = '#ffeb3b'; // Yellow for low damage
+          damageText.style.fontSize = '16px'; 
+        } else {
+          damageText.style.color = '#ffffff'; // White for very low damage
+          damageText.style.fontSize = '14px';
+        }
+        
+        damageText.style.position = 'absolute';
+        damageText.style.zIndex = '30';
+        damageText.style.fontWeight = 'bold';
+        damageText.style.textShadow = '0 0 3px black';
+        damageText.style.pointerEvents = 'none';
+        
+        // Position near the enemy
+        const rect = enemyElement.getBoundingClientRect();
+        const boardRect = boardElement.getBoundingClientRect();
+        
+        damageText.style.left = `${rect.left - boardRect.left + rect.width / 2}px`;
+        damageText.style.top = `${rect.top - boardRect.top}px`;
+        
+        // Add float-up animation
+        damageText.style.animation = 'float-up 1s forwards';
+        
+        boardElement.appendChild(damageText);
+        
+        // Remove after animation
+        setTimeout(() => {
+          if (damageText.parentNode) {
+            damageText.parentNode.removeChild(damageText);
+          }
+        }, 1000);
+        
+        // Also make enemy flash
+        enemyElement.style.animation = 'damage-pulse 0.5s';
+        setTimeout(() => {
+          enemyElement.style.animation = '';
+        }, 500);
+      }
+      
+      // Start moving (give a short delay for initial appearance)
+      setTimeout(() => {
+        moveInterval = setInterval(moveBeast, selectedAnimal.speed); // Move at animal-specific speed
+      }, 500);
+      
+      // Create a separate interval for checking/attacking enemies more frequently
+      const attackInterval = setInterval(() => {
+        if (!document.getElementById(beast.id)) {
+          clearInterval(attackInterval);
+          return;
+        }
+        
+        attackNearbyEnemies();
+      }, Math.min(selectedAnimal.speed / 2, 400)); // Attack checks at half the movement speed or 400ms, whichever is faster
+      
+      return true;
     }
-    
-    beast.interval = setInterval(updatePosition, 500);
-    updatePosition();
-    showEffectIndicator("Summon Beast", "The beast is hunting...");
-  };
-  
-  document.addEventListener('click', onClick, true);
-  return true;
-}
   }
-},*/
+},
 pyromancer: {
   name: "Pyromancer",
   description: "Unleashes a wave of fire that burns enemies over time.",
