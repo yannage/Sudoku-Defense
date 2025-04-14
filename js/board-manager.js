@@ -866,10 +866,47 @@ function isValidMoveForTest(puzzle, row, col, value) {
                 }
             }
         }
-        
+      
         return true;
     }
-    
+    function setCellValue(row, col, value) {
+  if (row < 0 || row > 8 || col < 0 || col > 8) return false;
+  if (fixedCells[row][col]) return false;
+  if (pathCells.has(`${row},${col}`)) return false;
+  
+  if (value === 0) {
+    board[row][col] = 0;
+    checkUnitCompletion();
+    EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
+    return true;
+  }
+  
+  board[row][col] = value;
+  
+  if (!isValidMove(row, col, value)) {
+    EventSystem.publish(GameEvents.SUDOKU_CELL_INVALID, { row, col, value });
+    const validNumbers = getPossibleValues(row, col);
+    EventSystem.publish(GameEvents.STATUS_MESSAGE,
+      validNumbers.length > 0 ?
+      `Warning: Tower violates Sudoku rules. Valid options: ${validNumbers.join(', ')}` :
+      "Warning: This tower violates Sudoku rules and will be removed after the wave.");
+  } else {
+    EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
+  }
+  
+  checkUnitCompletion();
+  
+  if (isComplete()) {
+    EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
+  }
+  
+  // ✅ Force a UI refresh
+  if (window.Game && typeof Game.updateBoard === 'function') {
+    Game.updateBoard();
+  }
+  
+  return true;
+}
     /**
      * Set the value of a cell
      * @param {number} row - Row index
@@ -877,93 +914,7 @@ function isValidMoveForTest(puzzle, row, col, value) {
      * @param {number} value - Value to set
      * @returns {boolean} Whether the move was valid
      */
-    function setCellValue(row, col, value) {
-      // Validate row and column
-      if (row < 0 || row > 8 || col < 0 || col > 8) {
-        console.error(`BoardManager: Invalid cell position (${row}, ${col})`);
-        return false;
-      }
-      
-      // Debug output for tower placement
-      if (value > 0) {
-        console.debug(`BoardManager: Tower placed at (${row}, ${col}) with value ${value}`);
-        console.debug(`BoardManager: Correct value at this position is ${solution[row][col]}`);
-        if (value !== solution[row][col]) {
-          console.debug(`BoardManager: MISMATCH - Tower value does not match solution!`);
-        } else {
-          console.debug(`BoardManager: MATCH - Tower value matches solution.`);
-        }
-      }
-      
-      // Check if the cell is fixed
-      if (fixedCells[row][col]) {
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on a fixed Sudoku cell!");
-        return false;
-      }
-      
-      // Check if the cell is on the enemy path
-      if (pathCells.has(`${row},${col}`)) {
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on the enemy path!");
-        return false;
-      }
-      
-      // If we're clearing a cell (value = 0), always allow it
-      if (value === 0) {
-        board[row][col] = 0;
-        
-        // Check for completions after clearing a cell
-        checkUnitCompletion();
-        
-        // Publish event
-        EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
-        
-        return true;
-      }
-      
-      // Check if the move is valid according to Sudoku rules
-      // But only provide a warning instead of preventing placement
-      if (!isValidMove(row, col, value)) {
-        // Generate warning but STILL ALLOW placement
-        EventSystem.publish(GameEvents.SUDOKU_CELL_INVALID, { row, col, value });
-        
-        // Get valid numbers for better user feedback
-        const validNumbers = getPossibleValues(row, col);
-        if (validNumbers.length > 0) {
-          EventSystem.publish(GameEvents.STATUS_MESSAGE,
-            `Warning: Tower placement violates Sudoku rules. This tower will be removed after the wave with 50% refund. Valid options: ${validNumbers.join(', ')}`);
-        } else {
-          EventSystem.publish(GameEvents.STATUS_MESSAGE,
-            "Warning: This tower violates Sudoku rules and will be removed after the wave with 50% refund.");
-        }
-        
-        // Set the cell value ANYWAY - this is the key difference
-        board[row][col] = value;
-        
-        // Publish event
-        EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
-        
-        // Check for unit completions
-        checkUnitCompletion();
-        
-        return true;
-      }
-      
-      // For valid moves, normal flow continues
-      board[row][col] = value;
-      
-      // Publish event
-      EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
-      
-      // Check for unit completions (rows, columns, grids)
-      checkUnitCompletion();
-      
-      // Check if the Sudoku is complete
-      if (isComplete()) {
-        EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
-      }
-      
-      return true;
-    }
+    
 
     function isTowerIncorrect(row, col, value) {
       // Check if it matches the solution
@@ -1008,27 +959,21 @@ function isValidMoveForTest(puzzle, row, col, value) {
     function checkUnitCompletion() {
   // Rows
   for (let row = 0; row < 9; row++) {
-    let nonPathCellCount = 0;
+    let numberSet = new Set();
     let filledCellCount = 0;
     let fixedCellCount = 0;
-    let numberSet = new Set();
-    let isComplete = true;
     
     for (let col = 0; col < 9; col++) {
       if (pathCells.has(`${row},${col}`)) continue;
-      
-      nonPathCellCount++;
-      if (fixedCells[row][col]) fixedCellCount++;
       const val = board[row][col];
       if (val > 0) {
         filledCellCount++;
         numberSet.add(val);
-      } else {
-        isComplete = false;
       }
+      if (fixedCells[row][col]) fixedCellCount++;
     }
     
-    isComplete = isComplete && numberSet.size === nonPathCellCount && nonPathCellCount > 0;
+    const isComplete = filledCellCount === 9 && numberSet.size === 9;
     const playerContributed = filledCellCount > fixedCellCount;
     
     if (isComplete && !completedRows.has(row)) {
@@ -1043,27 +988,21 @@ function isValidMoveForTest(puzzle, row, col, value) {
   
   // Columns
   for (let col = 0; col < 9; col++) {
-    let nonPathCellCount = 0;
+    let numberSet = new Set();
     let filledCellCount = 0;
     let fixedCellCount = 0;
-    let numberSet = new Set();
-    let isComplete = true;
     
     for (let row = 0; row < 9; row++) {
       if (pathCells.has(`${row},${col}`)) continue;
-      
-      nonPathCellCount++;
-      if (fixedCells[row][col]) fixedCellCount++;
       const val = board[row][col];
       if (val > 0) {
         filledCellCount++;
         numberSet.add(val);
-      } else {
-        isComplete = false;
       }
+      if (fixedCells[row][col]) fixedCellCount++;
     }
     
-    isComplete = isComplete && numberSet.size === nonPathCellCount && nonPathCellCount > 0;
+    const isComplete = filledCellCount === 9 && numberSet.size === 9;
     const playerContributed = filledCellCount > fixedCellCount;
     
     if (isComplete && !completedColumns.has(col)) {
@@ -1079,31 +1018,25 @@ function isValidMoveForTest(puzzle, row, col, value) {
   // Grids
   for (let gridRow = 0; gridRow < 3; gridRow++) {
     for (let gridCol = 0; gridCol < 3; gridCol++) {
-      let nonPathCellCount = 0;
+      let numberSet = new Set();
       let filledCellCount = 0;
       let fixedCellCount = 0;
-      let numberSet = new Set();
-      let isComplete = true;
       
       for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 3; j++) {
           const row = gridRow * 3 + i;
           const col = gridCol * 3 + j;
           if (pathCells.has(`${row},${col}`)) continue;
-          
-          nonPathCellCount++;
-          if (fixedCells[row][col]) fixedCellCount++;
           const val = board[row][col];
           if (val > 0) {
             filledCellCount++;
             numberSet.add(val);
-          } else {
-            isComplete = false;
           }
+          if (fixedCells[row][col]) fixedCellCount++;
         }
       }
       
-      isComplete = isComplete && numberSet.size === nonPathCellCount && nonPathCellCount > 0;
+      const isComplete = filledCellCount === 9 && numberSet.size === 9;
       const playerContributed = filledCellCount > fixedCellCount;
       const gridKey = `${gridRow}-${gridCol}`;
       
@@ -1476,7 +1409,6 @@ function toggleDisplayMode(showNumbers) {
   getPossibleValues,
   checkUnitCompletion,
   isComplete,
-  getPlayableCellsInUnit,
   getCompletionStatus,
   fixBoardDiscrepancies,
   // ADD THIS LINE:
