@@ -184,57 +184,459 @@ h1 {
 }
 
 
-/* Updated Enemy styling to match grid cells */
+/* Enhanced Enemy Visual Styles */
 .enemy {
-    /* Size and positioning */
+    /* Base styles adjusted for variety */
     position: absolute;
     width: 100%;
     height: 100%;
-    transform: none;
-    
-    /* Content alignment */
     display: flex;
     justify-content: center;
     align-items: center;
     box-sizing: border-box;
-    
-    /* Visual styling */
     font-size: inherit;
-    background-color: rgba(255, 255, 255, 0.3);
-    border-radius: 5px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
     z-index: 10;
-    
-    /* Smooth movement between cells */
-    transition: left 0.15s linear, top 0.15s linear;
-    transform-origin: center;
+    transition: left 0.15s linear, top 0.15s linear, transform 0.3s ease-out;
     will-change: transform, left, top;
 }
 
-.enemy-health-bar {
+/* Enemy type visual indicators */
+.enemy::before {
+    content: "";
     position: absolute;
-    bottom: 4px;
-    left: 10%;
-    width: 80%;
-    height: 4px;
-    background-color: #333;
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.enemy-health-fill {
+    top: 0;
+    left: 0;
+    width: 100%;
     height: 100%;
-    background-color: #ff0000;
-    transition: width 0.2s ease-in-out;
+    border-radius: 8px;
+    opacity: 0.3;
+    z-index: -1;
 }
 
-/* Animation for enemy damaged state */
-@keyframes enemy-damaged {
-    0% { background-color: rgba(255, 80, 80, 0.5); }
-    100% { background-color: rgba(255, 255, 255, 0.3); }
+/* Special enemy visual markers based on behavior */
+.enemy[data-behavior="armored"]::before {
+    background: linear-gradient(135deg, #888 0%, #ccc 100%);
+    border: 2px solid #aaa;
 }
 
-.enemy-damaged {
-    animation: enemy-damaged 0.3s;
+.enemy[data-behavior="accelerate"]::before {
+    background: linear-gradient(135deg, #ff8800 0%, #ffcc00 100%);
+}
+
+.enemy[data-behavior="split"]::before {
+    background: linear-gradient(135deg, #44aa44 0%, #88dd88 100%);
+}
+
+.enemy[data-behavior="heal"]::before {
+    background: linear-gradient(135deg, #66aa66 0%, #88cc88 100%);
+}
+
+.enemy[data-behavior="phasing"]::before {
+    background: linear-gradient(135deg, #7755aa 0%, #aa88cc 100%);
+}
+
+.enemy[data-behavior="teleport"]::before {
+    background: linear-gradient(135deg, #44aaff 0%, #88ccff 100%);
+}
+
+.enemy[data-behavior="buff"]::before {
+    background: linear-gradient(135deg, #ffdd44 0%, #ffee88 100%);
+}
+
+.enemy[data-behavior="summoner"]::before,
+.enemy[data-behavior="multiphase"]::before {
+    background: linear-gradient(135deg, #cc4444 0%, #ff8888 100%);
+    border: 2px solid #ff8800;
+}
+
+.enemy[data-behavior="scrambler"]::before {
+    background: linear-gradient(135deg, #aa44aa 0%, #dd88dd 100%);
+}
+
+/* Mini-boss and boss enemy styles */
+.enemy.mini-boss {
+    box-shadow: 0 0 10px rgba(255, 140, 0, 0.7);
+    z-index: 15;
+}
+
+.enemy.boss {
+    box-shadow: 0 0 15px rgba(255, 50, 50, 0.8);
+    z-index: 20;
+}
+
+/* Behavior-specific visual effects */
+.enemy.phased {
+    opacity: 0.5;
+    filter: blur(2px);
+    box-shadow: 0 0 15px rgba(200, 100, 255, 0.6);
+}
+
+.enemy.teleporting {
+    opacity: 0;
+    transform: scale(0.5);
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.enemy.teleport-arrival {
+    animation: teleport-arrival 0.3s;
+}
+
+.enemy.commanding {
+    animation: command-pulse 0.5s;
+}
+
+.enemy.summoning {
+    animation: summon-pulse 1s;
+}
+
+.enemy.scrambling {
+    animation: scramble-effect 1s;
+}
+
+.enemy.split-spawn {
+    animation: split-spawn 0.8s;
+}
+
+.enemy.splitting {
+    animation: splitting 0.5s;
+}
+
+.enemy.healing {
+    animation: heal-pulse 1s;
+}
+
+.enemy.healing-pulse {
+    animation: healing-source 1s;
+}
+
+.enemy.enraged {
+    filter: brightness(1.2) sepia(0.3) hue-rotate(-20deg);
+}
+
+.enemy.desperate {
+    filter: brightness(1.4) sepia(0.5) hue-rotate(-40deg);
+    animation: desperate-pulse 2s infinite alternate;
+}
+
+.enemy.defeated {
+    animation: defeat-animation 0.8s forwards;
+}
+
+.enemy.damage-immune {
+    animation: damage-immune 0.3s;
+}
+
+.enemy.damage-reduced {
+    animation: damage-reduced 0.3s;
+}
+
+.enemy.poison-tick {
+    animation: poison-pulse 0.3s;
+}
+
+/* Tower disabled effect */
+.sudoku-cell.disabled-tower {
+    filter: grayscale(0.8) brightness(0.6);
+    position: relative;
+}
+
+.sudoku-cell.disabled-tower::after {
+    content: "❌";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 18px;
+    color: rgba(255, 0, 0, 0.7);
+    pointer-events: none;
+}
+
+/* Buff link styling */
+.buff-link {
+    background: linear-gradient(to right, transparent, rgba(255, 215, 0, 0.5), transparent);
+    animation: buff-link-pulse 1s infinite alternate;
+}
+
+/* Wave info overlay */
+.wave-info-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 950;
+    opacity: 0;
+    transition: opacity 0.5s;
+    pointer-events: none;
+}
+
+.wave-info-overlay.active {
+    opacity: 1;
+}
+
+.wave-info-content {
+    background-color: rgba(30, 30, 60, 0.9);
+    border: 2px solid #a08030;
+    border-radius: 10px;
+    padding: 20px;
+    max-width: 90%;
+    transform: translateY(20px);
+    transition: transform 0.5s;
+    text-align: center;
+    color: white;
+}
+
+.wave-info-overlay.active .wave-info-content {
+    transform: translateY(0);
+}
+
+.wave-info-title {
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: #ffcc44;
+}
+
+.wave-info-description {
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+.wave-info-enemies {
+    font-size: 24px;
+    letter-spacing: 5px;
+}
+
+/* Boss phase transition effects */
+.boss-phase-flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 80, 80, 0.3);
+    z-index: 900;
+    pointer-events: none;
+    animation: boss-flash 2s;
+}
+
+.boss-phase-announcement {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    font-weight: bold;
+    color: #ff3030;
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+    z-index: 950;
+    pointer-events: none;
+    animation: phase-announcement 2s;
+}
+
+/* Screen shake for dramatic effects */
+.screen-shake {
+    animation: screen-shake 0.5s;
+}
+
+/* Status effects styling */
+.enemy.poisoned {
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.7);
+    position: relative;
+}
+
+.enemy.poisoned::after {
+    content: "☣️";
+    position: absolute;
+    top: -10px;
+    right: -5px;
+    font-size: 12px;
+}
+
+.enemy.slowed {
+    box-shadow: 0 0 8px rgba(0, 180, 255, 0.7);
+    filter: brightness(0.7);
+    transition: left 0.3s, top 0.3s; /* Slower movement transition */
+}
+
+.enemy.slowed::after {
+    content: "🐌";
+    position: absolute;
+    top: -10px;
+    right: -5px;
+    font-size: 12px;
+}
+
+.enemy.stunned {
+    box-shadow: 0 0 8px rgba(255, 255, 0, 0.7);
+    animation: stun-effect 0.5s infinite;
+}
+
+.enemy.stunned::after {
+    content: "💫";
+    position: absolute;
+    top: -10px;
+    right: -5px;
+    font-size: 12px;
+}
+
+/* Healing text */
+.healing-text {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #33ff33;
+    font-weight: bold;
+    font-size: 14px;
+    text-shadow: 0 0 3px black;
+    pointer-events: none;
+    animation: healing-text 1s forwards;
+}
+
+/* Animation keyframes */
+@keyframes defeat-animation {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.7; }
+    100% { transform: scale(0); opacity: 0; }
+}
+
+@keyframes particle-fly {
+    0% { opacity: 1; transform: scale(1); }
+    100% { 
+        opacity: 0; 
+        transform: 
+            translate(
+                calc(cos(var(--angle)) * var(--distance)), 
+                calc(sin(var(--angle)) * var(--distance))
+            )
+            scale(0.5);
+    }
+}
+
+@keyframes teleport-arrival {
+    0% { transform: scale(0.2); opacity: 0.2; }
+    50% { transform: scale(1.3); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes command-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+    50% { box-shadow: 0 0 10px 5px rgba(255, 215, 0, 0.7); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+}
+
+@keyframes summon-pulse {
+    0% { filter: brightness(1); }
+    50% { filter: brightness(1.5) sepia(0.5) hue-rotate(-30deg); }
+    100% { filter: brightness(1); }
+}
+
+@keyframes scramble-effect {
+    0% { filter: brightness(1); }
+    25% { filter: brightness(1.5) hue-rotate(90deg); }
+    50% { filter: brightness(1) hue-rotate(180deg); }
+    75% { filter: brightness(1.5) hue-rotate(270deg); }
+    100% { filter: brightness(1) hue-rotate(360deg); }
+}
+
+@keyframes split-spawn {
+    0% { transform: scale(0.3); opacity: 0.3; }
+    60% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes splitting {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.7; }
+    100% { transform: scale(0); opacity: 0; }
+}
+
+@keyframes heal-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(50, 255, 50, 0.7); }
+    50% { box-shadow: 0 0 10px 5px rgba(50, 255, 50, 0.7); }
+    100% { box-shadow: 0 0 0 0 rgba(50, 255, 50, 0.7); }
+}
+
+@keyframes healing-source {
+    0% { box-shadow: 0 0 0 0 rgba(30, 200, 30, 0.7); }
+    50% { box-shadow: 0 0 15px 8px rgba(30, 200, 30, 0.7); }
+    100% { box-shadow: 0 0 0 0 rgba(30, 200, 30, 0.7); }
+}
+
+@keyframes desperate-pulse {
+    0% { filter: brightness(1.4) sepia(0.5) hue-rotate(-40deg); }
+    100% { filter: brightness(1.7) sepia(0.7) hue-rotate(-60deg); }
+}
+
+@keyframes boss-flash {
+    0% { opacity: 0; }
+    25% { opacity: 0.6; }
+    50% { opacity: 0.3; }
+    75% { opacity: 0.5; }
+    100% { opacity: 0; }
+}
+
+@keyframes phase-announcement {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    25% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+    75% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+}
+
+@keyframes screen-shake {
+    0% { transform: translate(0, 0); }
+    10% { transform: translate(-5px, -5px); }
+    20% { transform: translate(5px, 5px); }
+    30% { transform: translate(-5px, 5px); }
+    40% { transform: translate(5px, -5px); }
+    50% { transform: translate(-5px, -5px); }
+    60% { transform: translate(5px, 5px); }
+    70% { transform: translate(-5px, 5px); }
+    80% { transform: translate(5px, -5px); }
+    90% { transform: translate(-5px, -5px); }
+    100% { transform: translate(0, 0); }
+}
+
+@keyframes stun-effect {
+    0% { transform: rotate(-5deg); }
+    25% { transform: rotate(5deg); }
+    50% { transform: rotate(-5deg); }
+    75% { transform: rotate(5deg); }
+    100% { transform: rotate(-5deg); }
+}
+
+@keyframes healing-text {
+    0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+    100% { transform: translateX(-50%) translateY(-30px); opacity: 0; }
+}
+
+@keyframes damage-immune {
+    0% { box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.7); }
+    50% { box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.3); }
+    100% { box-shadow: 0 0 0 4px rgba(255, 255, 255, 0); }
+}
+
+@keyframes damage-reduced {
+    0% { box-shadow: 0 0 0 4px rgba(180, 180, 180, 0.7); }
+    50% { box-shadow: 0 0 0 8px rgba(180, 180, 180, 0.3); }
+    100% { box-shadow: 0 0 0 4px rgba(180, 180, 180, 0); }
+}
+
+@keyframes poison-pulse {
+    0% { filter: brightness(1); }
+    50% { filter: brightness(1.5) sepia(0.5) hue-rotate(120deg); }
+    100% { filter: brightness(1); }
+}
+
+@keyframes buff-link-pulse {
+    0% { opacity: 0.3; }
+    100% { opacity: 0.7; }
 }
 
 .tower-level {
