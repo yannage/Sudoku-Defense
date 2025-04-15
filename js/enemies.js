@@ -66,56 +66,53 @@ const EnemiesModule = (function() {
      * @returns {Object} The created enemy
      */
     function createEnemy(type) {
-    console.log(`Creating enemy of type ${type}`);
+  console.log(`Creating enemy of type ${type}`);
+  
+  const typeData = enemyTypes[type] || enemyTypes[1];
+  
+  if (!path || path.length < 2) {
+    console.error("Cannot create enemy: path is invalid!", path);
+    return null;
+  }
+  
+  const startCell = path[0];
+  const nextCell = path[1] || startCell;
+  
+  if (!Array.isArray(startCell) || startCell.length !== 2) {
+    console.error("Invalid start cell in path:", startCell);
+    return null;
+  }
+  
+  const enemy = {
+    id: `enemy_${++enemyId}`,
+    type: type,
+    emoji: typeData.emoji,
+    health: typeData.health * (1 + (waveNumber - 1) * 0.2),
+    maxHealth: typeData.health * (1 + (waveNumber - 1) * 0.2),
+    speed: typeData.speed,
+    reward: typeData.reward,
+    points: typeData.points,
     
-    const typeData = enemyTypes[type] || enemyTypes[1];
+    // New fields here
+    tags: typeData.tags || [],
+    resistances: typeData.resistances || [],
+    statusEffects: [],
     
-    // Verify path is available and valid
-    if (!path || path.length < 2) {
-        console.error("Cannot create enemy: path is invalid!", path);
-        return null;
-    }
-    
-    // Calculate starting position (first cell in the path)
-    const startCell = path[0];
-    const nextCell = path[1] || startCell;
-    
-    if (!Array.isArray(startCell) || startCell.length !== 2) {
-        console.error("Invalid start cell in path:", startCell);
-        return null;
-    }
-    
-    // Use cell coordinates with initial progress
-    const enemy = {
-        id: `enemy_${++enemyId}`,
-        type: type,
-        emoji: typeData.emoji,
-        health: typeData.health * (1 + (waveNumber - 1) * 0.2),
-        maxHealth: typeData.health * (1 + (waveNumber - 1) * 0.2),
-        speed: typeData.speed,
-        reward: typeData.reward,
-        points: typeData.points,
-        // Start with a small progress value to begin moving immediately
-        currentPathIndex: 0,
-        previousPathIndex: 0,
-        progress: 0.01, // Small initial progress to start moving immediately
-        // Calculate interpolated position for smooth start
-        row: startCell[0] + (nextCell[0] - startCell[0]) * 0.01,
-        col: startCell[1] + (nextCell[1] - startCell[1]) * 0.01,
-        active: true
-    };
-    
-    console.log(`Enemy created at position: (${enemy.row}, ${enemy.col})`);
-    
-    // Add to enemies array
-    enemies.push(enemy);
-    
-    // Publish enemy spawn event
-    EventSystem.publish(GameEvents.ENEMY_SPAWN, enemy);
-    
-    return enemy;
+    currentPathIndex: 0,
+    previousPathIndex: 0,
+    progress: 0.01,
+    row: startCell[0] + (nextCell[0] - startCell[0]) * 0.01,
+    col: startCell[1] + (nextCell[1] - startCell[1]) * 0.01,
+    active: true
+  };
+  
+  console.log(`Enemy created at position: (${enemy.row}, ${enemy.col})`);
+  
+  enemies.push(enemy);
+  EventSystem.publish(GameEvents.ENEMY_SPAWN, enemy);
+  
+  return enemy;
 }
-
     /**
      * Start a wave of enemies
      */
