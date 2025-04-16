@@ -921,36 +921,6 @@ function onUnitCompleted(unitType, unitIndex) {
   processAnimationQueue();
 }
   
-  
-  
-  // Apply bonus effects for completed units
-  // Replace the individual animation functions with the unified one
-  function applyCompletionBonus(unitType, unitIndex) {
-    let bonusAmount = 50; // Base bonus
-    
-    // Different bonus amounts based on unit type
-    if (unitType === 'row') {
-      bonusAmount = 50;
-    } else if (unitType === 'column') {
-      bonusAmount = 75;
-    } else if (unitType === 'grid') {
-      bonusAmount = 100;
-    }
-    
-    // Add currency and score
-    if (window.PlayerModule) {
-      PlayerModule.addCurrency(bonusAmount);
-      PlayerModule.addScore(bonusAmount * 2);
-      
-      // Show message
-      EventSystem.publish(GameEvents.STATUS_MESSAGE,
-        `${unitType.charAt(0).toUpperCase() + unitType.slice(1)} ${unitIndex} completed! Bonus: ${bonusAmount} currency and ${bonusAmount * 2} points!`);
-    }
-    
-    // Animate unit completion with unified function
-    animateUnitCompletion(unitType, unitIndex, bonusAmount);
-  }
-  
   /**
    * Add this to your completion-bonus.js file to add lightweight animations
    * for row, column, and grid completions
@@ -1047,46 +1017,7 @@ function onUnitCompleted(unitType, unitIndex) {
     
     document.head.appendChild(style);
   }
-  
-  // Create sparkle effects
-  // Create sparkle effects
-  function createSparkles(cell) {
-    const rect = cell.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    
-    // Sparkle emojis
-    const sparkles = ['✨', '⭐', '🌟', '💫'];
-    
-    // Create 4-5 sparkles
-    for (let i = 0; i < 4 + Math.floor(Math.random() * 2); i++) {
-      const sparkle = document.createElement('div');
-      sparkle.className = 'celebration-sparkle';
-      sparkle.textContent = sparkles[i % sparkles.length];
-      
-      // Random direction
-      const angle = Math.random() * Math.PI * 2;
-      const distance = 20 + Math.random() * 40;
-      const tx = Math.cos(angle) * distance;
-      const ty = Math.sin(angle) * distance;
-      const rot = (Math.random() - 0.5) * 180;
-      
-      sparkle.style.setProperty('--tx', `${tx}px`);
-      sparkle.style.setProperty('--ty', `${ty}px`);
-      sparkle.style.setProperty('--rot', `${rot}deg`);
-      
-      sparkle.style.left = `${centerX}px`;
-      sparkle.style.top = `${centerY}px`;
-      
-      document.body.appendChild(sparkle);
-      
-      // Remove after animation completes
-      setTimeout(() => {
-        sparkle.remove();
-      }, 1000);
-    }
-  }
-  
+
   // Show completion message
   function showCompletionMessage(cell, text, bonusAmount) {
     const rect = cell.getBoundingClientRect();
@@ -1107,17 +1038,6 @@ function onUnitCompleted(unitType, unitIndex) {
     }, 1500);
   }
   
-  // Add flash overlay to cell
-  function addFlashOverlay(cell) {
-    const flash = document.createElement('div');
-    flash.className = 'completion-flash';
-    cell.appendChild(flash);
-    
-    // Remove after animation
-    setTimeout(() => {
-      flash.remove();
-    }, 700);
-  }
   
   // Play completion sound
   function playCompletionSound() {
