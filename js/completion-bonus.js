@@ -1037,7 +1037,90 @@ function onUnitCompleted(unitType, unitIndex) {
       message.remove();
     }, 1500);
   }
+  // Add this function to your code
+function addConnectedLineStyles() {
+  if (document.getElementById('connected-line-styles')) return;
   
+  const style = document.createElement('style');
+  style.id = 'connected-line-styles';
+  style.textContent = `
+    @keyframes drawLine {
+      from { stroke-dashoffset: 1000; }
+      to { stroke-dashoffset: 0; }
+    }
+    
+    .completion-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 20;
+    }
+    
+    .completion-line path {
+      stroke: gold;
+      stroke-width: 3;
+      fill: none;
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+      animation: drawLine 1.2s forwards ease-in-out;
+    }
+  `;
+  
+  document.head.appendChild(style);
+}
+
+// Add this function to your code
+function drawConnectingLine(cells, unitType) {
+  // Create SVG container
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.classList.add('completion-line');
+  document.body.appendChild(svg);
+  
+  // Create path through cell centers
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  
+  // Sort cells if needed
+  if (unitType === 'row' || unitType === 'column') {
+    cells.sort((a, b) => {
+      const aIndex = parseInt(a.getAttribute(unitType === 'row' ? 'data-col' : 'data-row'));
+      const bIndex = parseInt(b.getAttribute(unitType === 'row' ? 'data-col' : 'data-row'));
+      return aIndex - bIndex;
+    });
+  }
+  
+  // Create path data
+  let pathData = "";
+  cells.forEach((cell, i) => {
+    const rect = cell.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    
+    if (i === 0) pathData += `M ${x} ${y} `;
+    else pathData += `L ${x} ${y} `;
+  });
+  
+  // For grid type, complete the shape by connecting back to first point
+  if (unitType === 'grid' && cells.length > 0) {
+    const firstCell = cells[0];
+    const rect = firstCell.getBoundingClientRect();
+    pathData += `L ${rect.left + rect.width/2} ${rect.top + rect.height/2}`;
+  }
+  
+  path.setAttribute("d", pathData);
+  svg.appendChild(path);
+  
+  // Remove after animation completes
+  setTimeout(() => {
+    if (svg.parentNode) {
+      svg.parentNode.removeChild(svg);
+    }
+  }, 2000);
+  
+  return svg;
+}
   
   // Play completion sound
   function playCompletionSound() {
@@ -1147,146 +1230,153 @@ function onUnitCompleted(unitType, unitIndex) {
    * @param {*} unitIndex - Index of the unit (row number, column number, or grid key)
    * @param {number} bonusAmount - Currency bonus amount for unit completion
    */
-  /**
-   * Enhanced unit animation function with better cell finding and error handling
-   * Replace this function in your completion-bonus.js file
-   */
-  function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
-    console.log(`Animating completion for ${unitType} ${unitIndex} with ${bonusAmount} bonus`);
-    
-    // Get path cells to exclude from animation
-    const pathCells = window.BoardManager?.getPathCells?.() || new Set();
-    let validCells = [];
-    let centerCell = null;
-    
-    // Different behavior based on unit type
-    if (unitType === 'row') {
-      // Get all cells in the row
-      for (let col = 0; col < 9; col++) {
-        if (!pathCells.has(`${unitIndex},${col}`)) {
-          const cell = document.querySelector(`.sudoku-cell[data-row="${unitIndex}"][data-col="${col}"]`);
-          if (cell) {
-            validCells.push({ cell, index: col });
-          }
+function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
+  console.log(`Animating completion for ${unitType} ${unitIndex} with ${bonusAmount} bonus`);
+  
+  // Get path cells to exclude from animation
+  const pathCells = window.BoardManager?.getPathCells?.() || new Set();
+  let validCells = [];
+  let centerCell = null;
+  
+  // Different behavior based on unit type
+  if (unitType === 'row') {
+    // Get all cells in the row
+    for (let col = 0; col < 9; col++) {
+      if (!pathCells.has(`${unitIndex},${col}`)) {
+        const cell = document.querySelector(`.sudoku-cell[data-row="${unitIndex}"][data-col="${col}"]`);
+        if (cell) {
+          validCells.push({ cell, index: col });
         }
       }
-      
-      // Sort cells by column index for left-to-right wave
-      validCells.sort((a, b) => a.index - b.index);
-      
-    } else if (unitType === 'column') {
-      // Get all cells in the column
-      for (let row = 0; row < 9; row++) {
-        if (!pathCells.has(`${row},${unitIndex}`)) {
-          const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${unitIndex}"]`);
-          if (cell) {
-            validCells.push({ cell, index: row });
-          }
-        }
-      }
-      
-      // Sort cells by row index for top-to-bottom wave
-      validCells.sort((a, b) => a.index - b.index);
-      
-    } else if (unitType === 'grid') {
-      // Parse grid key to get the starting row and column
-      const [gridRow, gridCol] = unitIndex.split('-').map(Number);
-      const startRow = gridRow * 3;
-      const startCol = gridCol * 3;
-      
-      // Collect all valid cells in the grid
-      for (let r = 0; r < 3; r++) {
-        for (let c = 0; c < 3; c++) {
-          const row = startRow + r;
-          const col = startCol + c;
-          
-          // Skip path cells
-          if (pathCells.has(`${row},${col}`)) continue;
-          
-          const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
-          if (cell) {
-            // Use spiral order for grid animation
-            const spiralIndex = getSpiralIndex(r, c, 3, 3);
-            validCells.push({ cell, index: spiralIndex });
-          }
-        }
-      }
-      
-      // Sort cells by spiral index for spiral wave
-      validCells.sort((a, b) => a.index - b.index);
     }
     
-    // If no valid cells were found, log and return
-    if (validCells.length === 0) {
-      console.error(`No valid cells found for ${unitType} ${unitIndex} animation`);
-      return;
+    // Sort cells by column index for left-to-right wave
+    validCells.sort((a, b) => a.index - b.index);
+    
+  } else if (unitType === 'column') {
+    // Get all cells in the column
+    for (let row = 0; row < 9; row++) {
+      if (!pathCells.has(`${row},${unitIndex}`)) {
+        const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${unitIndex}"]`);
+        if (cell) {
+          validCells.push({ cell, index: row });
+        }
+      }
     }
     
-    console.log(`Found ${validCells.length} cells to animate for ${unitType} ${unitIndex}`);
+    // Sort cells by row index for top-to-bottom wave
+    validCells.sort((a, b) => a.index - b.index);
     
-    // Choose a center cell for the message (middle cell in the sequence)
-    centerCell = validCells[Math.floor(validCells.length / 2)].cell;
+  } else if (unitType === 'grid') {
+    // Parse grid key to get the starting row and column
+    const [gridRow, gridCol] = unitIndex.split('-').map(Number);
+    const startRow = gridRow * 3;
+    const startCol = gridCol * 3;
     
-    // Add initial flash to all cells
-    validCells.forEach(({ cell }) => {
-      try {
-        addFlashOverlay(cell);
-      } catch (e) {
-        console.error("Error adding flash overlay:", e);
-      }
-    });
-    
-    // Create wave animation with delay between cells
-    validCells.forEach(({ cell }, i) => {
-      // Apply wave animation with increasing delay
-      setTimeout(() => {
-        try {
-          // Add the wave animation class
-          cell.classList.add('cell-wave-animation');
-          
-          // Remove the class after animation completes
-          setTimeout(() => {
-            cell.classList.remove('cell-wave-animation');
-          }, 500);
-          
-          // Add glow effect on all cells with slight delay
-          setTimeout(() => {
-            cell.classList.add('cell-completion-glow');
-            
-            // Remove glow after animation
-            setTimeout(() => {
-              cell.classList.remove('cell-completion-glow');
-            }, 1200);
-          }, 300);
-        } catch (e) {
-          console.error("Error animating cell:", e);
+    // Collect all valid cells in the grid
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const row = startRow + r;
+        const col = startCol + c;
+        
+        // Skip path cells
+        if (pathCells.has(`${row},${col}`)) continue;
+        
+        const cell = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+        if (cell) {
+          // Use spiral order for grid animation
+          const spiralIndex = getSpiralIndex(r, c, 3, 3);
+          validCells.push({ cell, index: spiralIndex });
         }
-      }, i * 80); // 80ms between each cell in the wave
-    });
-    
-    // Show celebration sparkles on the center cell with a delay
-    setTimeout(() => {
-      try {
-        if (centerCell) {
-          createSparkles(centerCell);
-          
-          // Different messages based on unit type
-          const messageText = unitType.charAt(0).toUpperCase() + unitType.slice(1) + " Complete!";
-          showCompletionMessage(centerCell, messageText, bonusAmount);
-        }
-      } catch (e) {
-        console.error("Error creating sparkle effects:", e);
       }
-    }, 250);
-    
-    // Play completion sound at the start of the animation
-    try {
-      playCompletionSound();
-    } catch (e) {
-      console.error("Error playing completion sound:", e);
     }
+    
+    // Sort cells by spiral index for spiral wave
+    validCells.sort((a, b) => a.index - b.index);
   }
   
+  // If no valid cells were found, log and return
+  if (validCells.length === 0) {
+    console.error(`No valid cells found for ${unitType} ${unitIndex} animation`);
+    return;
+  }
+  
+  console.log(`Found ${validCells.length} cells to animate for ${unitType} ${unitIndex}`);
+  
+  // Choose a center cell for the message (middle cell in the sequence)
+  centerCell = validCells[Math.floor(validCells.length / 2)].cell;
+  
+  // Add initial flash to all cells
+  validCells.forEach(({ cell }) => {
+    try {
+      addFlashOverlay(cell);
+    } catch (e) {
+      console.error("Error adding flash overlay:", e);
+    }
+  });
+  
+  // Extract just the cell elements for the connecting line
+  const cellElements = validCells.map(item => item.cell);
+  
+  // Draw connecting line with delay to let initial flash happen first
+  setTimeout(() => {
+    try {
+      drawConnectingLine(cellElements, unitType);
+    } catch (e) {
+      console.error("Error drawing connecting line:", e);
+    }
+  }, 300);
+  
+  // Create wave animation with delay between cells
+  validCells.forEach(({ cell }, i) => {
+    // Apply wave animation with increasing delay
+    setTimeout(() => {
+      try {
+        // Add the wave animation class
+        cell.classList.add('cell-wave-animation');
+        
+        // Remove the class after animation completes
+        setTimeout(() => {
+          cell.classList.remove('cell-wave-animation');
+        }, 500);
+        
+        // Add glow effect on all cells with slight delay
+        setTimeout(() => {
+          cell.classList.add('cell-completion-glow');
+          
+          // Remove glow after animation
+          setTimeout(() => {
+            cell.classList.remove('cell-completion-glow');
+          }, 1200);
+        }, 300);
+      } catch (e) {
+        console.error("Error animating cell:", e);
+      }
+    }, i * 80); // 80ms between each cell in the wave
+  });
+  
+  // Show celebration sparkles on the center cell with a delay
+  setTimeout(() => {
+    try {
+      if (centerCell) {
+        createSparkles(centerCell);
+        
+        // Different messages based on unit type
+        const messageText = unitType.charAt(0).toUpperCase() + unitType.slice(1) + " Complete!";
+        showCompletionMessage(centerCell, messageText, bonusAmount);
+      }
+    } catch (e) {
+      console.error("Error creating sparkle effects:", e);
+    }
+  }, 500); // Delayed to happen after line starts drawing
+  
+  // Play completion sound at the start of the animation
+  try {
+    playCompletionSound();
+  } catch (e) {
+    console.error("Error playing completion sound:", e);
+  }
+}
   /**
    * This function should be updated in the completion-bonus.js file
    * It directly uses DOM queries rather than relying on BoardManager.getPlayableCellsInUnit
@@ -1512,28 +1602,31 @@ function onUnitCompleted(unitType, unitIndex) {
   // Initialize
   // Add this line to your init function
   function init() {
-    console.log("Initializing direct celebration system");
-    
-    // Reset celebration flag
-    hasCelebrated = false;
-    
-    // Add styles
-    addStyles();
-    
-    // Add completion animation styles
-    addCompletionAnimationStyles(); // Add this line
-    
-    // Add buttons after DOM is loaded
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function() {
-        addButtons();
-        hookEvents();
-      });
-    } else {
+  console.log("Initializing direct celebration system");
+  
+  // Reset celebration flag
+  hasCelebrated = false;
+  
+  // Add styles
+  addStyles();
+  
+  // Add completion animation styles
+  addCompletionAnimationStyles();
+  
+  // Add connected line styles
+  addConnectedLineStyles(); // Add this line
+  
+  // Add buttons after DOM is loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
       addButtons();
       hookEvents();
-    }
+    });
+  } else {
+    addButtons();
+    hookEvents();
   }
+}
   
   // Make functions globally available
   window.CompletionBonusModule = {
