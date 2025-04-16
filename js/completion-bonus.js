@@ -2073,7 +2073,7 @@ function init() {
   addCompletionAnimationStyles();
   
   // Add connected line styles
-  addConnectedLineStyles();
+  //addConnectedLineStyles();
   
   // Add combo styles
   addComboStyles();
