@@ -385,7 +385,7 @@ function handleCombo() {
       indicator.classList.remove('active');
     }
     
-  }, 10000); // Changed from 5000 to 10000ms (10 seconds)
+  }, 15000); // Changed from 5000 to 10000ms (10 seconds)
   
   // Log for debugging
   console.log(`Combo increased to ${comboCount}x - Timer set for 10 seconds (${new Date().toLocaleTimeString()})`);
@@ -565,7 +565,7 @@ function updateComboIndicator(combo) {
   bar.className = 'combo-bar';
   
   // Explicitly set animation duration to 10s to match the timeout
-  bar.style.animationDuration = '10s';
+  bar.style.animationDuration = '15s';
   
   barContainer.appendChild(bar);
 }
