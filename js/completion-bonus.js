@@ -313,7 +313,7 @@ function debugComboSystem() {
     // Check when the timer was created
     const now = Date.now();
     const elapsed = now - (window._lastComboTime || now);
-    const remaining = Math.max(0, 5000 - elapsed);
+    const remaining = Math.max(0, 10000 - elapsed);
     
     console.log(`Time elapsed since last combo: ${elapsed}ms`);
     console.log(`Estimated time remaining: ${remaining}ms`);
@@ -325,6 +325,7 @@ function debugComboSystem() {
 // Add this to window for access in console
 window.debugComboSystem = debugComboSystem;
 
+// Modify handleCombo to track timer creation time
 // Modify handleCombo to track timer creation time
 function handleCombo() {
   // Increment combo
@@ -343,11 +344,11 @@ function handleCombo() {
   // Store the time when this combo was triggered
   window._lastComboTime = Date.now();
   
-  // Set new timer (combo expires after 5 seconds)
+  // Set new timer (combo expires after 10 seconds)
   comboTimer = setTimeout(() => {
     // Only show message if combo was significant
     if (comboCount > 1) {
-      console.log(`Combo ended: ${comboCount}x (Timer completed after 5000ms)`);
+      console.log(`Combo ended: ${comboCount}x (Timer completed after 10000ms)`);
       
       // Optional: Show a small visual indication that combo ended
       const message = document.createElement('div');
@@ -384,10 +385,10 @@ function handleCombo() {
       indicator.classList.remove('active');
     }
     
-  }, 5000); // Explicitly set to 5000ms (5 seconds)
+  }, 10000); // Changed from 5000 to 10000ms (10 seconds)
   
   // Log for debugging
-  console.log(`Combo increased to ${comboCount}x - Timer set for 5 seconds (${new Date().toLocaleTimeString()})`);
+  console.log(`Combo increased to ${comboCount}x - Timer set for 10 seconds (${new Date().toLocaleTimeString()})`);
   
   // Return the current combo info
   return {
@@ -466,10 +467,10 @@ function addComboStyles() {
       animation: combo-timer 5s linear forwards;
     }
     
-    @keyframes combo-timer {
-      0% { transform: scaleX(1); }
-      100% { transform: scaleX(0); }
-    }
+@keyframes combo - timer {
+  0 % { transform: scaleX(1); }
+  100 % { transform: scaleX(0); }
+}
     
     .combo-message {
       position: fixed;
@@ -507,7 +508,6 @@ function addComboStyles() {
   document.head.appendChild(style);
 }
 
-// Add this function to create and update the combo indicator
 // Updated function to create and update the combo indicator with fixed timer
 function updateComboIndicator(combo) {
   // Get or create combo indicator
@@ -564,8 +564,8 @@ function updateComboIndicator(combo) {
   const bar = document.createElement('div');
   bar.className = 'combo-bar';
   
-  // Explicitly set animation duration to 5s to match the timeout
-  bar.style.animationDuration = '5s';
+  // Explicitly set animation duration to 10s to match the timeout
+  bar.style.animationDuration = '10s';
   
   barContainer.appendChild(bar);
 }
