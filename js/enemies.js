@@ -414,7 +414,11 @@ function startWave() {
   EventSystem.publish(GameEvents.STATUS_MESSAGE, `Wave ${waveNumber} started! Enemies: ${enemiesRemaining}`);
   
   // Start spawning using the pattern
+  setTimeout(() => {
   setupSpawning(wavePattern, wavePattern.composition, difficultyAdjustment);
+}, 3500);
+
+  
 }
 
 /**
