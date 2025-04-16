@@ -819,66 +819,110 @@ function resetGameAfterCelebration() {
   // Directly check unit (row, column, grid) completions using BoardManager
   function checkUnitCompletions() {}
   
-  // Handle completion of a unit (row, column, or box)
-  // Replace this in completion-bonus.js
-  
-  /**
-   * Handle completion of a unit (row, column, or box)
-   * Modified to ensure animations always play
-   */
-  /**
-   * Handle completion of a unit (row, column, or grid)
-   * Applies bonus effects and triggers animations with deduplication
-   */
-  function onUnitCompleted(unitType, unitIndex) {
-    const key = `${unitType}-${unitIndex}`;
-    const now = Date.now();
-    
-    // Initialize recentCompletions and permanentCompletions
-    if (!window._recentCompletions) window._recentCompletions = {};
-    if (!window._completedUnitSet) window._completedUnitSet = new Set();
-    
-    // Skip if already animated before (permanent suppression)
-    if (window._completedUnitSet.has(key)) {
-      console.log(`Already animated before, skipping: ${key}`);
-      return;
-    }
-    
-    // Prevent duplicate triggers within short window (throttling)
-    if ((now - (window._recentCompletions[key] || 0)) < 3000) {
-      console.log(`Throttled duplicate completion for ${key}`);
-      return;
-    }
-    
-    // Update both tracking mechanisms
-    window._recentCompletions[key] = now;
-    window._completedUnitSet.add(key);
-    
-    console.log(`Unit completed handler: ${key}`);
-    
-    // Determine bonus amount by unit type
-    let bonusAmount = 50;
-    if (unitType === 'column') bonusAmount = 75;
-    else if (unitType === 'grid') bonusAmount = 100;
-    
-    // Apply bonus points and currency
-    if (window.PlayerModule) {
-      PlayerModule.addCurrency(bonusAmount);
-      PlayerModule.addScore(bonusAmount * 2);
-      EventSystem.publish(GameEvents.STATUS_MESSAGE,
-        `${unitType.charAt(0).toUpperCase() + unitType.slice(1)} ${unitIndex} completed! Bonus: ${bonusAmount} currency and ${bonusAmount * 2} points!`);
-    }
-    
-    // Force board update before animation
-    if (window.Game && typeof Game.updateBoard === 'function') {
-      Game.updateBoard();
-    }
-    
-    // Run animation shortly after applying logic
-    setTimeout(() => {
-      animateUnitCompletion(unitType, unitIndex, bonusAmount);
-    }, 50);
+/**
+ * Animation Queue System
+ * 
+ * This modification adds a queue system to handle completion animations
+ * so they play one after another instead of simultaneously.
+ */
+
+// Create an animation queue system
+let animationQueue = [];
+let isAnimationRunning = false;
+
+// Process the animation queue
+function processAnimationQueue() {
+  if (animationQueue.length === 0 || isAnimationRunning) {
+    return;
   }
+  
+  // Get the next animation from the queue
+  const nextAnimation = animationQueue.shift();
+  isAnimationRunning = true;
+  
+  console.log(`Processing animation from queue: ${nextAnimation.unitType} ${nextAnimation.unitIndex}`);
+  
+  // Run the animation
+  performUnitAnimation(
+    nextAnimation.unitType,
+    nextAnimation.unitIndex,
+    nextAnimation.bonusAmount
+  );
+}
+
+// Wrapping function to handle animation completion
+function performUnitAnimation(unitType, unitIndex, bonusAmount) {
+  // The actual animation implementation (your existing code)
+  animateUnitCompletion(unitType, unitIndex, bonusAmount);
+  
+  // Set a timeout for when the animation is expected to complete
+  // This should be slightly longer than your longest animation
+  setTimeout(() => {
+    isAnimationRunning = false;
+    processAnimationQueue(); // Process the next animation in queue
+  }, 1500); // Adjust this based on your longest animation duration
+}
+
+/**
+ * Modified onUnitCompleted function that uses the queue
+ */
+function onUnitCompleted(unitType, unitIndex) {
+  const key = `${unitType}-${unitIndex}`;
+  const now = Date.now();
+  
+  // Initialize tracking sets if needed
+  if (!window._recentCompletions) window._recentCompletions = {};
+  if (!window._completedUnitSet) window._completedUnitSet = new Set();
+  
+  // Skip if already animated before (permanent suppression)
+  if (window._completedUnitSet.has(key)) {
+    console.log(`Already animated before, skipping: ${key}`);
+    return;
+  }
+  
+  // Prevent duplicate triggers within short window (throttling)
+  if ((now - (window._recentCompletions[key] || 0)) < 3000) {
+    console.log(`Throttled duplicate completion for ${key}`);
+    return;
+  }
+  
+  // Update both tracking mechanisms
+  window._recentCompletions[key] = now;
+  window._completedUnitSet.add(key);
+  
+  console.log(`Unit completed handler: ${key}`);
+  
+  // Determine bonus amount by unit type
+  let bonusAmount = 50;
+  if (unitType === 'column') bonusAmount = 75;
+  else if (unitType === 'grid') bonusAmount = 100;
+  
+  // Apply bonus points and currency
+  if (window.PlayerModule) {
+    PlayerModule.addCurrency(bonusAmount);
+    PlayerModule.addScore(bonusAmount * 2);
+    EventSystem.publish(GameEvents.STATUS_MESSAGE,
+      `${unitType.charAt(0).toUpperCase() + unitType.slice(1)} ${unitIndex} completed! Bonus: ${bonusAmount} currency and ${bonusAmount * 2} points!`);
+  }
+  
+  // Force board update before animation
+  if (window.Game && typeof Game.updateBoard === 'function') {
+    Game.updateBoard();
+  }
+  
+  // Instead of immediately running the animation, add it to the queue
+  animationQueue.push({
+    unitType: unitType,
+    unitIndex: unitIndex,
+    bonusAmount: bonusAmount
+  });
+  
+  // Try to process the queue (will only start if no animation is running)
+  processAnimationQueue();
+}
+  
+  
+  
   // Apply bonus effects for completed units
   // Replace the individual animation functions with the unified one
   function applyCompletionBonus(unitType, unitIndex) {
