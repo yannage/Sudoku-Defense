@@ -350,46 +350,71 @@ function getWavePattern(waveNumber) {
  * Creates more interesting and strategic enemy encounters
  */
 function startWave() {
-  console.log("Starting enhanced wave system for wave", waveNumber);
+  console.log("Starting consolidated wave system for wave", waveNumber);
   
   if (isWaveActive) {
     EventSystem.publish(GameEvents.STATUS_MESSAGE, "Wave already in progress!");
     return;
   }
   
-  // Get the latest path from BoardManager
-  updatePath();
+  // === Update and validate path ===
+  if (!path || path.length === 0) {
+    const boardManager = window.BoardManager;
+    if (boardManager?.getPathArray) {
+      path = boardManager.getPathArray();
+      console.log("Updated path from BoardManager:", path);
+    }
+  }
   
-  // Verify path is valid
-  if (!validatePath()) {
-    console.error("Cannot start wave: No valid path defined!");
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot start wave: Path not properly defined!");
+  // Emergency path generation
+  if (!path || !Array.isArray(path) || path.length === 0) {
+    console.warn("Path undefined or empty. Attempting emergency generation...");
+    if (window.BoardManager?.generateEnemyPath) {
+      path = BoardManager.generateEnemyPath();
+      if (!path || path.length === 0) {
+        console.error("Emergency path generation failed!");
+        return;
+      } else {
+        console.log("Emergency path generated successfully:", path);
+      }
+    } else {
+      return;
+    }
+  }
+  
+  // Fix string-based path format
+  if (typeof path[0] === 'string') {
+    path = path.map(pos => pos.split(',').map(Number));
+    console.log("Fixed path format:", path);
+  }
+  
+  // Final format validation
+  let validFormat = path.every(p => Array.isArray(p) && p.length === 2);
+  if (!validFormat) {
+    console.error("Invalid path format:", path);
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot start wave: Invalid path format!");
     return;
   }
   
-  // Get the appropriate wave pattern for this wave number
-  const wavePattern = getWavePattern(waveNumber);
+  // === Get wave pattern & adjust difficulty ===
+  const wavePattern = getWavePattern(waveNumber); // e.g., { name: "Swarm", composition: [1, 2, 3, "boss"] }
+  const difficultyAdjustment = calculateDynamicDifficulty(); // Optional difficulty tweaks
   
-  // Apply dynamic difficulty adjustments based on player performance
-  const difficultyAdjustment = calculateDynamicDifficulty();
-  
-  // Announce the wave
+  // Announce and setup wave
   announceWave(wavePattern);
-  
-  // Set up the enemy composition for this wave
-  const composition = wavePattern.composition;
-  enemiesRemaining = composition.length;
-  
-  // Start the wave
+  enemiesRemaining = wavePattern.composition.length;
   isWaveActive = true;
+  
   EventSystem.publish(GameEvents.WAVE_START, {
     waveNumber: waveNumber,
     enemyCount: enemiesRemaining,
     waveName: wavePattern.name
   });
   
-  // Set up enemy spawning based on the pattern
-  setupSpawning(wavePattern, composition, difficultyAdjustment);
+  EventSystem.publish(GameEvents.STATUS_MESSAGE, `Wave ${waveNumber} started! Enemies: ${enemiesRemaining}`);
+  
+  // Start spawning using the pattern
+  setupSpawning(wavePattern, wavePattern.composition, difficultyAdjustment);
 }
 
 /**
@@ -880,124 +905,6 @@ function initializeBehavior(typeData) {
   }
   
   return props;
-}
-    /**
-     * Start a wave of enemies
-     */
-    function startWave() {
-  console.log("EnemiesModule.startWave called");
-  
-  if (isWaveActive) {
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Wave already in progress!");
-    return;
-  }
-  
-  // Get the latest path from BoardManager or BoardManager
-  if (!path || path.length === 0) {
-    const boardManager = window.BoardManager;
-    if (boardManager && typeof boardManager.getPathArray === 'function') {
-      path = boardManager.getPathArray();
-      console.log("EnemiesModule: Updated path from BoardManager:", path);
-    } else if (window.BoardManager && typeof BoardManager.getPathArray === 'function') {
-      path = BoardManager.getPathArray();
-      console.log("EnemiesModule: Updated path from BoardManager:", path);
-    }
-  }
-  
-  // CRITICAL: Verify we have a valid path
-  if (!path || !Array.isArray(path) || path.length === 0) {
-    console.error("Cannot start wave: No valid path defined!");
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot start wave: Path not properly defined!");
-    
-    // Try emergency path generation
-    if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
-      console.log("Attempting emergency path generation...");
-      path = BoardManager.generateEnemyPath();
-      
-      if (!path || path.length === 0) {
-        console.error("Emergency path generation failed!");
-        return;
-      } else {
-        console.log("Emergency path generated successfully:", path);
-      }
-    } else {
-      return;
-    }
-  }
-  
-  // Verify path format - each element should be [row, col]
-  let validFormat = true;
-  for (let i = 0; i < path.length; i++) {
-    if (!Array.isArray(path[i]) || path[i].length !== 2) {
-      console.error(`Invalid path element at index ${i}:`, path[i]);
-      validFormat = false;
-      break;
-    }
-  }
-  
-  if (!validFormat) {
-    console.error("Path format is invalid, attempting to fix...");
-    // Try to fix the path format
-    if (typeof path[0] === 'string') {
-      // Format might be "row,col" strings
-      path = path.map(pos => pos.split(',').map(Number));
-      console.log("Fixed path:", path);
-    } else {
-      console.error("Cannot fix path format!");
-      EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot start wave: Invalid path format!");
-      return;
-    }
-  }
-  
-  console.log("Starting wave with path:", path);
-  isWaveActive = true;
-  
-  // Calculate number of enemies based on wave number
-  const baseEnemyCount = 6;
-  const enemyCount = baseEnemyCount + Math.floor((waveNumber - 1) * 3);
-  enemiesRemaining = enemyCount;
-  
-  // Determine which enemy types to use in this wave
-  const availableTypes = Math.min(9, Math.ceil(waveNumber / 2));
-  
-  // Publish wave start event
-  EventSystem.publish(GameEvents.WAVE_START, {
-    waveNumber: waveNumber,
-    enemyCount: enemyCount
-  });
-  
-  EventSystem.publish(GameEvents.STATUS_MESSAGE, `Wave ${waveNumber} started! Enemies: ${enemyCount}`);
-  
-  let enemiesSpawned = 0;
-  
-  // Clear any existing interval
-  if (spawnInterval) {
-    clearInterval(spawnInterval);
-  }
-  
-  // Spawn enemies at an interval
-  spawnInterval = setInterval(() => {
-    if (enemiesSpawned >= enemyCount) {
-      clearInterval(spawnInterval);
-      spawnInterval = null;
-      return;
-    }
-    
-    // Determine enemy type - higher waves have more varied and stronger enemies
-    let enemyType;
-    
-    // Boss enemy at the end of each wave (last 10% of enemies)
-    if (enemiesSpawned >= enemyCount * 0.9 && waveNumber % 3 === 0) {
-      enemyType = 'boss';
-    } else {
-      // Random enemy type based on available types
-      enemyType = Math.ceil(Math.random() * availableTypes);
-    }
-    
-    console.log(`Spawning enemy #${enemiesSpawned+1}, type: ${enemyType}`);
-    createEnemy(enemyType);
-    enemiesSpawned++;
-  }, 1000 / Math.sqrt(waveNumber)); // Spawn faster in higher waves
 }
 
 // Add a direct debug function to check path availability
