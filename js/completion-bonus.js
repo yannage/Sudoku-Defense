@@ -4,6 +4,12 @@
  * - Hides character abilities during celebration
  * - Makes Continue button reset game and prompt for new character selection
  */
+ 
+ // Add these variables near the top of your IIFE (after any existing let declarations)
+let comboCount = 0;
+let comboTimer = null;
+let comboBonusMultiplier = 0.2; // 20% bonus per combo level
+let comboMaxReached = 0; // Track the highest combo for stats
 
 // Track if we've already shown the celebration to prevent duplicates
 let hasCelebrated = false;
@@ -293,6 +299,263 @@ let hasCelebrated = false;
     
     document.head.appendChild(style);
   }
+  
+  // Add this function to handle the combo system
+function handleCombo() {
+  // Increment combo
+  comboCount++;
+  
+  // Update max combo if current combo is higher
+  if (comboCount > comboMaxReached) {
+    comboMaxReached = comboCount;
+  }
+  
+  // Clear existing timer if any
+  if (comboTimer) {
+    clearTimeout(comboTimer);
+  }
+  
+  // Set new timer (combo expires after 5 seconds)
+  comboTimer = setTimeout(() => {
+    // Only show message if combo was significant
+    if (comboCount > 1) {
+      console.log(`Combo ended: ${comboCount}x`);
+      
+      // Optional: Show a small visual indication that combo ended
+      const message = document.createElement('div');
+      message.textContent = `${comboCount}x Combo Ended`;
+      message.style.position = 'fixed';
+      message.style.top = '50px';
+      message.style.left = '50%';
+      message.style.transform = 'translateX(-50%)';
+      message.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+      message.style.color = '#ff9800';
+      message.style.padding = '5px 10px';
+      message.style.borderRadius = '5px';
+      message.style.fontWeight = 'bold';
+      message.style.fontSize = '14px';
+      message.style.zIndex = '9999';
+      message.style.animation = 'fadeOut 1.5s forwards';
+      document.body.appendChild(message);
+      
+      setTimeout(() => {
+        if (message.parentNode) {
+          message.parentNode.removeChild(message);
+        }
+      }, 1500);
+    }
+    
+    // Reset combo
+    comboCount = 0;
+  }, 5000); // Combo expires after 5 seconds of inactivity
+  
+  // Return the current combo info
+  return {
+    count: comboCount,
+    multiplier: 1 + (comboCount - 1) * comboBonusMultiplier
+  };
+}
+
+// Add this function to add styles for the combo system
+function addComboStyles() {
+  if (document.getElementById('combo-styles')) return;
+  
+  const style = document.createElement('style');
+  style.id = 'combo-styles';
+  style.textContent = `
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      70% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    
+    .combo-indicator {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: gold;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+      transform: scale(1);
+      opacity: 0;
+    }
+    
+    .combo-indicator.active {
+      opacity: 1;
+    }
+    
+    .combo-indicator.pulse {
+      transform: scale(1.2);
+    }
+    
+    .combo-counter {
+      margin-right: 5px;
+      font-size: 20px;
+      text-shadow: 0 0 5px gold;
+    }
+    
+    .combo-multiplier {
+      font-size: 14px;
+      color: #ffcc00;
+    }
+    
+    .combo-bar-container {
+      position: absolute;
+      bottom: -3px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background-color: rgba(255,255,255,0.3);
+      border-radius: 0 0 5px 5px;
+      overflow: hidden;
+    }
+    
+    .combo-bar {
+      height: 100%;
+      width: 100%;
+      background-color: gold;
+      transform-origin: left;
+      animation: combo-timer 5s linear forwards;
+    }
+    
+    @keyframes combo-timer {
+      0% { transform: scaleX(1); }
+      100% { transform: scaleX(0); }
+    }
+    
+    .combo-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      background-color: rgba(0, 0, 0, 0.7);
+      color: gold;
+      font-size: 24px;
+      font-weight: bold;
+      padding: 20px 30px;
+      border-radius: 10px;
+      z-index: 10001;
+      text-align: center;
+      animation: combo-popup 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      pointer-events: none;
+    }
+    
+    .combo-message.out {
+      animation: combo-popout 0.5s forwards;
+    }
+    
+    @keyframes combo-popup {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      70% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    
+    @keyframes combo-popout {
+      0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    }
+  `;
+  
+  document.head.appendChild(style);
+}
+
+// Add this function to create and update the combo indicator
+function updateComboIndicator(combo) {
+  // Get or create combo indicator
+  let indicator = document.getElementById('combo-indicator');
+  
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'combo-indicator';
+    indicator.className = 'combo-indicator';
+    
+    const counter = document.createElement('div');
+    counter.id = 'combo-counter';
+    counter.className = 'combo-counter';
+    
+    const multiplier = document.createElement('div');
+    multiplier.id = 'combo-multiplier';
+    multiplier.className = 'combo-multiplier';
+    
+    const barContainer = document.createElement('div');
+    barContainer.className = 'combo-bar-container';
+    
+    indicator.appendChild(counter);
+    indicator.appendChild(multiplier);
+    indicator.appendChild(barContainer);
+    
+    document.body.appendChild(indicator);
+  }
+  
+  // Update indicator content
+  const counter = document.getElementById('combo-counter');
+  const multiplier = document.getElementById('combo-multiplier');
+  const barContainer = indicator.querySelector('.combo-bar-container');
+  
+  // Only show for combos > 1
+  if (combo.count <= 1) {
+    indicator.classList.remove('active');
+    barContainer.innerHTML = '';
+    return;
+  }
+  
+  counter.textContent = `${combo.count}×`;
+  multiplier.textContent = `${Math.floor(combo.multiplier * 100)}% Bonus`;
+  
+  indicator.classList.add('active');
+  
+  // Add pulse animation
+  indicator.classList.add('pulse');
+  setTimeout(() => {
+    indicator.classList.remove('pulse');
+  }, 200);
+  
+  // Reset the timer bar
+  barContainer.innerHTML = '';
+  const bar = document.createElement('div');
+  bar.className = 'combo-bar';
+  barContainer.appendChild(bar);
+}
+
+// Function to show a combo message in the center of the screen
+function showComboMessage(combo) {
+  // Only show messages for significant combos
+  if (combo.count < 3) return;
+  
+  const message = document.createElement('div');
+  message.className = 'combo-message';
+  
+  // Choose message based on combo level
+  let messageText = '';
+  if (combo.count >= 7) {
+    messageText = `UNSTOPPABLE! ${combo.count}× COMBO!`;
+  } else if (combo.count >= 5) {
+    messageText = `AMAZING! ${combo.count}× COMBO!`;
+  } else if (combo.count >= 3) {
+    messageText = `${combo.count}× COMBO!`;
+  }
+  
+  message.textContent = messageText;
+  document.body.appendChild(message);
+  
+  // Remove after a short delay
+  setTimeout(() => {
+    message.classList.add('out');
+    setTimeout(() => {
+      if (message.parentNode) {
+        message.parentNode.removeChild(message);
+      }
+    }, 500);
+  }, 1000);
+}
   
   // Save the current puzzle as a trophy
   function savePuzzleAsTrophy() {
@@ -866,6 +1129,9 @@ function performUnitAnimation(unitType, unitIndex, bonusAmount) {
 /**
  * Modified onUnitCompleted function that uses the queue
  */
+/**
+ * Modified onUnitCompleted function that uses the queue and combo system
+ */
 function onUnitCompleted(unitType, unitIndex) {
   const key = `${unitType}-${unitIndex}`;
   const now = Date.now();
@@ -892,17 +1158,38 @@ function onUnitCompleted(unitType, unitIndex) {
   
   console.log(`Unit completed handler: ${key}`);
   
-  // Determine bonus amount by unit type
-  let bonusAmount = 50;
-  if (unitType === 'column') bonusAmount = 75;
-  else if (unitType === 'grid') bonusAmount = 100;
+  // Process combo system
+  const combo = handleCombo();
+  
+  // Determine base bonus amount by unit type
+  let baseBonusAmount = 50;
+  if (unitType === 'column') baseBonusAmount = 75;
+  else if (unitType === 'grid') baseBonusAmount = 100;
+  
+  // Apply combo multiplier to bonuses
+  const bonusAmount = Math.floor(baseBonusAmount * combo.multiplier);
   
   // Apply bonus points and currency
   if (window.PlayerModule) {
     PlayerModule.addCurrency(bonusAmount);
     PlayerModule.addScore(bonusAmount * 2);
-    EventSystem.publish(GameEvents.STATUS_MESSAGE,
-      `${unitType.charAt(0).toUpperCase() + unitType.slice(1)} ${unitIndex} completed! Bonus: ${bonusAmount} currency and ${bonusAmount * 2} points!`);
+    
+    // Different message based on combo
+    if (combo.count > 1) {
+      EventSystem.publish(GameEvents.STATUS_MESSAGE,
+        `${combo.count}× COMBO! ${unitType.charAt(0).toUpperCase() + unitType.slice(1)} ${unitIndex} completed! Bonus: ${bonusAmount} currency (${Math.floor(combo.multiplier * 100)}% boost)!`);
+    } else {
+      EventSystem.publish(GameEvents.STATUS_MESSAGE,
+        `${unitType.charAt(0).toUpperCase() + unitType.slice(1)} ${unitIndex} completed! Bonus: ${bonusAmount} currency and ${bonusAmount * 2} points!`);
+    }
+  }
+  
+  // Update combo indicator
+  updateComboIndicator(combo);
+  
+  // Show combo message for big combos
+  if (combo.count >= 3) {
+    showComboMessage(combo);
   }
   
   // Force board update before animation
@@ -910,11 +1197,12 @@ function onUnitCompleted(unitType, unitIndex) {
     Game.updateBoard();
   }
   
-  // Instead of immediately running the animation, add it to the queue
+  // Add to animation queue with combo information
   animationQueue.push({
     unitType: unitType,
     unitIndex: unitIndex,
-    bonusAmount: bonusAmount
+    bonusAmount: bonusAmount,
+    combo: combo.count
   });
   
   // Try to process the queue (will only start if no animation is running)
@@ -930,93 +1218,94 @@ function onUnitCompleted(unitType, unitIndex) {
   
   // Add CSS styles for unit completion animations
   // Add CSS styles for unit completion animations
-  function addCompletionAnimationStyles() {
-    if (document.getElementById('completion-animation-styles')) return;
-    
-    const style = document.createElement('style');
-    style.id = 'completion-animation-styles';
-    style.textContent = `
-        /* Completion animation styles */
-        .cell-completion-glow {
-            animation: cell-glow 1.2s ease-in-out;
-            z-index: 5;
-        }
-        
-        @keyframes cell-glow {
-            0% { box-shadow: inset 0 0 5px rgba(255, 215, 0, 0.2); }
-            50% { box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.8); }
-            100% { box-shadow: inset 0 0 5px rgba(255, 215, 0, 0.2); }
-        }
-        
-        /* Wave animation for cells */
-        .cell-wave-animation {
-            animation: cell-wave 0.5s ease-in-out;
-            z-index: 5;
-        }
-        
-        @keyframes cell-wave {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); background-color: rgba(255, 215, 0, 0.3); }
-            100% { transform: scale(1); }
-        }
-        
-        .celebration-sparkle {
-            position: absolute;
-            color: gold;
-            font-size: 16px;
-            pointer-events: none;
-            z-index: 31;
-            animation: sparkle-float 1s forwards ease-out;
-        }
-        
-        @keyframes sparkle-float {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
-            100% { transform: translate(var(--tx), var(--ty)) scale(1) rotate(var(--rot)); opacity: 0; }
-        }
-        
-        .completion-flash {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 215, 0, 0.15);
-            pointer-events: none;
-            z-index: 10;
-            animation: flash-fade 0.7s forwards ease-out;
-        }
-        
-        @keyframes flash-fade {
-            0% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-        
-        .completion-message {
-            position: absolute;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            font-weight: bold;
-            pointer-events: none;
-            z-index: 100;
-            animation: message-float 1.5s forwards ease-out;
-            white-space: nowrap;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-        }
-        
-        @keyframes message-float {
-            0% { transform: translate(-50%, 0); opacity: 0; }
-            20% { transform: translate(-50%, -10px); opacity: 1; }
-            80% { transform: translate(-50%, -20px); opacity: 1; }
-            100% { transform: translate(-50%, -30px); opacity: 0; }
-        }
-    `;
-    
-    document.head.appendChild(style);
-  }
+  // Add CSS styles for unit completion animations with combo support
+function addCompletionAnimationStyles() {
+  if (document.getElementById('completion-animation-styles')) return;
+  
+  const style = document.createElement('style');
+  style.id = 'completion-animation-styles';
+  style.textContent = `
+      /* Completion animation styles */
+      .cell-completion-glow {
+          animation: cell-glow 1.2s ease-in-out;
+          z-index: 5;
+      }
+      
+      @keyframes cell-glow {
+          0% { box-shadow: inset 0 0 5px rgba(255, 215, 0, calc(0.2 * var(--glow-intensity, 1))); }
+          50% { box-shadow: inset 0 0 20px rgba(255, 215, 0, calc(0.8 * var(--glow-intensity, 1))); }
+          100% { box-shadow: inset 0 0 5px rgba(255, 215, 0, calc(0.2 * var(--glow-intensity, 1))); }
+      }
+      
+      /* Wave animation for cells */
+      .cell-wave-animation {
+          animation: cell-wave 0.5s ease-in-out;
+          z-index: 5;
+      }
+      
+      @keyframes cell-wave {
+          0% { transform: scale(1); }
+          50% { transform: scale(var(--wave-scale, 1.2)); background-color: rgba(255, 215, 0, 0.3); }
+          100% { transform: scale(1); }
+      }
+      
+      .celebration-sparkle {
+          position: absolute;
+          color: gold;
+          font-size: 16px;
+          pointer-events: none;
+          z-index: 31;
+          animation: sparkle-float 1s forwards ease-out;
+      }
+      
+      @keyframes sparkle-float {
+          0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+          20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+          100% { transform: translate(var(--tx), var(--ty)) scale(1) rotate(var(--rot)); opacity: 0; }
+      }
+      
+      .completion-flash {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(255, 215, 0, 0.15);
+          pointer-events: none;
+          z-index: 10;
+          animation: flash-fade 0.7s forwards ease-out;
+      }
+      
+      @keyframes flash-fade {
+          0% { opacity: 1; }
+          100% { opacity: 0; }
+      }
+      
+      .completion-message {
+          position: absolute;
+          background-color: rgba(0, 0, 0, 0.7);
+          color: white;
+          padding: 5px 10px;
+          border-radius: 5px;
+          font-size: 12px;
+          font-weight: bold;
+          pointer-events: none;
+          z-index: 100;
+          animation: message-float 1.5s forwards ease-out;
+          white-space: nowrap;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      }
+      
+      @keyframes message-float {
+          0% { transform: translate(-50%, 0); opacity: 0; }
+          20% { transform: translate(-50%, -10px); opacity: 1; }
+          80% { transform: translate(-50%, -20px); opacity: 1; }
+          100% { transform: translate(-50%, -30px); opacity: 0; }
+      }
+  `;
+  
+  document.head.appendChild(style);
+}
 
   // Show completion message
   function showCompletionMessage(cell, text, bonusAmount) {
@@ -1230,8 +1519,8 @@ function drawConnectingLine(cells, unitType) {
    * @param {*} unitIndex - Index of the unit (row number, column number, or grid key)
    * @param {number} bonusAmount - Currency bonus amount for unit completion
    */
-function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
-  console.log(`Animating completion for ${unitType} ${unitIndex} with ${bonusAmount} bonus`);
+function animateUnitCompletion(unitType, unitIndex, bonusAmount, comboCount = 1) {
+  console.log(`Animating completion for ${unitType} ${unitIndex} with ${bonusAmount} bonus (Combo: ${comboCount}×)`);
   
   // Get path cells to exclude from animation
   const pathCells = window.BoardManager?.getPathCells?.() || new Set();
@@ -1306,10 +1595,32 @@ function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
   // Choose a center cell for the message (middle cell in the sequence)
   centerCell = validCells[Math.floor(validCells.length / 2)].cell;
   
-  // Add initial flash to all cells
+  // Add initial flash to all cells - brighter for higher combos
   validCells.forEach(({ cell }) => {
     try {
-      addFlashOverlay(cell);
+      const flash = document.createElement('div');
+      flash.className = 'completion-flash';
+      
+      // Enhance flash for combos
+      if (comboCount > 1) {
+        // Increase opacity for higher combos
+        const opacity = Math.min(0.15 + (comboCount * 0.03), 0.5);
+        flash.style.backgroundColor = `rgba(255, 215, 0, ${opacity})`;
+        
+        // Add glow for higher combos
+        if (comboCount >= 3) {
+          flash.style.boxShadow = `0 0 ${comboCount * 2}px gold`;
+        }
+      }
+      
+      cell.appendChild(flash);
+      
+      // Remove after animation
+      setTimeout(() => {
+        if (flash.parentNode === cell) {
+          flash.remove();
+        }
+      }, 700);
     } catch (e) {
       console.error("Error adding flash overlay:", e);
     }
@@ -1318,14 +1629,86 @@ function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
   // Extract just the cell elements for the connecting line
   const cellElements = validCells.map(item => item.cell);
   
-  // Draw connecting line with delay to let initial flash happen first
+  // Draw connecting line with delay - enhanced for combos
   setTimeout(() => {
     try {
-      drawConnectingLine(cellElements, unitType);
+      // Create SVG container
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.classList.add('completion-line');
+      document.body.appendChild(svg);
+      
+      // Create path through cell centers
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      
+      // Sort cells if needed
+      if (unitType === 'row' || unitType === 'column') {
+        cellElements.sort((a, b) => {
+          const aIndex = parseInt(a.getAttribute(unitType === 'row' ? 'data-col' : 'data-row'));
+          const bIndex = parseInt(b.getAttribute(unitType === 'row' ? 'data-col' : 'data-row'));
+          return aIndex - bIndex;
+        });
+      }
+      
+      // Create path data
+      let pathData = "";
+      cellElements.forEach((cell, i) => {
+        const rect = cell.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        
+        if (i === 0) pathData += `M ${x} ${y} `;
+        else pathData += `L ${x} ${y} `;
+      });
+      
+      // For grid type, complete the shape by connecting back to first point
+      if (unitType === 'grid' && cellElements.length > 0) {
+        const firstCell = cellElements[0];
+        const rect = firstCell.getBoundingClientRect();
+        pathData += `L ${rect.left + rect.width/2} ${rect.top + rect.height/2}`;
+      }
+      
+      path.setAttribute("d", pathData);
+      
+      // Enhance line for combos
+      if (comboCount > 1) {
+        // Thicker line for higher combos
+        const strokeWidth = 3 + (comboCount > 5 ? 2 : comboCount > 3 ? 1 : 0);
+        path.setAttribute("stroke-width", strokeWidth);
+        
+        // Different color for higher combos
+        if (comboCount >= 7) {
+          path.setAttribute("stroke", "#ff5500"); // Orange-Red for high combos
+        } else if (comboCount >= 5) {
+          path.setAttribute("stroke", "#ff9800"); // Orange for medium combos
+        } else if (comboCount >= 3) {
+          path.setAttribute("stroke", "#ffc107"); // Amber for low combos
+        } else {
+          path.setAttribute("stroke", "gold"); // Default gold
+        }
+        
+        // Add glow for higher combos
+        if (comboCount >= 3) {
+          path.setAttribute("filter", "drop-shadow(0 0 3px gold)");
+        }
+      } else {
+        path.setAttribute("stroke", "gold");
+      }
+      
+      svg.appendChild(path);
+      
+      // Remove after animation completes
+      setTimeout(() => {
+        if (svg.parentNode) {
+          svg.parentNode.removeChild(svg);
+        }
+      }, 2000);
     } catch (e) {
       console.error("Error drawing connecting line:", e);
     }
   }, 300);
+  
+  // Speed up animations for higher combos
+  const baseDelay = comboCount > 5 ? 50 : comboCount > 3 ? 60 : comboCount > 1 ? 70 : 80;
   
   // Create wave animation with delay between cells
   validCells.forEach(({ cell }, i) => {
@@ -1335,34 +1718,59 @@ function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
         // Add the wave animation class
         cell.classList.add('cell-wave-animation');
         
+        // Enhanced animation for combos
+        if (comboCount > 1) {
+          // More dramatic scaling for higher combos
+          const scale = 1.2 + (comboCount * 0.05);
+          cell.style.setProperty('--wave-scale', scale.toFixed(2));
+        }
+        
         // Remove the class after animation completes
         setTimeout(() => {
           cell.classList.remove('cell-wave-animation');
+          cell.style.removeProperty('--wave-scale');
         }, 500);
         
         // Add glow effect on all cells with slight delay
         setTimeout(() => {
           cell.classList.add('cell-completion-glow');
           
+          // Enhanced glow for combos
+          if (comboCount > 1) {
+            // Brighter glow for higher combos
+            const glowIntensity = 0.8 + (comboCount * 0.05);
+            cell.style.setProperty('--glow-intensity', glowIntensity.toFixed(2));
+          }
+          
           // Remove glow after animation
           setTimeout(() => {
             cell.classList.remove('cell-completion-glow');
+            cell.style.removeProperty('--glow-intensity');
           }, 1200);
         }, 300);
       } catch (e) {
         console.error("Error animating cell:", e);
       }
-    }, i * 80); // 80ms between each cell in the wave
+    }, i * baseDelay); // Dynamic delay based on combo
   });
   
   // Show celebration sparkles on the center cell with a delay
   setTimeout(() => {
     try {
       if (centerCell) {
-        createSparkles(centerCell);
+        // More sparkles for higher combos
+        const sparkleCount = comboCount > 5 ? 8 : comboCount > 3 ? 6 : comboCount > 1 ? 5 : 4;
         
-        // Different messages based on unit type
-        const messageText = unitType.charAt(0).toUpperCase() + unitType.slice(1) + " Complete!";
+        createSparkles(centerCell, sparkleCount);
+        
+        // Different messages based on unit type and combo
+        let messageText = unitType.charAt(0).toUpperCase() + unitType.slice(1) + " Complete!";
+        
+        // Add combo info to message
+        if (comboCount > 1) {
+          messageText = `${comboCount}× COMBO! ${messageText}`;
+        }
+        
         showCompletionMessage(centerCell, messageText, bonusAmount);
       }
     } catch (e) {
@@ -1599,13 +2007,19 @@ function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
   
   
   
-  // Initialize
-  // Add this line to your init function
-  function init() {
+function init() {
   console.log("Initializing direct celebration system");
   
   // Reset celebration flag
   hasCelebrated = false;
+  
+  // Reset combo tracking
+  comboCount = 0;
+  comboMaxReached = 0;
+  if (comboTimer) {
+    clearTimeout(comboTimer);
+    comboTimer = null;
+  }
   
   // Add styles
   addStyles();
@@ -1614,7 +2028,10 @@ function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
   addCompletionAnimationStyles();
   
   // Add connected line styles
-  addConnectedLineStyles(); // Add this line
+  addConnectedLineStyles();
+  
+  // Add combo styles
+  addComboStyles();
   
   // Add buttons after DOM is loaded
   if (document.readyState === 'loading') {
@@ -1629,15 +2046,28 @@ function animateUnitCompletion(unitType, unitIndex, bonusAmount) {
 }
   
   // Make functions globally available
-  window.CompletionBonusModule = {
-    showCelebration: showCelebration,
-    showTrophyRoom: showTrophyRoom,
-    savePuzzleAsTrophy: savePuzzleAsTrophy,
-    onUnitCompleted: onUnitCompleted,
-    checkUnitCompletions: checkUnitCompletions,
-    applyEffects: applyEffects,
-    resetGameAfterCelebration: resetGameAfterCelebration
-  };
+  // Make functions globally available
+window.CompletionBonusModule = {
+  showCelebration: showCelebration,
+  showTrophyRoom: showTrophyRoom,
+  savePuzzleAsTrophy: savePuzzleAsTrophy,
+  onUnitCompleted: onUnitCompleted,
+  checkUnitCompletions: checkUnitCompletions,
+  applyEffects: applyEffects,
+  resetGameAfterCelebration: resetGameAfterCelebration,
+  
+  // Add combo system functions to the module
+  getComboCount: function() { return comboCount; },
+  getMaxCombo: function() { return comboMaxReached; },
+  resetCombo: function() {
+    comboCount = 0;
+    if (comboTimer) {
+      clearTimeout(comboTimer);
+      comboTimer = null;
+    }
+    updateComboIndicator({ count: 0, multiplier: 1 });
+  }
+};
   
   // Make closeTrophyRoom globally available for emergency fixes
   window.closeTrophyRoom = closeTrophyRoom;
