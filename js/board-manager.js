@@ -409,14 +409,14 @@ function getPlayableCellsInUnit(unitType, unitIndex) {
 /**
  * Generate a random valid Sudoku puzzle
  * Modified with a better validation approach
- */
-function generatePuzzle(difficulty = 'easy') {
-    console.log(`BoardManager: Generating new Sudoku puzzle with difficulty: ${difficulty}`);
+ */function generatePuzzle(difficulty = 'easy', style = 'defense') {
+    console.log(`BoardManager: Generating new Sudoku puzzle with difficulty: ${difficulty}, style: ${style}`);
     
     // Reset completion tracking
     completedRows.clear();
     completedColumns.clear();
     completedGrids.clear();
+    pathCells.clear(); // Always clear first to avoid lingering paths from previous runs
     
     let attempts = 0;
     let validPuzzleFound = false;
@@ -425,10 +425,15 @@ function generatePuzzle(difficulty = 'easy') {
         attempts++;
         console.log(`BoardManager: Puzzle generation attempt ${attempts}`);
         
-        let pathLength = 9;
-        if (attempts > 3) pathLength = 6;
+        // Only generate path if in defense mode
+        if (style === 'defense') {
+            let pathLength = 9;
+            if (attempts > 3) pathLength = 6;
+            generateEnemyPath(pathLength); // This mutates `pathCells`
+        } else {
+            pathCells.clear(); // Ensure path is empty for basic mode
+        }
         
-        const pathArray = generateEnemyPath(pathLength);
         solution = generateCompleteSolution();
         
         const cellsToReveal = difficultySettings[difficulty] || 30;
