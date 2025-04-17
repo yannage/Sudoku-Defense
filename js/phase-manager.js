@@ -385,6 +385,12 @@ if (BoardManager?.init) {
             BoardManager.setDifficulty(gameSettings.difficulty);
         }
         
+        const currencyDisplay = document.getElementById('currency-value')?.parentNode;
+if (currencyDisplay) {
+    currencyDisplay.style.opacity = '1'; // Fully visible
+    currencyDisplay.style.pointerEvents = 'auto';
+}
+        
         // Apply difficulty to LevelsModule
         if (window.LevelsModule && typeof LevelsModule.setDifficulty === 'function') {
             LevelsModule.setDifficulty(gameSettings.difficulty);
@@ -426,11 +432,11 @@ if (BoardManager?.init) {
         });
         
         // Optional: Hide or modify currency display
-        const currencyDisplay = document.getElementById('currency-value')?.parentNode;
-        if (currencyDisplay) {
-            // Instead of hiding it, we could make it less prominent
-            currencyDisplay.style.opacity = '0.3';
-        }
+const currencyDisplay = document.getElementById('currency-value')?.parentNode;
+if (currencyDisplay) {
+    currencyDisplay.style.opacity = '0'; // Fully transparent
+    currencyDisplay.style.pointerEvents = 'none'; // Prevent hovering or clicks
+}
         
         // Add a class to the body for CSS targeting
         document.body.classList.add('basic-mode');
