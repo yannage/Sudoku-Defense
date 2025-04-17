@@ -56,7 +56,9 @@ const PhaseManager = (function() {
                 } else {
                     console.error("Setup menu not found in DOM");
                     // If setup menu is missing, proceed to character selection
-                    transitionTo(PHASES.INTRO);
+                    setTimeout(() => {
+    transitionTo(PHASES.INTRO);
+}, 0);
                 }
             },
             exit: function() {
@@ -68,35 +70,38 @@ const PhaseManager = (function() {
                     setupMenu.style.display = 'none';
                 }
                 
-                // Apply selected game settings
-                applyGameSettings();
+
             }
         },
-        [PHASES.INTRO]: {
-            enter: function() {
-                console.log("Entering INTRO phase");
-                // Hide game elements that shouldn't be visible during intro
-                hideGameBoard();
-                
-                // Show character selection
-                if (window.AbilitySystem && typeof AbilitySystem.init === 'function') {
-                    // First make sure any existing character UI is cleaned up
-                    const existingCharacterSelection = document.getElementById('character-selection');
-                    if (existingCharacterSelection) {
-                        existingCharacterSelection.remove();
-                    }
-                    
-                    // Reinitialize ability system to trigger character selection
-                    AbilitySystem.init();
-                    
-                    // Ensure character selection is visible
-                    const newCharacterSelection = document.getElementById('character-selection');
-                    if (newCharacterSelection) {
-                        newCharacterSelection.style.display = 'flex';
-                        newCharacterSelection.style.zIndex = '10000';
-                    }
-                }
-            },
+[PHASES.INTRO]: {
+    enter: function() {
+        console.log("Entering INTRO phase");
+        
+        if (gameSettings.style === 'basic') {
+            console.warn("Basic mode selected — skipping INTRO phase.");
+            setTimeout(() => {
+    transitionTo(PHASES.SUDOKU);
+}, 0);
+            return;
+        }
+        
+        hideGameBoard();
+        
+        if (window.AbilitySystem && typeof AbilitySystem.init === 'function') {
+            const existingCharacterSelection = document.getElementById('character-selection');
+            if (existingCharacterSelection) {
+                existingCharacterSelection.remove();
+            }
+            
+            AbilitySystem.init();
+            
+            const newCharacterSelection = document.getElementById('character-selection');
+            if (newCharacterSelection) {
+                newCharacterSelection.style.display = 'flex';
+                newCharacterSelection.style.zIndex = '10000';
+            }
+        }
+    },
             exit: function() {
                 console.log("Exiting INTRO phase");
                 // Hide character selection
@@ -112,6 +117,15 @@ const PhaseManager = (function() {
         [PHASES.SUDOKU]: {
             enter: function() {
                 console.log("Entering SUDOKU phase");
+                
+                if (gameSettings.style === 'basic') {
+    const characterSelection = document.getElementById('character-selection');
+    if (characterSelection) {
+        characterSelection.style.display = 'none';
+    }
+}
+                
+                showGameBoard();
                 // Show Sudoku board in number mode
                 if (window.BoardManager && typeof BoardManager.toggleDisplayMode === 'function') {
                     BoardManager.toggleDisplayMode(true); // true for numbers mode
@@ -261,10 +275,29 @@ const PhaseManager = (function() {
         const startGameBtn = document.getElementById('start-game-btn');
         if (startGameBtn) {
             startGameBtn.addEventListener('click', function() {
-                console.log("Start Game button clicked");
-                // Proceed to character selection
-                transitionTo(PHASES.INTRO);
-            });
+    console.log("Start Game button clicked");
+    
+    // Apply selected settings first
+    applyGameSettings();
+    
+    if (gameSettings.style === 'basic') {
+        // Skip character selection
+        const difficulty = gameSettings?.difficulty || 'easy';
+        if (window.BoardManager?.generatePuzzle) {
+            BoardManager.generatePuzzle(difficulty);
+        }
+        
+        // Go directly to Sudoku phase
+        setTimeout(() => {
+    transitionTo(PHASES.SUDOKU);
+}, 0);
+    } else {
+        // Go to character selection
+        setTimeout(() => {
+    transitionTo(PHASES.INTRO);
+}, 0);
+    }
+});
         } else {
             console.error("Start game button not found");
         }
@@ -751,16 +784,23 @@ const PhaseManager = (function() {
             // Wave complete event
             EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
                 // Return to Sudoku phase after wave
-                transitionTo(PHASES.SUDOKU);
+                setTimeout(() => {
+    transitionTo(PHASES.SUDOKU);
+}, 0);
             });
             
             // Character selected event
-            EventSystem.subscribe('character:selected', function() {
-                // Transition to Sudoku phase when character is selected
-                if (currentPhase === PHASES.INTRO) {
-                    transitionTo(PHASES.SUDOKU);
-                }
-            });
+EventSystem.subscribe('character:selected', function() {
+    if (currentPhase === PHASES.INTRO) {
+        const difficulty = gameSettings?.difficulty || 'easy';
+        if (window.BoardManager?.generatePuzzle) {
+            BoardManager.generatePuzzle(difficulty);
+        }
+        setTimeout(() => {
+    transitionTo(PHASES.SUDOKU);
+}, 0);
+    }
+});
         }
         
         // Initialize the phase indicator

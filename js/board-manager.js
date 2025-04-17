@@ -410,8 +410,8 @@ function getPlayableCellsInUnit(unitType, unitIndex) {
  * Generate a random valid Sudoku puzzle
  * Modified with a better validation approach
  */
-function generatePuzzle() {
-    console.log("BoardManager: Generating new Sudoku puzzle...");
+function generatePuzzle(difficulty = 'easy') {
+    console.log(`BoardManager: Generating new Sudoku puzzle with difficulty: ${difficulty}`);
     
     // Reset completion tracking
     completedRows.clear();
@@ -425,46 +425,33 @@ function generatePuzzle() {
         attempts++;
         console.log(`BoardManager: Puzzle generation attempt ${attempts}`);
         
-        // Generate the enemy path first
-        let pathLength = 9; // Start with shorter paths
-        if (attempts > 3) {
-            // Use an even simpler path on later attempts
-            pathLength = 6;
-        }
-        const pathArray = generateEnemyPath(pathLength);
+        let pathLength = 9;
+        if (attempts > 3) pathLength = 6;
         
-        // Generate a complete solution
+        const pathArray = generateEnemyPath(pathLength);
         solution = generateCompleteSolution();
         
-        // Determine how many cells to reveal based on difficulty
-        let cellsToReveal = difficultySettings[difficulty];
-        
-        // Create a puzzle from the solution
+        const cellsToReveal = difficultySettings[difficulty] || 30;
         const { puzzle, fixed } = createPuzzleFromSolution(solution, pathCells, cellsToReveal);
         
-        // TEST THE PUZZLE: Check if it's still solvable with backtracking
         validPuzzleFound = isSudokuSolvable(JSON.parse(JSON.stringify(puzzle)));
         
         if (validPuzzleFound) {
-            // Set the board and fixed cells
             board = puzzle;
             fixedCells = fixed;
-            
             console.log("BoardManager: Valid solvable puzzle generated!");
         } else {
-            console.log("BoardManager: Generated puzzle is not solvable with current path, retrying...");
-            // Clear path cells for the next attempt
+            console.log("BoardManager: Generated puzzle is not solvable, retrying...");
             pathCells.clear();
         }
     }
     
     if (!validPuzzleFound) {
-        console.log("BoardManager: Failed to generate a valid puzzle after multiple attempts");
-        // Emergency fallback - generate a very simple puzzle with minimal path
+        console.log("BoardManager: Failed after multiple attempts, using fallback");
         emergencyPuzzleGeneration();
     }
     
-    // Count fixed cells for debugging
+    // Count and log fixed cells
     let fixedCount = 0;
     for (let row = 0; row < 9; row++) {
         for (let col = 0; col < 9; col++) {
@@ -473,7 +460,6 @@ function generatePuzzle() {
     }
     console.log(`BoardManager: Generated puzzle with ${fixedCount} fixed cells`);
     
-    // Notify other modules that the board has been updated
     EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
         board: getBoard(),
         solution: getSolution(),
@@ -481,15 +467,9 @@ function generatePuzzle() {
         pathCells: getPathArray()
     });
     
-    // Remove all towers when a new puzzle is generated
     setTimeout(() => {
-        if (window.TowersModule && typeof TowersModule.init === 'function') {
-            TowersModule.init();
-        }
-        // Force a board update to ensure correct display
-        if (window.Game && typeof Game.updateBoard === 'function') {
-            Game.updateBoard();
-        }
+        if (window.TowersModule?.init) TowersModule.init();
+        if (window.Game?.updateBoard) Game.updateBoard();
     }, 100);
     
     return board;
