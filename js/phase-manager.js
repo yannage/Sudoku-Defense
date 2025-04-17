@@ -284,7 +284,9 @@ const PhaseManager = (function() {
         // Skip character selection
 const difficulty = gameSettings?.difficulty || 'easy';
 const style = gameSettings?.style || 'defense';
-BoardManager.generatePuzzle(difficulty, style);
+if (BoardManager?.init) {
+    BoardManager.init({ difficulty, style });
+}
         
         // Go directly to Sudoku phase
         setTimeout(() => {
@@ -793,7 +795,9 @@ EventSystem.subscribe('character:selected', function() {
     if (currentPhase === PHASES.INTRO) {
         const difficulty = gameSettings?.difficulty || 'easy';
 const style = gameSettings?.style || 'defense';
-BoardManager.generatePuzzle(difficulty, style);
+if (BoardManager?.init) {
+    BoardManager.init({ difficulty, style });
+}
         setTimeout(() => {
     transitionTo(PHASES.SUDOKU);
 }, 0);

@@ -5,13 +5,12 @@
  */
 
 const BoardManager = (function() {
-    // Private variables
-    let board = Array(9).fill().map(() => Array(9).fill(0));
-    let solution = Array(9).fill().map(() => Array(9).fill(0));
-    let fixedCells = Array(9).fill().map(() => Array(9).fill(false));
-    let pathCells = new Set(); // Cells that form the enemy path
-    let difficulty = 'medium'; // easy, medium, hard
-    
+            let board = Array(9).fill().map(() => Array(9).fill(0));
+            let solution = Array(9).fill().map(() => Array(9).fill(0));
+            let fixedCells = Array(9).fill().map(() => Array(9).fill(false));
+            let pathCells = new Set();
+            let difficulty = 'medium';
+            let gameStyle = 'defense';
     // Track completed units to avoid triggering events multiple times
     let completedRows = new Set();
     let completedColumns = new Set();
@@ -29,17 +28,14 @@ const BoardManager = (function() {
      * @param {Object} options - Initialization options
      */
     function init(options = {}) {
-        console.log("BoardManager initializing...");
-        difficulty = options.difficulty || 'medium';
-        
-        // Clear completion tracking
-        completedRows.clear();
-        completedColumns.clear();
-        completedGrids.clear();
-        
-        // Generate a new puzzle
-        generatePuzzle();
-    }
+    console.log("BoardManager initializing...");
+    difficulty = options.difficulty || 'medium';
+    gameStyle = options.style || 'defense';
+    completedRows.clear();
+    completedColumns.clear();
+    completedGrids.clear();
+    generatePuzzle(difficulty, gameStyle);
+}
     
     /**
      * Generate a complete, random Sudoku solution
@@ -659,56 +655,51 @@ function isValidMoveForTest(puzzle, row, col, value) {
  * @returns {boolean} Whether the move was valid
  */
 function setCellValue(row, col, value) {
-  if (row < 0 || row > 8 || col < 0 || col > 8) return false;
-  if (fixedCells[row][col]) return false;
-  if (pathCells.has(`${row},${col}`)) return false;
-  
-  // Check if there's already a tower at this position
-  // This helps avoid the "double-click" issue
-  if (value > 0 && board[row][col] === value) {
-    console.log(`Cell already contains value ${value} at [${row},${col}]`);
-    return false;
-  }
-  
-  if (value === 0) {
-    board[row][col] = 0;
-    // Force immediate UI update before status checks
-    forceUIUpdate();
-    checkUnitCompletion();
-    EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
-    return true;
-  }
-  
-  // Set the value immediately
-  board[row][col] = value;
-  
-  // Force immediate UI update - FIRST UPDATE before validations
-  forceUIUpdate();
-  
-  if (!isValidMove(row, col, value)) {
-    EventSystem.publish(GameEvents.SUDOKU_CELL_INVALID, { row, col, value });
-    const validNumbers = getPossibleValues(row, col);
-    EventSystem.publish(GameEvents.STATUS_MESSAGE,
-      validNumbers.length > 0 ?
-      `Warning: Tower violates Sudoku rules. Valid options: ${validNumbers.join(', ')}` :
-      "Warning: This tower violates Sudoku rules and will be removed after the wave.");
-  } else {
-    EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
-  }
-  
-  // Check unit completion AFTER UI shows the value
-  setTimeout(() => {
-    checkUnitCompletion();
-  
-    if (isComplete()) {
-      EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
+    if (row < 0 || row > 8 || col < 0 || col > 8) return false;
+    if (fixedCells[row][col]) return false;
+    if (pathCells.has(`${row},${col}`)) return false;
+    
+    if (value > 0 && board[row][col] === value) {
+        console.log(`Cell already contains value ${value} at [${row},${col}]`);
+        return false;
     }
     
-    // Final UI refresh to ensure completion effects are shown
+    if (value === 0) {
+        board[row][col] = 0;
+        forceUIUpdate();
+        checkUnitCompletion();
+        EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
+        return true;
+    }
+    
+    if (gameStyle === 'basic' && solution[row][col] !== value) {
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Incorrect number");
+        return false;
+    }
+    
+    board[row][col] = value;
     forceUIUpdate();
-  }, 50);
-  
-  return true;
+    
+    if (!isValidMove(row, col, value)) {
+        EventSystem.publish(GameEvents.SUDOKU_CELL_INVALID, { row, col, value });
+        const validNumbers = getPossibleValues(row, col);
+        EventSystem.publish(GameEvents.STATUS_MESSAGE,
+            validNumbers.length > 0 ?
+            `Warning: Tower violates Sudoku rules. Valid options: ${validNumbers.join(', ')}` :
+            "Warning: This tower violates Sudoku rules and will be removed after the wave.");
+    } else {
+        EventSystem.publish(GameEvents.SUDOKU_CELL_VALID, { row, col, value });
+    }
+    
+    setTimeout(() => {
+        checkUnitCompletion();
+        if (isComplete()) {
+            EventSystem.publish(GameEvents.SUDOKU_COMPLETE);
+        }
+        forceUIUpdate();
+    }, 50);
+    
+    return true;
 }
 
 /**
@@ -1289,25 +1280,24 @@ function toggleDisplayMode(showNumbers) {
     
     // Public API
     return {
-  init,
-  generatePuzzle,
-  generateEnemyPath,
-  setCellValue,
-  getBoard,
-  getBoardRaw: () => board,
-  getSolution,
-  getFixedCells,
-  getPathCells,
-  getPathArray,
-  setDifficulty,
-  isValidMove,
-  getPossibleValues,
-  checkUnitCompletion,
-  isComplete,
-  getCompletionStatus,
-  fixBoardDiscrepancies,
-  // ADD THIS LINE:
-  toggleDisplayMode
+    init,
+    generatePuzzle,
+    generateEnemyPath,
+    setCellValue,
+    getBoard,
+    getBoardRaw: () => board,
+    getSolution,
+    getFixedCells,
+    getPathCells,
+    getPathArray,
+    setDifficulty,
+    isValidMove,
+    getPossibleValues,
+    checkUnitCompletion,
+    isComplete,
+    getCompletionStatus,
+    fixBoardDiscrepancies,
+    toggleDisplayMode
 };
 })();
 
