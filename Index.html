@@ -8,7 +8,41 @@
 </head>
 <body>
     <h1>Sudoku Tower Defense</h1>
-    
+    <!-- Add this HTML code before the game-container in index.html -->
+<div id="setup-menu">
+    <div class="setup-container">
+        <h2>Sudoku Game Setup</h2>
+        
+        <div class="setup-section">
+            <h3>Game Style</h3>
+            <div class="option-container">
+                <div class="option-group">
+                    <button class="setup-option active" data-option="style" data-value="defense">Sudoku Defense</button>
+                    <button class="setup-option" data-option="style" data-value="basic">Sudoku Basic</button>
+                </div>
+                <div class="option-tooltip" id="style-tooltip">
+                    Sudoku Defense: Classic Sudoku combined with tower defense gameplay.
+                </div>
+            </div>
+        </div>
+        
+        <div class="setup-section">
+            <h3>Game Difficulty</h3>
+            <div class="option-container">
+                <div class="option-group">
+                    <button class="setup-option active" data-option="difficulty" data-value="easy">Easy</button>
+                    <button class="setup-option" data-option="difficulty" data-value="medium">Intermediate</button>
+                    <button class="setup-option" data-option="difficulty" data-value="hard">Expert</button>
+                </div>
+                <div class="option-tooltip" id="difficulty-tooltip">
+                    Easy: More numbers revealed, perfect for beginners.
+                </div>
+            </div>
+        </div>
+        
+        <button id="start-game-btn" class="start-game-button">Start Game</button>
+    </div>
+</div>
     <div id="game-container">
         <div id="game-header">
             <div id="score">Score: <span id="score-value">0</span></div>
@@ -76,6 +110,8 @@
 <script src="js/game.js"></script>
 <script src="js/completion-bonus.js"></script>
 <script src="js/enhanced-tower-rotation.js"></script>
+<script src="js/setup.js"></script>
+<script src="js/setup-ui.js"></script>
 <script src="js/init.js"></script> <!-- This initializes everything -->
 
 

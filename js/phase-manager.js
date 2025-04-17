@@ -4,22 +4,74 @@
  */
 
 const PhaseManager = (function() {
+    // Current phase
+    let currentPhase = null;
+    let previousPhase = null;
+    
     // Game phases
     const PHASES = {
-        INTRO: 'intro',             // Character selection
-        SUDOKU: 'sudoku',           // Puzzle solving
-        BATTLE: 'battle',           // Enemy wave
+        SETUP: 'setup',          // New setup phase
+        INTRO: 'intro',          // Character selection
+        SUDOKU: 'sudoku',        // Puzzle solving
+        BATTLE: 'battle',        // Enemy wave
         CELEBRATION: 'celebration', // Victory celebration
         GAME_OVER: 'game_over',     // Game over screen
         HISTORY: 'history'          // History/trophy review
     };
+
+    // Add game settings object (keep it in the phase manager)
+    let gameSettings = {
+        style: 'defense',     // 'defense' or 'basic'
+        difficulty: 'easy'    // 'easy', 'medium', or 'hard'
+    };
     
-    // Current phase
-    let currentPhase = PHASES.INTRO;
-    let previousPhase = null;
-    
-    // Phase transition handlers
+    // Phase transition handlers - IMPORTANT: Define as a complete object
     const phaseHandlers = {
+        [PHASES.SETUP]: {
+            enter: function() {
+                console.log("Entering SETUP phase");
+                
+                // Hide game elements
+                hideGameBoard();
+                
+                // Load saved settings
+                loadGameSettings();
+                
+                // Show setup menu
+                const setupMenu = document.getElementById('setup-menu');
+                if (setupMenu) {
+                    setupMenu.style.display = 'flex';
+                    
+                    // Initialize options based on saved settings
+                    setActiveOption('style', gameSettings.style);
+                    setActiveOption('difficulty', gameSettings.difficulty);
+                    updateTooltip('style', gameSettings.style);
+                    updateTooltip('difficulty', gameSettings.difficulty);
+                    
+                    // Setup event listeners (only if not already set up)
+                    if (!window._setupListenersInitialized) {
+                        initSetupListeners();
+                        window._setupListenersInitialized = true;
+                    }
+                } else {
+                    console.error("Setup menu not found in DOM");
+                    // If setup menu is missing, proceed to character selection
+                    transitionTo(PHASES.INTRO);
+                }
+            },
+            exit: function() {
+                console.log("Exiting SETUP phase");
+                
+                // Hide setup menu
+                const setupMenu = document.getElementById('setup-menu');
+                if (setupMenu) {
+                    setupMenu.style.display = 'none';
+                }
+                
+                // Apply selected game settings
+                applyGameSettings();
+            }
+        },
         [PHASES.INTRO]: {
             enter: function() {
                 console.log("Entering INTRO phase");
@@ -180,6 +232,204 @@ const PhaseManager = (function() {
             gameContainer.style.opacity = '0';
             gameContainer.style.transition = 'opacity 0.3s';
         }
+    }
+    
+    function initSetupListeners() {
+        console.log("Initializing setup listeners");
+        
+        // Option selection buttons
+        document.querySelectorAll('.setup-option').forEach(button => {
+            button.addEventListener('click', function() {
+                const option = this.getAttribute('data-option');
+                const value = this.getAttribute('data-value');
+                
+                console.log(`Option clicked: ${option} = ${value}`);
+                
+                // Update active button
+                setActiveOption(option, value);
+                
+                // Update tooltip
+                updateTooltip(option, value);
+                
+                // Save setting
+                gameSettings[option] = value;
+                saveGameSettings();
+            });
+        });
+        
+        // Start game button
+        const startGameBtn = document.getElementById('start-game-btn');
+        if (startGameBtn) {
+            startGameBtn.addEventListener('click', function() {
+                console.log("Start Game button clicked");
+                // Proceed to character selection
+                transitionTo(PHASES.INTRO);
+            });
+        } else {
+            console.error("Start game button not found");
+        }
+    }
+
+    /**
+     * Set active class on the appropriate option button
+     */
+    function setActiveOption(option, value) {
+        // Remove active class from all options in this group
+        document.querySelectorAll(`.setup-option[data-option="${option}"]`).forEach(button => {
+            button.classList.remove('active');
+        });
+        
+        // Add active class to selected option
+        const selectedButton = document.querySelector(`.setup-option[data-option="${option}"][data-value="${value}"]`);
+        if (selectedButton) {
+            selectedButton.classList.add('active');
+        }
+    }
+
+    /**
+     * Update tooltip text based on selected option
+     */
+    function updateTooltip(option, value) {
+        const tooltip = document.getElementById(`${option}-tooltip`);
+        if (!tooltip) return;
+        
+        let text = '';
+        
+        if (option === 'style') {
+            if (value === 'defense') {
+                text = 'Sudoku Defense: Classic Sudoku combined with tower defense gameplay. Place towers to defend against enemy waves.';
+            } else if (value === 'basic') {
+                text = 'Sudoku Basic: Pure Sudoku gameplay without enemies or tower defense elements. Just solve the puzzle at your own pace.';
+            }
+        } else if (option === 'difficulty') {
+            if (value === 'easy') {
+                text = 'Easy: More numbers revealed at the start, perfect for beginners.';
+            } else if (value === 'medium') {
+                text = 'Intermediate: Balanced challenge with fewer numbers revealed, good for regular players.';
+            } else if (value === 'hard') {
+                text = 'Expert: Very few numbers revealed, designed for Sudoku masters. Challenging puzzles!';
+            }
+        }
+        
+        tooltip.textContent = text;
+    }
+
+    /**
+     * Load game settings from localStorage
+     */
+    function loadGameSettings() {
+        try {
+            const savedSettings = localStorage.getItem('sudoku_game_settings');
+            if (savedSettings) {
+                const parsedSettings = JSON.parse(savedSettings);
+                gameSettings = { ...gameSettings, ...parsedSettings };
+            }
+        } catch (e) {
+            console.error("Error loading game settings:", e);
+        }
+    }
+
+    /**
+     * Save game settings to localStorage
+     */
+    function saveGameSettings() {
+        try {
+            localStorage.setItem('sudoku_game_settings', JSON.stringify(gameSettings));
+        } catch (e) {
+            console.error("Error saving game settings:", e);
+        }
+    }
+
+    /**
+     * Apply game settings to the game
+     */
+    function applyGameSettings() {
+        console.log("Applying game settings:", gameSettings);
+        
+        // Apply difficulty to BoardManager
+        if (window.BoardManager && typeof BoardManager.setDifficulty === 'function') {
+            BoardManager.setDifficulty(gameSettings.difficulty);
+        }
+        
+        // Apply difficulty to LevelsModule
+        if (window.LevelsModule && typeof LevelsModule.setDifficulty === 'function') {
+            LevelsModule.setDifficulty(gameSettings.difficulty);
+        }
+        
+        // Apply game style
+        if (gameSettings.style === 'basic') {
+            setupBasicSudokuMode();
+        } else {
+            setupDefenseMode();
+        }
+    }
+
+    /**
+     * Set up Basic Sudoku mode
+     */
+    function setupBasicSudokuMode() {
+        console.log("Setting up Basic Sudoku mode");
+        
+        // Set high currency
+        if (window.PlayerModule) {
+            if (typeof PlayerModule.setInitialCurrency === 'function') {
+                PlayerModule.setInitialCurrency(1000000);
+            } else if (typeof PlayerModule.addCurrency === 'function') {
+                PlayerModule.addCurrency(1000000);
+            }
+        }
+        
+        // Hide defense-specific elements
+        const elementsToHide = [
+            document.getElementById('start-wave'),
+            document.getElementById('wave-value')?.parentNode
+        ];
+        
+        elementsToHide.forEach(element => {
+            if (element) {
+                element.style.display = 'none';
+            }
+        });
+        
+        // Optional: Hide or modify currency display
+        const currencyDisplay = document.getElementById('currency-value')?.parentNode;
+        if (currencyDisplay) {
+            // Instead of hiding it, we could make it less prominent
+            currencyDisplay.style.opacity = '0.3';
+        }
+        
+        // Add a class to the body for CSS targeting
+        document.body.classList.add('basic-mode');
+        document.body.classList.remove('defense-mode');
+    }
+
+    /**
+     * Set up Defense mode
+     */
+    function setupDefenseMode() {
+        console.log("Setting up Sudoku Defense mode");
+        
+        // Show all defense elements
+        const elementsToShow = [
+            document.getElementById('start-wave'),
+            document.getElementById('wave-value')?.parentNode
+        ];
+        
+        elementsToShow.forEach(element => {
+            if (element) {
+                element.style.display = '';
+            }
+        });
+        
+        // Restore currency display
+        const currencyDisplay = document.getElementById('currency-value')?.parentNode;
+        if (currencyDisplay) {
+            currencyDisplay.style.opacity = '1';
+        }
+        
+        // Update body classes
+        document.body.classList.add('defense-mode');
+        document.body.classList.remove('basic-mode');
     }
     
     function showGameBoard() {
@@ -364,66 +614,37 @@ const PhaseManager = (function() {
         }
     }
     
-    /**
- * Enhancement to the startNewGame function in phase-manager.js
- * Replace the existing startNewGame function with this improved version
- */
-
-function startNewGame() {
-  console.log("PhaseManager: Starting completely new game");
-  
-  // First save the score if needed
-  if (window.SaveSystem && typeof SaveSystem.saveScore === 'function') {
-    SaveSystem.saveScore();
-  }
-  
-  // Clear character selection to force re-selection
-  localStorage.removeItem('sudoku_td_character');
-  
-  // Transition to intro phase BEFORE resetting the game
-  // This ensures the character selection screen will be visible
-  transitionTo(PHASES.INTRO);
-  
-  // Reset game state after a short delay
-  // This gives the phase transition time to complete
-  setTimeout(() => {
-    // Clear any existing game over or celebration screens
-    const gameOverScreen = document.getElementById('game-over-screen');
-    if (gameOverScreen) {
-      gameOverScreen.remove();
-    }
-    
-    const celebrationContainer = document.getElementById('celebration-container');
-    if (celebrationContainer) {
-      celebrationContainer.classList.remove('active');
-      setTimeout(() => {
-        if (celebrationContainer.parentNode) {
-          celebrationContainer.parentNode.removeChild(celebrationContainer);
+    function startNewGame() {
+        console.log("Starting new game from SETUP phase");
+        
+        // Save the current score if needed
+        if (window.SaveSystem && typeof SaveSystem.saveScore === 'function') {
+            SaveSystem.saveScore();
         }
-      }, 300);
-    }
-    
-    // Reset game state
-    if (window.Game && typeof Game.reset === 'function') {
-      Game.reset();
-    }
-    
-    // Make sure the character selection is visible
-    setTimeout(() => {
-      const characterSelection = document.getElementById('character-selection');
-      if (!characterSelection) {
-        // If character selection doesn't exist, reinitialize the ability system
-        if (window.AbilitySystem && typeof AbilitySystem.init === 'function') {
-          AbilitySystem.init();
+        
+        // Clear character selection
+        localStorage.removeItem('sudoku_td_character');
+        
+        // Clear any game over or celebration screens
+        const gameOverScreen = document.getElementById('game-over-screen');
+        if (gameOverScreen) {
+            gameOverScreen.remove();
         }
-      } else {
-        // Make sure it's visible
-        characterSelection.style.display = 'flex';
-        characterSelection.style.zIndex = '10000';
-      }
-    }, 300);
-  }, 100);
-}
+        
+        const celebrationContainer = document.getElementById('celebration-container');
+        if (celebrationContainer) {
+            celebrationContainer.classList.remove('active');
+        }
+        
+        // Reset game state
+        if (window.Game && typeof Game.reset === 'function') {
+            Game.reset();
+        }
+        
+        // Start from setup phase
+        transitionTo(PHASES.SETUP);
+    }
+    
     /**
      * Update the phase indicator
      * @param {string} phase - Current phase to display
@@ -503,7 +724,7 @@ function startNewGame() {
     function getCurrentPhase() {
         return currentPhase;
     }
-    
+
     /**
      * Initialize the phase manager and set up event subscriptions
      */
@@ -543,10 +764,10 @@ function startNewGame() {
         }
         
         // Initialize the phase indicator
-        updatePhaseIndicator(PHASES.INTRO);
+        updatePhaseIndicator(PHASES.SETUP);
         
-        // Default to intro phase
-        transitionTo(PHASES.INTRO);
+        // Start with setup phase
+        transitionTo(PHASES.SETUP);
         
         console.log("PhaseManager initialized");
     }
