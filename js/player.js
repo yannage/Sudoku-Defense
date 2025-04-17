@@ -107,17 +107,6 @@ function addScore(points) {
     // Publish both events for redundancy
     EventSystem.publish(GameEvents.SCORE_CHANGE, state.score);
     EventSystem.publish(GameEvents.PLAYER_UPDATE, { ...state });
-    
-    // Add visual indicator for significant point changes
-    if (Math.abs(points) >= 20) {
-        const message = points > 0 ?
-            `+${points} points!` :
-            `${points} points`;
-        
-        const color = points > 0 ? '#4caf50' : '#f44336';
-        
-        showFloatingScoreText(message, color);
-    }
 }
 
 /**

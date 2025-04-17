@@ -759,10 +759,7 @@ if (gameStyle === 'basic') {
             EventSystem.publish(GameEvents.STATUS_MESSAGE,
                 `Correct placement! +${pointsAwarded} points`);
             
-            // Trigger floating score animation
-            if (typeof window.showFloatingScoreText === 'function') {
-                window.showFloatingScoreText(`+${pointsAwarded}`, '#4caf50');
-            }
+
         }
     } else {
         // Incorrect number - penalize
