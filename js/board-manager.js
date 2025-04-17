@@ -647,6 +647,10 @@ function isValidMoveForTest(puzzle, row, col, value) {
       
         return true;
     }
+    
+    
+    
+    
     /**
  * Set the value of a cell
  * @param {number} row - Row index
@@ -654,6 +658,149 @@ function isValidMoveForTest(puzzle, row, col, value) {
  * @param {number} value - Value to set
  * @returns {boolean} Whether the move was valid
  */
+/**
+ * Add these functions to board-manager.js, then replace the setCellValue function 
+ * with the updated version below
+ */
+
+/**
+ * Calculate points for a correct move based on emptiness of row, column, and grid
+ * @param {number} row - Row index
+ * @param {number} col - Column index
+ * @returns {number} Points to award
+ */
+function calculateMovePoints(row, col) {
+    // Base points for a correct placement
+    let points = 10;
+    
+    // Get completion status
+    const { rows: completedRows, columns: completedColumns, grids: completedGrids } = getCompletionStatus();
+    
+    // Calculate grid position
+    const gridRow = Math.floor(row / 3);
+    const gridCol = Math.floor(col / 3);
+    const gridKey = `${gridRow}-${gridCol}`;
+    
+    // Calculate emptiness bonus
+    let emptyCount = 0;
+    
+    // Check row emptiness (excluding path cells)
+    for (let c = 0; c < 9; c++) {
+        if (c !== col && !pathCells.has(`${row},${c}`) && board[row][c] === 0) {
+            emptyCount++;
+        }
+    }
+    
+    // Check column emptiness (excluding path cells)
+    for (let r = 0; r < 9; r++) {
+        if (r !== row && !pathCells.has(`${r},${col}`) && board[r][col] === 0) {
+            emptyCount++;
+        }
+    }
+    
+    // Check grid emptiness (excluding path cells)
+    const gridStartRow = Math.floor(row / 3) * 3;
+    const gridStartCol = Math.floor(col / 3) * 3;
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+            const gridRow = gridStartRow + r;
+            const gridCol = gridStartCol + c;
+            if ((gridRow !== row || gridCol !== col) &&
+                !pathCells.has(`${gridRow},${gridCol}`) &&
+                board[gridRow][gridCol] === 0) {
+                emptyCount++;
+            }
+        }
+    }
+    
+    // Award bonus points based on emptiness
+    points += emptyCount * 2;
+    
+    // Debug output
+    console.log(`Tower placement at [${row},${col}]: ${points} points (${emptyCount} empty cells)`);
+    
+    return points;
+}
+
+/**
+ * Calculate the penalty for an incorrect move
+ * @returns {number} Points to deduct
+ */
+function calculateIncorrectPenalty() {
+    // Base penalty for incorrect placement
+    return 15;
+}
+
+/**
+ * Set the value of a cell - UPDATED VERSION WITH DIRECT PLAYER MODULE INTEGRATION
+ * @param {number} row - Row index
+ * @param {number} col - Column index
+ * @param {number} value - Value to set
+ * @returns {boolean} Whether the move was valid
+ */
+/**
+ * Add this code block to replace the existing gameStyle === 'basic' condition 
+ * in your setCellValue function
+ */
+
+if (gameStyle === 'basic') {
+    // Check if the placement is correct
+    const isCorrect = solution[row][col] === value;
+    
+    if (isCorrect) {
+        // Award points based on emptiness of row, column, and grid
+        const pointsAwarded = calculateMovePoints(row, col);
+        
+        // Direct integration with PlayerModule
+        if (window.PlayerModule && typeof PlayerModule.addScore === 'function' && pointsAwarded > 0) {
+            PlayerModule.addScore(pointsAwarded);
+            
+            // Visual feedback
+            EventSystem.publish(GameEvents.STATUS_MESSAGE,
+                `Correct placement! +${pointsAwarded} points`);
+            
+            // Trigger floating score animation
+            if (typeof window.showFloatingScoreText === 'function') {
+                window.showFloatingScoreText(`+${pointsAwarded}`, '#4caf50');
+            }
+        }
+    } else {
+        // Incorrect number - penalize
+        const penalty = calculateIncorrectPenalty();
+        
+        // Direct integration with PlayerModule
+        if (window.PlayerModule && typeof PlayerModule.addScore === 'function') {
+            // Check current score to determine actual penalty
+            const currentScore = PlayerModule.getState().score;
+            const actualPenalty = Math.min(currentScore, penalty);
+            
+            if (actualPenalty > 0) {
+                // Only deduct and show animation if there are points to deduct
+                PlayerModule.addScore(-actualPenalty);
+                
+                // Visual feedback
+                EventSystem.publish(GameEvents.STATUS_MESSAGE,
+                    `Incorrect number! -${actualPenalty} points`);
+                
+                // Only show floating animation if points were actually deducted
+                if (typeof window.showFloatingScoreText === 'function') {
+                    window.showFloatingScoreText(`-${actualPenalty}`, '#f44336');
+                }
+            } else {
+                // Still show message but without point deduction
+                EventSystem.publish(GameEvents.STATUS_MESSAGE, "Incorrect number!");
+            }
+        }
+        
+        return false;
+    }
+}
+
+/**
+ * For a cleaner complete implementation, this is how the updated 
+ * setCellValue function should look when fully replaced:
+ */
+
 function setCellValue(row, col, value) {
     if (row < 0 || row > 8 || col < 0 || col > 8) return false;
     if (fixedCells[row][col]) return false;
@@ -672,11 +819,68 @@ function setCellValue(row, col, value) {
         return true;
     }
     
-    if (gameStyle === 'basic' && solution[row][col] !== value) {
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Incorrect number");
-        return false;
+    // Handle both game styles in a more consistent way
+    if (gameStyle === 'defense' || gameStyle === 'basic') {
+        const isCorrect = solution[row][col] === value;
+        
+        if (isCorrect) {
+            // Award points based on emptiness of row, column, and grid
+            const pointsAwarded = calculateMovePoints(row, col);
+            
+            // Direct integration with PlayerModule
+            if (window.PlayerModule && typeof PlayerModule.addScore === 'function' && pointsAwarded > 0) {
+                PlayerModule.addScore(pointsAwarded);
+                
+                // Visual feedback
+                EventSystem.publish(GameEvents.STATUS_MESSAGE,
+                    `Correct placement! +${pointsAwarded} points`);
+                
+                // Trigger floating score animation
+                if (typeof window.showFloatingScoreText === 'function') {
+                    window.showFloatingScoreText(`+${pointsAwarded}`, '#4caf50');
+                }
+            }
+        } else {
+            // Penalize incorrect placement
+            const penalty = calculateIncorrectPenalty();
+            
+            // Direct integration with PlayerModule
+            if (window.PlayerModule && typeof PlayerModule.addScore === 'function') {
+                // Check current score to determine actual penalty
+                const currentScore = PlayerModule.getState().score;
+                const actualPenalty = Math.min(currentScore, penalty);
+                
+                if (actualPenalty > 0) {
+                    // Only deduct and show animation if there are points to deduct
+                    PlayerModule.addScore(-actualPenalty);
+                    
+                    // Visual feedback
+                    const message = gameStyle === 'defense' ?
+                        `Incorrect placement! -${actualPenalty} points` :
+                        `Incorrect number! -${actualPenalty} points`;
+                    EventSystem.publish(GameEvents.STATUS_MESSAGE, message);
+                    
+                    // Only show floating animation if points were actually deducted
+                    if (typeof window.showFloatingScoreText === 'function') {
+                        window.showFloatingScoreText(`-${actualPenalty}`, '#f44336');
+                    }
+                } else {
+                    // Still show message but without point deduction
+                    const message = gameStyle === 'defense' ?
+                        "Incorrect placement!" : "Incorrect number!";
+                    EventSystem.publish(GameEvents.STATUS_MESSAGE, message);
+                }
+            }
+            
+            // For basic mode, return false to prevent the move
+            if (gameStyle === 'basic') {
+                return false;
+            }
+        }
     }
     
+  
+
     board[row][col] = value;
     forceUIUpdate();
     
@@ -701,6 +905,41 @@ function setCellValue(row, col, value) {
     
     return true;
 }
+
+/**
+ * Also add this debug function to help troubleshoot
+ */
+function debugScoring() {
+    console.log("=== SCORING SYSTEM DEBUG ===");
+    console.log("PlayerModule available:", window.PlayerModule ? "YES" : "NO");
+    
+    if (window.PlayerModule) {
+        console.log("PlayerModule methods:", Object.keys(PlayerModule));
+        console.log("Current player state:", PlayerModule.getState());
+    }
+    
+    // Test score calculation
+    const testRow = 4;
+    const testCol = 4;
+    console.log(`Test calculation for cell [${testRow},${testCol}]:`, calculateMovePoints(testRow, testCol));
+    
+    // Test direct scoring
+    if (window.PlayerModule && typeof PlayerModule.addScore === 'function') {
+        console.log("Testing score addition...");
+        const currentScore = PlayerModule.getState().score;
+        PlayerModule.addScore(5);
+        const newScore = PlayerModule.getState().score;
+        console.log(`Score before: ${currentScore}, after +5: ${newScore}, difference: ${newScore - currentScore}`);
+        
+        // Reset score
+        PlayerModule.addScore(-(newScore - currentScore));
+    }
+    
+    return "Check browser console for debug info";
+}
+
+// Make debug function available globally
+window.debugScoring = debugScoring;
 
 /**
  * Helper function to force UI updates

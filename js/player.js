@@ -82,15 +82,94 @@ const PlayerModule = (function() {
      * Add score to the player
      * @param {number} points - Points to add
      */
-    function addScore(points) {
+    /**
+ * Update to PlayerModule to properly handle negative scores
+ * This should replace the existing addScore function in player.js
+ */
+
+/**
+ * Add score to the player (can be negative for penalties)
+ * Score will never go below 0
+ * @param {number} points - Points to add (negative for penalties)
+ */
+function addScore(points) {
+    const prevScore = state.score;
+    
+    if (points < 0) {
+        // For negative points, ensure we don't go below 0
+        state.score = Math.max(0, state.score + points);
+        console.log(`Score penalty: ${points}, Previous: ${prevScore}, New: ${state.score}`);
+    } else {
         state.score += points;
-        console.log("Score added: " + points + ", New score: " + state.score);
-        
-        // Publish both events for redundancy
-        EventSystem.publish(GameEvents.SCORE_CHANGE, state.score);
-        EventSystem.publish(GameEvents.PLAYER_UPDATE, { ...state });
+        console.log(`Score added: ${points}, New score: ${state.score}`);
     }
     
+    // Publish both events for redundancy
+    EventSystem.publish(GameEvents.SCORE_CHANGE, state.score);
+    EventSystem.publish(GameEvents.PLAYER_UPDATE, { ...state });
+    
+    // Add visual indicator for significant point changes
+    if (Math.abs(points) >= 20) {
+        const message = points > 0 ?
+            `+${points} points!` :
+            `${points} points`;
+        
+        const color = points > 0 ? '#4caf50' : '#f44336';
+        
+        showFloatingScoreText(message, color);
+    }
+}
+
+/**
+ * Show floating score text for visual feedback
+ * @param {string} message - Message to display
+ * @param {string} color - CSS color for the text
+ */
+function showFloatingScoreText(message, color) {
+    // Create element for score animation
+    const scoreText = document.createElement('div');
+    scoreText.textContent = message;
+    scoreText.style.position = 'fixed';
+    scoreText.style.top = '50%';
+    scoreText.style.left = '50%';
+    scoreText.style.transform = 'translate(-50%, -50%)';
+    scoreText.style.color = color;
+    scoreText.style.fontWeight = 'bold';
+    scoreText.style.fontSize = '24px';
+    scoreText.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
+    scoreText.style.zIndex = '9999';
+    scoreText.style.pointerEvents = 'none';
+    scoreText.style.animation = 'score-float 1.5s forwards';
+    
+    // Add animation style if not already present
+    if (!document.getElementById('score-animation-style')) {
+        const style = document.createElement('style');
+        style.id = 'score-animation-style';
+        style.textContent = `
+            @keyframes score-float {
+                0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                10% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+                20% { transform: translate(-50%, -50%) scale(1); }
+                80% { opacity: 1; transform: translate(-50%, -80px) scale(1); }
+                100% { opacity: 0; transform: translate(-50%, -100px) scale(0.8); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(scoreText);
+    
+    // Remove after animation
+    setTimeout(() => {
+        if (scoreText.parentNode) {
+            scoreText.parentNode.removeChild(scoreText);
+        }
+    }, 1500);
+}
+
+// Make showFloatingScoreText available to the window for debugging
+// and for other modules to use
+window.showFloatingScoreText = showFloatingScoreText;
     /**
      * Lose a life
      * @returns {boolean} Whether the player still has lives
