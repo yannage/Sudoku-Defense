@@ -1518,23 +1518,44 @@ button:active {
     background-color: black;
     color: white;
 }
+
 .sudoku-cell.grass {
-  background-color: #6ab04c !important; /* soft green */
+  background-color: #6ab04c !important; /* soft green fallback */
+  background-image: url('/assets/grass2.png') !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
 }
 
 .sudoku-cell.dirt {
-  background-color: #b5835a !important; /* dirt brown */
+  background-color: #b5835a !important; /* dirt brown fallback */
+  background-image: url('/assets/dirt2.png') !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
 }
+
 .sudoku-cell.tower-number {
   font-weight: bold;
   font-size: 1.4rem;
   color: #000;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.7); /* Makes text readable on any background */
 }
+
 .sudoku-cell.fixed-block {
-  background-color: #2e7d32 !important; /* Dark green */
+  background-color: #2e7d32 !important; /* Dark green fallback */
+  background-image: url('/assets/bunker.png') !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
 }
+
 .sudoku-cell.dark-grass {
-  background-color: #2e7d32 !important; /* Dark green */
+  background-color: #2e7d32 !important; /* Dark green fallback */
+background-image: url('/assets/bunker.png') !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
 }
 
 /* Path cells during Sudoku phase */
