@@ -123,7 +123,7 @@ loadEnhancedBarrelSystem();
         
         // Set the background image and position based on tower type
         const spritePos = spritePositions[towerType] || spritePositions[1];
-        barrelElement.style.backgroundImage = 'url("/assets/aimsheet.png")';
+        barrelElement.style.backgroundImage = 'url("/assets/aimsheet2.png")';
         barrelElement.style.backgroundSize = '96px 96px';
         barrelElement.style.backgroundPosition = `${spritePos.x}px ${spritePos.y}px`;
         barrelElement.style.backgroundRepeat = 'no-repeat';
@@ -169,7 +169,7 @@ loadEnhancedBarrelSystem();
         barrelElement = document.createElement('div');
         barrelElement.className = 'tower-barrel';
         barrelElement.setAttribute('data-type', tower.type);
-        barrelElement.style.backgroundImage = 'url("/assets/aimsheet.png")';
+        barrelElement.style.backgroundImage = 'url("/assets/aimsheet2.png")';
         barrelElement.style.backgroundSize = '96px 96px';
         barrelElement.style.backgroundPosition = `${spritePos.x}px ${spritePos.y}px`;
         barrelElement.style.backgroundRepeat = 'no-repeat';
@@ -341,7 +341,7 @@ loadEnhancedBarrelSystem();
       
       // Set the background image and position based on tower type
       const spritePos = spritePositions[towerType] || { x: 0, y: 0 };
-      barrelElement.style.backgroundImage = 'url("/assets/aimsheet.png")';
+      barrelElement.style.backgroundImage = 'url("/assets/aimsheet2.png")';
       barrelElement.style.backgroundSize = '96px 96px';
       barrelElement.style.backgroundPosition = `${spritePos.x}px ${spritePos.y}px`;
       barrelElement.style.backgroundRepeat = 'no-repeat';
