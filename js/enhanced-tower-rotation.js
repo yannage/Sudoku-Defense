@@ -23,7 +23,7 @@
       setTimeout(initTowerRotation, 500);
       return;
     }
-    
+    //test
 loadEnhancedBarrelSystem();
     
     // Setup event handling for game state changes
