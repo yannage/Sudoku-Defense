@@ -45,31 +45,35 @@ loadEnhancedBarrelSystem();
     // Add required styles
     const style = document.createElement('style');
     style.textContent = `
-      /* Tower barrel styles */
-      .tower-barrel {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 32px;
-        height: 32px;
-        z-index: 10;
-        transform-origin: center center;
-        transition: transform 0.2s ease-out;
-        pointer-events: none;
-      }
-      
-      /* Animation for attacking towers */
-      @keyframes tower-attack-recoil {
-        0% { transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1); }
-        20% { transform: translate(-50%, -50%) rotate(var(--rotation)) scale(0.85); }
-        100% { transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1); }
-      }
-      
-      .tower-barrel.attacking {
-        animation: tower-attack-recoil 0.3s ease-out forwards;
-      }
-    `;
+.tower-barrel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 32px;
+  height: 32px;
+  z-index: 10;
+  transform-origin: center center;
+  transition: transform 0.2s ease-out;
+  pointer-events: none;
+
+  background-image: url("/assets/aimsheet2.png");
+  background-size: 96px 96px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+
+  transform: translate(-50%, -50%) scale(1.3); /* 30% larger */
+}
+
+.tower-barrel.attacking {
+  animation: tower-attack-recoil 0.3s ease-out forwards;
+}
+
+@keyframes tower-attack-recoil {
+  0%   { transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1.3); }
+  20%  { transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1.1); }
+  100% { transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1.3); }
+}
+`;
     document.head.appendChild(style);
     
     // Define sprite positions for each tower type
@@ -181,9 +185,8 @@ loadEnhancedBarrelSystem();
       // Calculate angle
       const angle = calculateAngle(tower, enemy);
       
-      // Apply rotation to the barrel
-      barrelElement.style.setProperty('--rotation', `${angle}deg`);
-      barrelElement.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+barrelElement.style.setProperty('--rotation', `${angle}deg`);
+barrelElement.style.transform = `translate(-50%, -50%) rotate(${angle}deg) scale(1.3)`;
       
       // Add attacking animation
       barrelElement.classList.add('attacking');
