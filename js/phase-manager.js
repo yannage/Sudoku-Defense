@@ -690,25 +690,18 @@ if (currencyDisplay) {
      * @param {string} phase - Current phase to display
      */
     function updatePhaseIndicator(phase) {
-        let indicator = document.getElementById('phase-indicator');
-        
-        if (!indicator) {
-            // Create the indicator
-            indicator = document.createElement('div');
-            indicator.id = 'phase-indicator';
-            document.body.insertBefore(indicator, document.body.firstChild);
-        }
-        
-        // Format the phase name for display
-        const phaseName = phase.charAt(0).toUpperCase() + phase.slice(1).replace('_', ' ');
-        
-        // Update indicator text and class
-        indicator.textContent = `Current Phase: ${phaseName}`;
-        
-        // Remove all phase classes and add the current one
-        indicator.classList.remove('intro', 'sudoku', 'battle', 'celebration', 'game_over', 'history');
-        indicator.classList.add(phase);
+    const indicator = document.getElementById('phase-indicator');
+    if (!indicator) {
+        console.warn('Phase indicator element not found in DOM.');
+        return;
     }
+
+    const phaseName = phase.charAt(0).toUpperCase() + phase.slice(1).replace('_', ' ');
+    indicator.textContent = `Current Phase: ${phaseName}`;
+
+    indicator.className = 'phase-banner'; // reset base class
+    indicator.classList.add(phase); // adds phase-specific style
+}
     
     /**
      * Transition to a new phase
