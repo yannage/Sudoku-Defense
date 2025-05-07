@@ -118,6 +118,9 @@ const PhaseManager = (function() {
             enter: function() {
                 console.log("Entering SUDOKU phase");
                 
+                MissionControl.start()
+
+                
                 if (gameSettings.style === 'basic') {
     const characterSelection = document.getElementById('character-selection');
     if (characterSelection) {
@@ -140,6 +143,8 @@ const PhaseManager = (function() {
             exit: function() {
                 console.log("Exiting SUDOKU phase");
                 // Nothing specific needed when exiting Sudoku phase
+                
+                MissionControl.stop();
             }
         },
         [PHASES.BATTLE]: {
@@ -149,6 +154,8 @@ const PhaseManager = (function() {
                 if (window.BoardManager && typeof BoardManager.toggleDisplayMode === 'function') {
                     BoardManager.toggleDisplayMode(false); // false for sprite mode
                 }
+                
+                
                 
                 // Apply ground art to make paths clear
                 applyGroundArt();
