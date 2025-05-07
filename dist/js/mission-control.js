@@ -3,7 +3,7 @@ const MissionControl = (function() {
   
   function start() {
     updateTips();
-    updateInterval = setInterval(updateTips, 6000);
+    updateInterval = setInterval(updateTips, 20000);
   }
   
   function stop() {
@@ -11,51 +11,45 @@ const MissionControl = (function() {
   }
   
   function updateTips() {
-  const current = BoardManager.getBoard();
-  const solution = BoardManager.getSolution();
-  
-  let allTips = [
-    ...oneMissingInRow(current),
-    ...oneMissingInCol(current),
-    ...oneMissingInGrid(current),
-    ...twoMissingInRow(current),
-    ...twoMissingInCol(current),
-    ...numberAlmostUsed(current, solution)
-  ];
-  
-  console.log("All tips gathered:", allTips);
-  
-  const tipList = document.getElementById('mission-tips');
-  if (!tipList) return;
-  
-  tipList.innerHTML = '';
-  
-  if (allTips.length === 0) {
-    const li = document.createElement('li');
-    li.textContent = `Mission Control: No tactical hints at this time. Keep scanning, rookie.`;
-    li.style.fontStyle = 'italic';
-    tipList.appendChild(li);
-    return;
+    const current = BoardManager.getBoard();
+    const solution = BoardManager.getSolution();
+    
+    let allTips = [
+      ...oneMissingInRow(current),
+      ...oneMissingInCol(current),
+      ...oneMissingInGrid(current),
+      ...twoMissingInRow(current),
+      ...twoMissingInCol(current),
+      ...numberAlmostUsed(current, solution),
+      ...missingNumberCompletely(current),
+      ...numberUnderused(current),
+      ...nearlyFullUnits(current),
+      ...digitMissingInGrid(current)
+    ];
+    
+    allTips.sort((a, b) => a.weight - b.weight);
+    const selected = shuffle(allTips).slice(0, 3);
+    
+    const tipList = document.getElementById('mission-tips');
+    if (!tipList) return;
+    
+    tipList.innerHTML = '';
+    selected.forEach((tip, index) => {
+      const li = document.createElement('li');
+      li.textContent = `Mission Control: ${tip.text}`;
+      tipList.appendChild(li);
+      
+      if (index < selected.length - 1) {
+        const divider = document.createElement('li');
+        divider.textContent = '==============================';
+        divider.style.color = '#666';
+        divider.style.fontFamily = 'monospace';
+        divider.style.textAlign = 'center';
+        tipList.appendChild(divider);
+      }
+    });
   }
   
-  allTips.sort((a, b) => a.weight - b.weight);
-  const selected = shuffle(allTips).slice(0, 3);
-  
-  selected.forEach((tip, index) => {
-    const li = document.createElement('li');
-    li.textContent = `Mission Control: ${tip.text}`;
-    tipList.appendChild(li);
-    
-    if (index < selected.length - 1) {
-      const divider = document.createElement('li');
-      divider.textContent = '==============================';
-      divider.style.color = '#666';
-      divider.style.fontFamily = 'monospace';
-      divider.style.textAlign = 'center';
-      tipList.appendChild(divider);
-    }
-  });
-}
   function shuffle(arr) {
     return arr.map(v => [v, Math.random()])
       .sort((a, b) => a[1] - b[1])
@@ -168,11 +162,106 @@ const MissionControl = (function() {
     return tips;
   }
   
+  // === NEW EDUCATIONAL MODULES ===
+  
+  function missingNumberCompletely(current) {
+    const tips = [];
+    for (let num = 1; num <= 9; num++) {
+      let found = false;
+      for (let r = 0; r < 9; r++) {
+        if (current[r].includes(num)) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        tips.push({
+          weight: 4,
+          text: `We’ve got zero ${num}s on the field. Start scouting good landing zones — they’re overdue.`
+        });
+      }
+    }
+    return tips;
+  }
+  
+  function numberUnderused(current) {
+    const tips = [];
+    for (let num = 1; num <= 9; num++) {
+      let count = 0;
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (current[r][c] === num) count++;
+        }
+      }
+      if (count >= 1 && count <= 3) {
+        tips.push({
+          weight: 4,
+          text: `${num}s are rare in the wild right now — just ${count} on the board. Look where they could belong.`
+        });
+      }
+    }
+    return tips;
+  }
+  
+  function nearlyFullUnits(current) {
+    const tips = [];
+    for (let i = 0; i < 9; i++) {
+      const rowCount = current[i].filter(n => n !== 0).length;
+      if (rowCount >= 7) {
+        tips.push({
+          weight: 3,
+          text: `Row ${i + 1} is mostly locked in. Only a few gaps left — that’s prime territory.`
+        });
+      }
+      
+      let colCount = 0;
+      for (let r = 0; r < 9; r++) {
+        if (current[r][i] !== 0) colCount++;
+      }
+      if (colCount >= 7) {
+        tips.push({
+          weight: 3,
+          text: `Column ${i + 1} is 75% done. You’re close to cracking it.`
+        });
+      }
+    }
+    return tips;
+  }
+  
+  function digitMissingInGrid(current) {
+    const tips = [];
+    for (let num = 1; num <= 9; num++) {
+      for (let grid = 0; grid < 9; grid++) {
+        const rowBase = Math.floor(grid / 3) * 3;
+        const colBase = (grid % 3) * 3;
+        let found = false;
+        
+        for (let r = 0; r < 3; r++) {
+          for (let c = 0; c < 3; c++) {
+            if (current[rowBase + r][colBase + c] === num) {
+              found = true;
+              break;
+            }
+          }
+          if (found) break;
+        }
+        
+        if (!found) {
+          tips.push({
+            weight: 4,
+            text: `No sign of ${num}s in Grid ${grid + 1}. That’s a blind spot worth investigating.`
+          });
+        }
+      }
+    }
+    return tips;
+  }
+  
   return { start, stop };
 })();
 
+// Attach to window
 window.MissionControl = MissionControl;
-
 
 
 EventSystem.subscribe("PHASE_STARTED", (phase) => {
