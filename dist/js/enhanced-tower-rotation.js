@@ -56,7 +56,7 @@ loadEnhancedBarrelSystem();
   transition: transform 0.2s ease-out;
   pointer-events: none;
 
-  background-image: url("/assets/aimsheet3.png");
+  background-image: url("/dist/assets/aimsheet3.png");
   background-size: 96px 96px;
   background-repeat: no-repeat;
   image-rendering: pixelated;
@@ -127,7 +127,7 @@ loadEnhancedBarrelSystem();
         
         // Set the background image and position based on tower type
         const spritePos = spritePositions[towerType] || spritePositions[1];
-        barrelElement.style.backgroundImage = 'url("/assets/aimsheet3.png")';
+        barrelElement.style.backgroundImage = 'url("/dist/assets/aimsheet3.png")';
         barrelElement.style.backgroundSize = '96px 96px';
         barrelElement.style.backgroundPosition = `${spritePos.x}px ${spritePos.y}px`;
         barrelElement.style.backgroundRepeat = 'no-repeat';
@@ -173,7 +173,7 @@ loadEnhancedBarrelSystem();
         barrelElement = document.createElement('div');
         barrelElement.className = 'tower-barrel';
         barrelElement.setAttribute('data-type', tower.type);
-        barrelElement.style.backgroundImage = 'url("/assets/aimsheet3.png")';
+        barrelElement.style.backgroundImage = 'url("/dist/assets/aimsheet3.png")';
         barrelElement.style.backgroundSize = '96px 96px';
         barrelElement.style.backgroundPosition = `${spritePos.x}px ${spritePos.y}px`;
         barrelElement.style.backgroundRepeat = 'no-repeat';
@@ -344,7 +344,7 @@ barrelElement.style.transform = `translate(-50%, -50%) rotate(${angle}deg) scale
       
       // Set the background image and position based on tower type
       const spritePos = spritePositions[towerType] || { x: 0, y: 0 };
-      barrelElement.style.backgroundImage = 'url("/assets/aimsheet3.png")';
+      barrelElement.style.backgroundImage = 'url("/dist/assets/aimsheet3.png")';
       barrelElement.style.backgroundSize = '96px 96px';
       barrelElement.style.backgroundPosition = `${spritePos.x}px ${spritePos.y}px`;
       barrelElement.style.backgroundRepeat = 'no-repeat';

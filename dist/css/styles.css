@@ -159,7 +159,7 @@ h1 {
 .tower {
     width: 32px;
     height: 32px;
-    background-image: url('/assets/spritesheet4.png');
+    background-image: url('/dist/assets/spritesheet4.png');
     background-size: 98px 98px;
     background-repeat: no-repeat;
     display: inline-block;
@@ -1521,7 +1521,7 @@ button:active {
 
 .sudoku-cell.grass {
   background-color: #6ab04c !important; /* soft green fallback */
-  background-image: url('/assets/grass2.png') !important;
+  background-image: url('/dist/assets/grass2.png') !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
@@ -1529,7 +1529,7 @@ button:active {
 
 .sudoku-cell.dirt {
   background-color: #b5835a !important; /* dirt brown fallback */
-  background-image: url('/assets/dirt2.png') !important;
+  background-image: url('/dist/assets/dirt2.png') !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
@@ -1544,7 +1544,7 @@ button:active {
 
 .sudoku-cell.fixed-block {
   background-color: #2e7d32 !important; /* Dark green fallback */
-  background-image: url('/assets/bunker.png') !important;
+  background-image: url('/dist/assets/bunker.png') !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
@@ -1552,7 +1552,7 @@ button:active {
 
 .sudoku-cell.dark-grass {
   background-color: #2e7d32 !important; /* Dark green fallback */
-background-image: url('/assets/bunker.png') !important;
+background-image: url('/dist/assets/bunker.png') !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
