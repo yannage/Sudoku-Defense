@@ -479,7 +479,7 @@ function updateBoard() {
   if (newTower) {
     updateUI();
   }
-  
+
   // Update the board
   updateBoard();
 }

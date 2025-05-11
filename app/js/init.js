@@ -13,6 +13,19 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
+    // Inject emoji font face
+const emojiFontStyle = document.createElement('style');
+emojiFontStyle.textContent = `
+@font-face {
+  font-family: 'NotoColorEmoji';
+  src: url('assets/fonts/NotoColorEmoji-Regular.ttf') format('truetype');
+}
+body {
+  font-family: 'NotoColorEmoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;
+}
+`;
+document.head.appendChild(emojiFontStyle);
+
 
     
     // First, add the SaveSystem module
