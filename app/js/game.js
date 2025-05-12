@@ -232,105 +232,123 @@ function reset() {
      * MODIFIED: Enemies now follow grid cells exactly
      */
     function renderEnemies() {
-    // Get all enemies
-    const enemies = EnemiesModule.getEnemies();
+        // Get all enemies
+const enemies = EnemiesModule.getEnemies();
+
+// Get or create enemy container
+let enemyContainer = document.getElementById('enemy-container');
+
+if (!enemyContainer) {
+    enemyContainer = document.createElement('div');
+    enemyContainer.id = 'enemy-container';
+    enemyContainer.style.position = 'absolute';
+    enemyContainer.style.top = '0';
+    enemyContainer.style.left = '0';
+    enemyContainer.style.width = '100%';
+    enemyContainer.style.height = '100%';
+    enemyContainer.style.pointerEvents = 'none';
+    boardElement.appendChild(enemyContainer);
+}
+
+// Update existing enemy elements and create new ones as needed
+enemies.forEach(enemy => {
+    let enemyElement = document.getElementById(enemy.id);
     
-    // Get or create enemy container
-    let enemyContainer = document.getElementById('enemy-container');
-    
-    if (!enemyContainer) {
-        enemyContainer = document.createElement('div');
-        enemyContainer.id = 'enemy-container';
-        enemyContainer.style.position = 'absolute';
-        enemyContainer.style.top = '0';
-        enemyContainer.style.left = '0';
-        enemyContainer.style.width = '100%';
-        enemyContainer.style.height = '100%';
-        enemyContainer.style.pointerEvents = 'none';
-        boardElement.appendChild(enemyContainer);
-    }
-    
-    // Update existing enemy elements and create new ones as needed
-    enemies.forEach(enemy => {
-        let enemyElement = document.getElementById(enemy.id);
+    if (!enemyElement) {
+        // Create new enemy element
+        enemyElement = document.createElement('div');
+        enemyElement.id = enemy.id;
+        enemyElement.className = 'enemy';
         
-        if (!enemyElement) {
-            // Create new enemy element
-            enemyElement = document.createElement('div');
-            enemyElement.id = enemy.id;
-            enemyElement.className = 'enemy';
-            enemyElement.textContent = enemy.emoji;
-            
-            // Apply grid cell styling
-            enemyElement.style.position = 'absolute';
-            enemyElement.style.display = 'flex';
-            enemyElement.style.justifyContent = 'center';
-            enemyElement.style.alignItems = 'center';
-            enemyElement.style.width = `${cellSize}px`;
-            enemyElement.style.height = `${cellSize}px`;
-            enemyElement.style.fontSize = `${cellSize * 0.6}px`;
-            enemyElement.style.zIndex = '10';
-            
-            // Create health bar
-            const healthBar = document.createElement('div');
-            healthBar.className = 'enemy-health-bar';
-            healthBar.style.position = 'absolute';
-            healthBar.style.bottom = '4px';
-            healthBar.style.left = '10%';
-            healthBar.style.width = '80%';
-            healthBar.style.height = '4px';
-            healthBar.style.backgroundColor = '#333';
-            
-            const healthFill = document.createElement('div');
-            healthFill.className = 'enemy-health-fill';
-            healthFill.style.width = '100%';
-            healthFill.style.height = '100%';
-            healthFill.style.backgroundColor = '#ff0000';
-            
-            healthBar.appendChild(healthFill);
-            enemyElement.appendChild(healthBar);
-            
-            // Place at exact position immediately before adding to DOM (prevents flashing)
-            const left = enemy.col * cellSize;
-            const top = enemy.row * cellSize;
-            enemyElement.style.left = `${left}px`;
-            enemyElement.style.top = `${top}px`;
-            
-            // Add to container only after all styles are set
-            enemyContainer.appendChild(enemyElement);
-        }
+        // Use sprite instead of emoji
+        // Use sprite instead of emoji
+const sprite = document.createElement('div');
+sprite.className = 'enemy-sprite';
+if (enemy.spriteClass) {
+    sprite.classList.add(enemy.spriteClass);
+}
+
+// Fix for alignment: adjust scale and position
+const scale = cellSize / 256;
+sprite.style.setProperty('--enemy-scale', scale);
+sprite.style.position = 'absolute';
+sprite.style.left = `${(cellSize - 256 * scale) / 2}px`;
+sprite.style.top = `${(cellSize - 288 * scale) / 2}px`;
+
+enemyElement.appendChild(sprite);
         
-        // Calculate position based on grid coordinates (with decimal precision for smooth movement)
+        // Apply grid cell styling
+        enemyElement.style.position = 'absolute';
+        enemyElement.style.display = 'flex';
+        enemyElement.style.justifyContent = 'center';
+        enemyElement.style.alignItems = 'center';
+        enemyElement.style.width = `${cellSize}px`;
+        enemyElement.style.height = `${cellSize}px`;
+        enemyElement.style.fontSize = `${cellSize * 0.6}px`;
+        enemyElement.style.zIndex = '10';
+        
+        // Create health bar
+        const healthBar = document.createElement('div');
+        healthBar.className = 'enemy-health-bar';
+        healthBar.style.position = 'absolute';
+        healthBar.style.bottom = '4px';
+        healthBar.style.left = '10%';
+        healthBar.style.width = '80%';
+        healthBar.style.height = '4px';
+        healthBar.style.backgroundColor = '#333';
+        
+        const healthFill = document.createElement('div');
+        healthFill.className = 'enemy-health-fill';
+        healthFill.style.width = '100%';
+        healthFill.style.height = '100%';
+        healthFill.style.backgroundColor = '#ff0000';
+        
+        healthBar.appendChild(healthFill);
+        enemyElement.appendChild(healthBar);
+        
+        // Place at exact position immediately before adding to DOM (prevents flashing)
         const left = enemy.col * cellSize;
         const top = enemy.row * cellSize;
+        enemyElement.style.left = `${left}px`;
+        enemyElement.style.top = `${top}px`;
         
-        // Use requestAnimationFrame for smoother updates
-        requestAnimationFrame(() => {
-            // Update enemy position
-            enemyElement.style.left = `${left}px`;
-            enemyElement.style.top = `${top}px`;
-            
-            // Update health bar
-            const healthFill = enemyElement.querySelector('.enemy-health-fill');
-            if (healthFill) {
-                const healthPercent = (enemy.health / enemy.maxHealth) * 100;
-                healthFill.style.width = `${healthPercent}%`;
-            }
-        });
-    });
+        // Add to container only after all styles are set
+        enemyContainer.appendChild(enemyElement);
+    }
     
-    // Remove enemy elements for defeated enemies
-    const enemyElements = enemyContainer.getElementsByClassName('enemy');
+    // Calculate position based on grid coordinates (with decimal precision for smooth movement)
+    const left = enemy.col * cellSize;
+    const top = enemy.row * cellSize;
     
-    for (let i = enemyElements.length - 1; i >= 0; i--) {
-        const element = enemyElements[i];
-        const enemyId = element.id;
+    // Use requestAnimationFrame for smoother updates
+    requestAnimationFrame(() => {
+        // Update enemy position
+        enemyElement.style.left = `${left}px`;
+        enemyElement.style.top = `${top}px`;
         
-        if (!enemies.find(e => e.id === enemyId)) {
-            element.remove();
+        // Update health bar
+        const healthFill = enemyElement.querySelector('.enemy-health-fill');
+        if (healthFill) {
+            const healthPercent = (enemy.health / enemy.maxHealth) * 100;
+            healthFill.style.width = `${healthPercent}%`;
         }
+    });
+});
+
+// Remove enemy elements for defeated enemies
+const enemyElements = enemyContainer.getElementsByClassName('enemy');
+
+for (let i = enemyElements.length - 1; i >= 0; i--) {
+    const element = enemyElements[i];
+    const enemyId = element.id;
+    
+    if (!enemies.find(e => e.id === enemyId)) {
+        element.remove();
     }
 }
+        
+        
+    }
     
     /**
      * Set up the Sudoku board
