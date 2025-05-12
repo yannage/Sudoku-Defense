@@ -21,19 +21,18 @@ const EnemiesModule = (function() {
  * Each enemy type forces different tactical decisions from the player
  */
 const enemyTypes = {
-  // Early game enemies (simple but distinct)
   1: {
-    emoji: '1️⃣',
+    spriteClass: 'enemy-type-1',
     name: "Scout",
     health: 60,
     speed: 1.1,
     reward: 15,
     points: 5,
-    behavior: "basic", // Basic movement pattern
+    behavior: "basic",
     description: "Fast scout with low health"
   },
   2: {
-    emoji: '2️⃣',
+    spriteClass: 'enemy-type-2',
     name: "Soldier",
     health: 90,
     speed: 0.9,
@@ -43,150 +42,146 @@ const enemyTypes = {
     description: "Balanced enemy with moderate health and speed"
   },
   3: {
-    emoji: '3️⃣',
+    spriteClass: 'enemy-type-3',
     name: "Armored",
     health: 80,
     speed: 0.8,
     reward: 21,
     points: 9,
-    behavior: "armored", // Reduces damage taken by 30%
-    armorValue: 0.3, // 30% damage reduction
+    behavior: "armored",
+    armorValue: 0.3,
     description: "Damage resistant enemy that's vulnerable to pierce towers"
   },
   4: {
-    emoji: '4️⃣',
+    spriteClass: 'enemy-type-4',
     name: "Rusher",
     health: 70,
-    speed: 0.7, // Starts slow
+    speed: 0.7,
     reward: 24,
     points: 11,
-    behavior: "accelerate", // Increases speed as it takes damage
-    speedRamp: 0.015, // Per percent of health lost
-    maxSpeedMultiplier: 2.5, // Maximum speed multiplier
+    behavior: "accelerate",
+    speedRamp: 0.015,
+    maxSpeedMultiplier: 2.5,
     description: "Accelerates dramatically as it takes damage"
   },
   5: {
-    emoji: '5️⃣',
+    spriteClass: 'enemy-type-5',
     name: "Splitter",
     health: 120,
     speed: 0.8,
     reward: 27,
     points: 13,
-    behavior: "split", // Splits into two smaller enemies when killed
-    splitInto: [1, 1], // Splits into two type 1 enemies
+    behavior: "split",
+    splitInto: [1, 1],
     description: "Splits into two smaller enemies when destroyed"
   },
-  
-  // Mid-game enemies (introduce more mechanics)
   6: {
-    emoji: '6️⃣',
+    spriteClass: 'enemy-type-6',
     name: "Medic",
     health: 100,
     speed: 0.9,
     reward: 30,
     points: 15,
-    behavior: "heal", // Heals nearby enemies
-    healRadius: 2, // Cells
-    healAmount: 8, // HP per pulse
-    healInterval: 3, // Seconds between heals
+    behavior: "heal",
+    healRadius: 2,
+    healAmount: 8,
+    healInterval: 3,
     description: "Heals nearby enemies - high priority target"
   },
   7: {
-    emoji: '7️⃣',
+    spriteClass: 'enemy-type-7',
     name: "Phantom",
     health: 110,
     speed: 1.0,
     reward: 33,
     points: 17,
-    behavior: "phasing", // Periodically becomes immune to damage
-    phaseInterval: 4, // Seconds between phases
-    phaseDuration: 2, // Seconds of immunity
+    behavior: "phasing",
+    phaseInterval: 4,
+    phaseDuration: 2,
     description: "Periodically phases to become immune to damage"
   },
   8: {
-    emoji: '8️⃣',
+    spriteClass: 'enemy-type-8',
     name: "Teleporter",
     health: 90,
     speed: 1.0,
     reward: 36,
     points: 19,
-    behavior: "teleport", // Occasionally jumps ahead on path
-    teleportChance: 0.15, // 15% chance each second
-    teleportDistance: 3, // Cells to jump ahead
+    behavior: "teleport",
+    teleportChance: 0.15,
+    teleportDistance: 3,
     description: "Randomly teleports forward along the path"
   },
   9: {
-    emoji: '9️⃣',
+    spriteClass: 'enemy-type-9',
     name: "Commander",
     health: 130,
     speed: 0.8,
     reward: 39,
     points: 21,
-    behavior: "buff", // Buffs nearby enemies
-    buffRadius: 2, // Cells
-    buffEffect: { speedBoost: 0.3 }, // 30% speed boost to nearby enemies
+    behavior: "buff",
+    buffRadius: 2,
+    buffEffect: { speedBoost: 0.3 },
     description: "Increases the speed of nearby enemies"
   },
-  
-  // Special enemies (mini-bosses and bosses)
   'swarm_lord': {
-    emoji: '🐝',
+    spriteClass: 'enemy-type-10',
     name: "Swarm Lord",
     health: 300,
     speed: 0.6,
     reward: 80,
     points: 40,
-    behavior: "summoner", // Periodically spawns smaller enemies
-    summonType: 1, // Type 1 enemies
-    summonCount: 3, // Number per summon
-    summonInterval: 6, // Seconds between summons
-    scale: 1.2, // Visual size multiplier
+    behavior: "summoner",
+    summonType: 1,
+    summonCount: 3,
+    summonInterval: 6,
+    scale: 1.2,
     isMinibloss: true,
     description: "Mini-boss that summons swarms of fast scouts"
   },
   'titan': {
-    emoji: '🪨',
+    spriteClass: 'enemy-type-11',
     name: "Titan",
     health: 450,
     speed: 0.4,
     reward: 90,
     points: 45,
-    behavior: "tank", // Extremely high health, very slow
-    damageReduction: 0.4, // 40% damage reduction
-    vulnerabilityHitcount: 5, // After 5 hits, becomes vulnerable
+    behavior: "tank",
+    damageReduction: 0.4,
+    vulnerabilityHitcount: 5,
     scale: 1.3,
     isMinibloss: true,
     description: "Mini-boss with extremely high health but very slow movement"
   },
   'numeromancer': {
-    emoji: '🧙',
+    spriteClass: 'enemy-type-12',
     name: "Numeromancer",
     health: 350,
     speed: 0.7,
     reward: 100,
     points: 50,
-    behavior: "scrambler", // Can disable towers temporarily
-    disableRadius: 2, // Cells
-    disableDuration: 4, // Seconds
-    disableInterval: 8, // Seconds between disables
+    behavior: "scrambler",
+    disableRadius: 2,
+    disableDuration: 4,
+    disableInterval: 8,
     scale: 1.2,
     isMinibloss: true,
     description: "Mini-boss that temporarily disables nearby towers"
   },
   'boss': {
-    emoji: '👹',
+    spriteClass: 'enemy-type-13',
     name: "Void Devourer",
     health: 800,
     speed: 0.5,
     reward: 150,
     points: 100,
-    behavior: "multiphase", // Has multiple phases with different behaviors
+    behavior: "multiphase",
     phases: [
-      { behavior: "tank", threshold: 0.7 }, // First 30% of health
-      { behavior: "rage", threshold: 0.4, speedBoost: 0.5 }, // Next 30% of health
-      { behavior: "desperate", threshold: 0 } // Final 40% of health
+      { behavior: "tank", threshold: 0.7 },
+      { behavior: "rage", threshold: 0.4, speedBoost: 0.5 },
+      { behavior: "desperate", threshold: 0 }
     ],
-    scale: 1.5, // Visual size multiplier
+    scale: 1.5,
     isBoss: true,
     description: "Main boss with multiple phases and devastating abilities"
   }
@@ -578,15 +573,23 @@ function showWaveInfo(wavePattern) {
   const waveInfo = document.createElement('div');
   waveInfo.className = 'wave-info-overlay';
   
-  // Create content based on wave type
-  let enemyPreview = '';
-  wavePattern.composition.forEach(type => {
-    if (typeof type === 'number') {
-      enemyPreview += enemyTypes[type].emoji + ' ';
-    } else {
-      enemyPreview += enemyTypes[type].emoji + ' ';
-    }
-  });
+let enemyPreview = '';
+const seenTypes = new Set();
+wavePattern.composition.forEach(type => {
+  if (seenTypes.has(type)) return;
+  seenTypes.add(type);
+  
+  
+  
+  const enemyData = enemyTypes[type];
+  if (enemyData?.spriteClass) {
+enemyPreview += `
+  <div class="enemy-preview-wrapper">
+    <div class="enemy preview enemy-sprite ${enemyData.spriteClass}"></div>
+  </div>
+`;
+  }
+});
   
   waveInfo.innerHTML = `
         <div class="wave-info-content">
@@ -804,7 +807,7 @@ function createEnemy(type, adjustment = { health: 1.0, speed: 1.0 }) {
     id: `enemy_${++enemyId}`,
     type: type,
     name: typeData.name,
-    emoji: typeData.emoji,
+    spriteClass: typeData.spriteClass,
     health: scaledHealth,
     maxHealth: scaledHealth,
     speed: scaledSpeed,
