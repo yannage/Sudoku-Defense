@@ -272,15 +272,6 @@ h1 {
 .enemy-type-19 { background-position: -576px -768px; }
 .enemy-type-20 { background-position: -864px -768px; }
 
-.wave-info-enemies {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-}
-.wave-info-enemies.enemy {
-  align-items: center;
-  transform: scale(0.25); /* Optional shrink */
-}
 
 /* Enemy type visual indicators */
 .enemy::before {
@@ -439,6 +430,41 @@ h1 {
     animation: buff-link-pulse 1s infinite alternate;
 }
 
+.wave-info-enemies {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 6px; /* tighter spacing */
+  padding: 5px 0; /* less vertical padding */
+}
+
+
+
+.enemy-preview-wrapper {
+  width: 48px;
+  height: 48px;
+  border: 1px solid lime;
+  overflow: hidden;
+  position: relative;
+}
+
+.enemy.preview::before {
+  display: none;
+}
+
+.enemy.preview {
+  background-image: url("/app/assets/enemy-sprites.png") !important;
+  background-repeat: no-repeat;
+  background-size: 768px 1152px;
+  background-position: 0px 0px; /* test type 1 */
+  transform: scale(0.18);
+  transform-origin: top left;
+  width: 256px;
+  height: 288px;
+  z-index: 999;
+  background-color: transparent !important;
+}
+
 /* Wave info overlay */
 .wave-info-overlay {
     position: fixed;
@@ -485,11 +511,6 @@ h1 {
 .wave-info-description {
     font-size: 16px;
     margin-bottom: 15px;
-}
-
-.wave-info-enemies {
-    font-size: 24px;
-    letter-spacing: 5px;
 }
 
 /* Boss phase transition effects */
