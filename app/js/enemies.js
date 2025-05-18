@@ -1846,31 +1846,36 @@ function createDefeatParticles(enemy, enemyEl) {
      */
     function waveComplete() {
     isWaveActive = false;
-    
-    // Clear any enemies that might still be around
-    enemies = [];
-    
-    // Publish wave complete event first, before incrementing
-    // This way LevelsModule can handle the increment
-    EventSystem.publish(GameEvents.WAVE_COMPLETE, {
-        waveNumber: waveNumber
-    });
-    
-    // Generate new path for the next wave immediately
-    setTimeout(() => {
-        // Use BoardManager if available, otherwise fallback to BoardManager
-        if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
-            const newPath = BoardManager.generateEnemyPath();
-            path = newPath;
-            
-            // Notify other modules of the path change
-            EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
-                pathCells: newPath
-            });
-            
-            // Also publish a specific event for path updates
-            EventSystem.publish('path:updated', newPath);
-        }
+
+
+  
+  // Clear any enemies that might still be around
+  enemies = [];
+  
+  // Reset the recent tower placements list
+  window.recentTowerPlacements = [];
+  
+  // Publish wave complete event first, before incrementing
+  // This way LevelsModule can handle the increment
+  EventSystem.publish(GameEvents.WAVE_COMPLETE, {
+    waveNumber: waveNumber
+  });
+  
+  // Generate new path for the next wave immediately
+  setTimeout(() => {
+    // Use BoardManager if available, otherwise fallback to BoardManager
+    if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
+      const newPath = BoardManager.generateEnemyPath();
+      path = newPath;
+      
+      // Notify other modules of the path change
+      EventSystem.publish(GameEvents.SUDOKU_GENERATED, {
+        pathCells: newPath
+      });
+      
+      // Also publish a specific event for path updates
+      EventSystem.publish('path:updated', newPath);
+    }
         else if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
             // Clear existing path
             const pathCells = BoardManager.getPathCells();

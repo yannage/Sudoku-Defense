@@ -52,45 +52,47 @@ const LevelsModule = (function() {
     }
 }
 
-    /**
-     * Start a wave
-     */
-    function startWave() {
-    console.log("LevelsModule.startWave called");
+/**
+ * Hook to ensure wave start uses the latest tower data for path generation
+ */
+function startWave() {
+  console.log("LevelsModule.startWave called");
+  
+  if (EnemiesModule.isWaveInProgress()) {
+    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Wave already in progress!");
+    return;
+  }
+  
+  // Get the current path from BoardManager or BoardManager
+  const boardManager = window.BoardManager;
+  
+  // IMPORTANT: Generate a new path that considers recent tower placements
+  let currentPath = null;
+  if (boardManager && typeof boardManager.generateEnemyPath === 'function') {
+    console.log("Generating new path with consideration for recent tower placements");
+    currentPath = boardManager.generateEnemyPath();
+    console.log("Path generated:", currentPath);
     
-    if (EnemiesModule.isWaveInProgress()) {
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Wave already in progress!");
-        return;
+    // Explicitly ensure EnemiesModule has the current path
+    if (window.EnemiesModule && Array.isArray(currentPath) && currentPath.length > 0) {
+      console.log("Explicitly setting path in EnemiesModule");
+      EnemiesModule.path = currentPath;
+      
+      // Also publish a path update event
+      EventSystem.publish('path:updated', currentPath);
     }
-    
-    // Get the current path from BoardManager or BoardManager
-    const boardManager = window.BoardManager;
-    let currentPath = null;
-    
-    if (boardManager && typeof boardManager.getPathArray === 'function') {
-        currentPath = boardManager.getPathArray();
-        console.log("Path from BoardManager:", currentPath);
-        
-        // IMPORTANT: Explicitly ensure EnemiesModule has the current path
-        if (window.EnemiesModule && Array.isArray(currentPath) && currentPath.length > 0) {
-            console.log("Explicitly setting path in EnemiesModule");
-            EnemiesModule.path = currentPath;
-            
-            // Also publish a path update event
-            EventSystem.publish('path:updated', currentPath);
-        }
-    } else {
-        console.error("Cannot get path data - no path provider available");
-    }
-    
-    // Start the wave in the enemies module
-    console.log("Starting wave via EnemiesModule.startWave()");
-    EnemiesModule.startWave();
-    
-    setTimeout(() => BoardManager.toggleDisplayMode(false), 50); // Show tower sprites during the wave
-    
-    //add ground art
-    applyGroundArt();
+  } else {
+    console.error("Cannot get path data - no path provider available");
+  }
+  
+  // Start the wave in the enemies module
+  console.log("Starting wave via EnemiesModule.startWave()");
+  EnemiesModule.startWave();
+  
+  setTimeout(() => BoardManager.toggleDisplayMode(false), 50); // Show tower sprites during the wave
+  
+  //add ground art
+  applyGroundArt();
 }
 
     /**

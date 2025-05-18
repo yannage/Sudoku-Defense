@@ -237,41 +237,114 @@ function getPlayableCellsInUnit(unitType, unitIndex) {
      * Generate a path for enemies to follow
      * Creates a non-overlapping path from a starting point to an end point
      */
-    function generateEnemyPath(maxLength = 13) {
-  console.log("BoardManager: Generating enemy path");
+    /**
+ * Modified function to generate enemy paths that favor proximity to recent tower placements
+ */
+function generateEnemyPath(maxLength = 13) {
+  console.log("BoardManager: Generating enemy path with tower placement bias");
   pathCells.clear();
+  
+  // Track recently placed towers (if not already tracked)
+  if (!window.recentTowerPlacements) {
+    window.recentTowerPlacements = [];
+  }
+  
+  // Get recent tower placements
+  const recentTowers = window.recentTowerPlacements;
+  console.log(`Using ${recentTowers.length} recent tower placements for path generation`);
   
   const directions = [
     [-1, 0], // up
-    [1, 0], // down
-    [0, 1] // right
+    [1, 0],  // down
+    [0, 1]   // right
   ];
   
+  // Start position: random row on left edge
   let currentRow = Math.floor(Math.random() * 9);
   let currentCol = 0;
+  
+  // End position: random row on right edge
   const endRow = Math.floor(Math.random() * 9);
   
+  // Add starting position to path
   pathCells.add(`${currentRow},${currentCol}`);
   
+  // Calculate a target area if we have recent towers
+  let targetArea = null;
+  if (recentTowers.length > 0) {
+    // Calculate the center of mass of recent tower placements
+    let sumRow = 0, sumCol = 0;
+    recentTowers.forEach(tower => {
+      sumRow += tower.row;
+      sumCol += tower.col;
+    });
+    
+    targetArea = {
+      row: Math.round(sumRow / recentTowers.length),
+      col: Math.round(sumCol / recentTowers.length)
+    };
+    
+    console.log(`Path generation target area: (${targetArea.row}, ${targetArea.col})`);
+  }
+  
+  // Generate path
   while (pathCells.size < maxLength && currentCol < 8) {
     let possibleMoves = [];
     
+    // Calculate scores for each possible move
     for (let [dr, dc] of directions) {
       const newRow = currentRow + dr;
       const newCol = currentCol + dc;
       const key = `${newRow},${newCol}`;
       
-      if (
-        newRow >= 0 && newRow < 9 &&
-        newCol >= 0 && newCol < 9 &&
-        !pathCells.has(key)
-      ) {
-        possibleMoves.push([dr, dc]);
+      // Skip invalid or already used cells
+      if (newRow < 0 || newRow >= 9 || newCol < 0 || newCol >= 9 || pathCells.has(key)) {
+        continue;
       }
+      
+      // Base score: all valid moves start with same priority
+      let score = 10;
+      
+      // Bias toward target area if one exists
+      if (targetArea) {
+        // Calculate distance to target area
+        const distToTarget = Math.abs(newRow - targetArea.row) + Math.abs(newCol - targetArea.col);
+        
+        // Adjust score based on proximity to target (lower distance = higher score)
+        if (distToTarget < 3) {
+          // Very close to target - high priority
+          score += 8;
+        } else if (distToTarget < 5) {
+          // Moderately close - medium priority
+          score += 5;
+        } else if (distToTarget < 7) {
+          // Somewhat close - small priority
+          score += 2;
+        }
+      }
+      
+      // Bias toward right side (progress toward end)
+      if (dc > 0) {
+        score += 3;
+      }
+      
+      // Bias toward end row as we get closer to the right edge
+      if (currentCol > 5) {
+        // When we're close to right edge, start moving toward endRow
+        const moveTowardEnd = (endRow > currentRow && dr > 0) || (endRow < currentRow && dr < 0);
+        if (moveTowardEnd) {
+          score += 4;
+        }
+      }
+      
+      possibleMoves.push({ dr, dc, score });
     }
     
+    // Sort moves by score (highest first)
+    possibleMoves.sort((a, b) => b.score - a.score);
+    
+    // If no valid moves, try to force-right
     if (possibleMoves.length === 0) {
-      // Try force-right if stuck
       const forcedCol = currentCol + 1;
       const key = `${currentRow},${forcedCol}`;
       if (forcedCol < 9 && !pathCells.has(key)) {
@@ -283,19 +356,20 @@ function getPlayableCellsInUnit(unitType, unitIndex) {
       break;
     }
     
-    const rightMoves = possibleMoves.filter(([_, dc]) => dc > 0);
-    const verticalMoves = possibleMoves.filter(([_, dc]) => dc === 0);
-    const movesTowardEnd = verticalMoves.filter(([dr]) =>
-      (dr > 0 && currentRow < endRow) || (dr < 0 && currentRow > endRow)
-    );
+    // Choose a move, with some randomness
+    // 70% chance to pick highest scored move, 30% chance for a random move
+    let chosenMove;
+    if (Math.random() < 0.7 || possibleMoves.length === 1) {
+      chosenMove = possibleMoves[0];
+    } else {
+      // Pick randomly from other options if available
+      const randomIndex = Math.floor(Math.random() * possibleMoves.length);
+      chosenMove = possibleMoves[randomIndex];
+    }
     
-    const bestMoves = rightMoves.length > 0 ?
-      rightMoves :
-      (movesTowardEnd.length > 0 ? movesTowardEnd : verticalMoves.length > 0 ? verticalMoves : possibleMoves);
-    
-    const [dr, dc] = bestMoves[Math.floor(Math.random() * bestMoves.length)];
-    currentRow += dr;
-    currentCol += dc;
+    // Apply the chosen move
+    currentRow += chosenMove.dr;
+    currentCol += chosenMove.dc;
     pathCells.add(`${currentRow},${currentCol}`);
   }
   
@@ -317,6 +391,9 @@ function getPlayableCellsInUnit(unitType, unitIndex) {
   completedRows.clear();
   completedColumns.clear();
   completedGrids.clear();
+  
+  // Clear recent tower placements after using them
+  window.recentTowerPlacements = [];
   
   const pathArray = Array.from(pathCells).map(pos => pos.split(',').map(Number));
   console.log(`BoardManager: Generated enemy path with ${pathArray.length} cells`);

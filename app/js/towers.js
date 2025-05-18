@@ -199,128 +199,149 @@ const towerTypes = {
  * Place these functions inside the TowersModule IIFE
  */
 
-// Replace or update your createTower function with this version
+/**
+ * Tracking recent tower placements to influence enemy paths
+ * Add this to the createTower function in TowersModule
+ */
 function createTower(type, row, col, options = {}) {
-  const { free = false } = options;
-  console.log(`Creating tower: Type=${type}, Position=(${row},${col})`);
-  
-  const typeData = towerTypes[type];
-  
-  if (!typeData) {
-    console.error("Invalid tower type:", type);
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Invalid tower type!");
-    return null;
-  }
-  
-  // Check if player has enough currency
-  const playerState = PlayerModule.getState();
-  if (!free && playerState.currency < typeData.cost) {
-    console.log("Not enough currency to build tower");
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, `Not enough currency to build this tower! Need ${typeData.cost}`);
-    return null;
-  }
-  
-  // Check if there's already a tower at this position
-  if (getTowerAt(row, col)) {
-    console.log(`Tower already exists at position (${row},${col})`);
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "There's already a tower in this cell!");
-    return null;
-  }
-  
-  // Check if the cell is fixed or on a path
-  const boardManager = window.BoardManager;
-  if (!boardManager) {
-    console.error("BoardManager not available");
-    return null;
-  }
-  
-  const fixedCells = boardManager.getFixedCells();
-  const pathCells = boardManager.getPathCells();
-  
-  if (fixedCells && fixedCells[row] && fixedCells[row][col]) {
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on a fixed Sudoku cell!");
-    return null;
-  }
-  
-  if (pathCells && pathCells.has && pathCells.has(`${row},${col}`)) {
-    EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on the enemy path!");
-    return null;
-  }
-  
-  // Calculate tower position
-  const x = col * cellSize + cellSize / 2;
-  const y = row * cellSize + cellSize / 2;
-  
-  // Create tower instance
-  const tower = {
-    id: `tower_${++towerId}`,
-    type: type,
-    emoji: typeData.emoji,
-    damage: typeData.damage,
-    range: typeData.range * cellSize,
-    attackSpeed: typeData.attackSpeed,
-    attackCooldown: 0,
-    level: 1,
-    row: row,
-    col: col,
-    x: x,
-    y: y,
-    target: null
-  };
-  
-  // Check if the tower matches the solution
-  const solution = boardManager.getSolution();
-  if (solution && type !== 'special') {
-    const typeValue = parseInt(type);
-    if (!isNaN(typeValue) && solution[row][col] !== typeValue) {
-      // Mark as incorrect
-      tower.isCorrect = false;
-      tower.matchesSolution = false;
-      incorrectTowers.add(tower.id);
-      
-      console.log(`Tower at (${row},${col}) is incorrect. Solution value: ${solution[row][col]}, Tower type: ${type}`);
-      EventSystem.publish(GameEvents.STATUS_MESSAGE, `Warning: This tower does not match the solution and will be removed after the wave.`);
-    } else {
-      tower.isCorrect = true;
-      tower.matchesSolution = true;
-    }
-  }
-  
-  // Spend currency if applicable
-  if (!free) {
-    PlayerModule.spendCurrency(typeData.cost);
-  }
-  
-  // Update the board first via BoardManager
-  if (boardManager && typeof boardManager.setCellValue === 'function') {
-    const numberValue = parseInt(type);
-    if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9) {
-      const success = boardManager.setCellValue(row, col, numberValue);
-      if (!success) {
-        console.error(`Failed to set cell value ${numberValue} at (${row},${col})`);
-        // Refund currency if placement fails
-        if (!free) {
-          PlayerModule.addCurrency(typeData.cost);
-        }
+    const { free = false } = options;
+    console.log(`Creating tower: Type=${type}, Position=(${row},${col})`);
+    
+    const typeData = towerTypes[type];
+    
+    if (!typeData) {
+        console.error("Invalid tower type:", type);
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Invalid tower type!");
         return null;
-      }
     }
-  }
-  
-  // Add to towers array
-  towers.push(tower);
-  
-  // Publish tower placed event
-  EventSystem.publish(GameEvents.TOWER_PLACED, tower);
-  
-  // Force UI update
-  setTimeout(() => {
-    if (window.Game && typeof Game.updateBoard === 'function') {
-      Game.updateBoard();
+    
+    // Check if player has enough currency
+    const playerState = PlayerModule.getState();
+    if (!free && playerState.currency < typeData.cost) {
+        console.log("Not enough currency to build tower");
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, `Not enough currency to build this tower! Need ${typeData.cost}`);
+        return null;
     }
-  }, 10);
-  
-  return tower;
+    
+    // Check if there's already a tower at this position
+    if (getTowerAt(row, col)) {
+        console.log(`Tower already exists at position (${row},${col})`);
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "There's already a tower in this cell!");
+        return null;
+    }
+    
+    // Check if the cell is fixed or on a path
+    const boardManager = window.BoardManager;
+    if (!boardManager) {
+        console.error("BoardManager not available");
+        return null;
+    }
+    
+    const fixedCells = boardManager.getFixedCells();
+    const pathCells = boardManager.getPathCells();
+    
+    if (fixedCells && fixedCells[row] && fixedCells[row][col]) {
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on a fixed Sudoku cell!");
+        return null;
+    }
+    
+    if (pathCells && pathCells.has && pathCells.has(`${row},${col}`)) {
+        EventSystem.publish(GameEvents.STATUS_MESSAGE, "Cannot place a tower on the enemy path!");
+        return null;
+    }
+    
+    // Calculate tower position
+    const x = col * cellSize + cellSize / 2;
+    const y = row * cellSize + cellSize / 2;
+    
+    // Create tower instance
+    const tower = {
+        id: `tower_${++towerId}`,
+        type: type,
+        emoji: typeData.emoji,
+        damage: typeData.damage,
+        range: typeData.range * cellSize,
+        attackSpeed: typeData.attackSpeed,
+        attackCooldown: 0,
+        level: 1,
+        row: row,
+        col: col,
+        x: x,
+        y: y,
+        target: null
+    };
+    
+    // Check if the tower matches the solution
+    const solution = boardManager.getSolution();
+    if (solution && type !== 'special') {
+        const typeValue = parseInt(type);
+        if (!isNaN(typeValue) && solution[row][col] !== typeValue) {
+            // Mark as incorrect
+            tower.isCorrect = false;
+            tower.matchesSolution = false;
+            incorrectTowers.add(tower.id);
+            
+            console.log(`Tower at (${row},${col}) is incorrect. Solution value: ${solution[row][col]}, Tower type: ${type}`);
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, `Warning: This tower does not match the solution and will be removed after the wave.`);
+        } else {
+            tower.isCorrect = true;
+            tower.matchesSolution = true;
+        }
+    }
+    
+    // Spend currency if applicable
+    if (!free) {
+        PlayerModule.spendCurrency(typeData.cost);
+    }
+    
+    // Update the board first via BoardManager
+    if (boardManager && typeof boardManager.setCellValue === 'function') {
+        const numberValue = parseInt(type);
+        if (!isNaN(numberValue) && numberValue >= 1 && numberValue <= 9) {
+            const success = boardManager.setCellValue(row, col, numberValue);
+            if (!success) {
+                console.error(`Failed to set cell value ${numberValue} at (${row},${col})`);
+                // Refund currency if placement fails
+                if (!free) {
+                    PlayerModule.addCurrency(typeData.cost);
+                }
+                return null;
+            }
+        }
+    }
+    
+    // Add to towers array
+    towers.push(tower);
+    
+    // Record this placement for path generation (only if it's a valid Sudoku placement)
+    if (tower.isCorrect !== false && type !== 'special') {
+        // Initialize the array if it doesn't exist
+        if (!window.recentTowerPlacements) {
+            window.recentTowerPlacements = [];
+        }
+        
+        // Add this placement to recent towers
+        window.recentTowerPlacements.push({ row, col, type });
+        
+        // Keep the list manageable (last 5 placements)
+        if (window.recentTowerPlacements.length > 5) {
+            window.recentTowerPlacements.shift();
+        }
+        
+        console.log(`Added tower at (${row},${col}) to recent placements list. Total: ${window.recentTowerPlacements.length}`);
+    }
+    
+    // Publish tower placed event
+    EventSystem.publish(GameEvents.TOWER_PLACED, tower);
+    
+    // Force UI update
+    setTimeout(() => {
+        if (window.Game && typeof Game.updateBoard === 'function') {
+            Game.updateBoard();
+        }
+    }, 10);
+    
+    return tower;
 }
 
 // Replace your removeIncorrectTowers function with this version
