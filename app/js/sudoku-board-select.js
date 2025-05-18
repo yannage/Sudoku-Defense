@@ -1,22 +1,33 @@
 /**
- * Sudoku Cell Selection System - Fixed Version
- * 
- * This version fixes the issue where clicking a new cell immediately places
- * the previously selected number.
+ * Enhanced Sudoku Interaction System
+ * Supports both number highlighting and cell analysis modes
  */
 
 (function() {
-  // Track the currently selected cell
+  // State tracking
+  let highlightedNumber = null;
   let selectedCell = null;
+  let selectionMode = 'default'; // 'default', 'highlight', or 'analyze'
+  
+  // UI Elements tracking
+  let modeToggleButton = null;
+  let modeIndicator = null;
 
-  // Add required styles for selection system
+  // Add required styles for the system
   function addStyles() {
     // Check if styles are already added
-    if (document.getElementById('cell-selection-styles')) return;
+    if (document.getElementById('sudoku-interaction-styles')) return;
     
     const style = document.createElement('style');
-    style.id = 'cell-selection-styles';
+    style.id = 'sudoku-interaction-styles';
     style.textContent = `
+      /* Number highlighting */
+      .sudoku-cell.number-highlighted {
+        background-color: rgba(135, 206, 250, 0.4) !important; /* Light blue highlight */
+        box-shadow: inset 0 0 0 2px #2196F3 !important; /* Blue border */
+        transition: all 0.2s ease;
+      }
+      
       /* Selected cell highlight */
       .sudoku-cell.cell-selected {
         background-color: rgba(255, 255, 0, 0.3) !important; 
@@ -69,95 +80,207 @@
         z-index: 10;
         pointer-events: none;
       }
+      
+      /* Mode toggle button */
+      #sudoku-mode-toggle {
+        position: fixed;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 6px 15px;
+        font-size: 14px;
+        cursor: pointer;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        transition: background-color 0.3s;
+      }
+      
+      #sudoku-mode-toggle:hover {
+        background-color: #444;
+      }
+      
+      #sudoku-mode-toggle.highlight-mode {
+        background-color: #2196F3;
+      }
+      
+      #sudoku-mode-toggle.analyze-mode {
+        background-color: #4CAF50;
+      }
+      
+      #sudoku-mode-toggle .icon {
+        margin-right: 6px;
+        font-size: 16px;
+      }
+      
+      /* Mode indicator tooltip */
+      #mode-indicator {
+        position: fixed;
+        top: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(0,0,0,0.7);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 5px;
+        font-size: 14px;
+        z-index: 1000;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s, transform 0.3s;
+      }
+      
+      #mode-indicator.visible {
+        opacity: 1;
+      }
+      
+      /* Keyboard shortcut hint */
+      .keyboard-hint {
+        margin-left: 5px;
+        opacity: 0.7;
+        font-size: 12px;
+        background-color: rgba(255,255,255,0.2);
+        padding: 2px 5px;
+        border-radius: 3px;
+      }
     `;
     document.head.appendChild(style);
   }
 
   /**
-   * Clear tower selection from PlayerModule and UI
-   * This is the key fix - we ensure no tower is selected after placement
+   * Create the mode toggle button and indicator
    */
-  function clearTowerSelection() {
-    // Deselect tower in PlayerModule
-    if (window.PlayerModule && typeof PlayerModule.selectTower === 'function') {
-      PlayerModule.selectTower(null);
+  function createModeUI() {
+    // Create mode toggle button if it doesn't exist
+    if (!modeToggleButton) {
+      modeToggleButton = document.createElement('button');
+      modeToggleButton.id = 'sudoku-mode-toggle';
+      modeToggleButton.innerHTML = '<span class="icon">🎯</span> Place Mode <span class="keyboard-hint">Tab</span>';
+      document.body.appendChild(modeToggleButton);
+      
+      // Add click handler for mode toggle
+      modeToggleButton.addEventListener('click', toggleInteractionMode);
     }
     
-    // Remove selected class from all tower options
-    document.querySelectorAll('.tower-option').forEach(option => {
-      option.classList.remove('selected');
+    // Create mode indicator if it doesn't exist
+    if (!modeIndicator) {
+      modeIndicator = document.createElement('div');
+      modeIndicator.id = 'mode-indicator';
+      document.body.appendChild(modeIndicator);
+    }
+  }
+
+  /**
+   * Toggle between interaction modes (default/highlight/analyze)
+   */
+  function toggleInteractionMode() {
+    // Clear any existing selections
+    clearHighlights();
+    clearCellSelection();
+    
+    // Cycle through modes
+    switch (selectionMode) {
+      case 'default':
+        selectionMode = 'analyze';
+        modeToggleButton.innerHTML = '<span class="icon">🔍</span> Analyze Mode <span class="keyboard-hint">Tab</span>';
+        modeToggleButton.className = 'analyze-mode';
+        showModeIndicator('Analyze Mode: Click cells to see possible values');
+        break;
+        
+      case 'analyze':
+        selectionMode = 'highlight';
+        modeToggleButton.innerHTML = '<span class="icon">🎨</span> Highlight Mode <span class="keyboard-hint">Tab</span>';
+        modeToggleButton.className = 'highlight-mode';
+        showModeIndicator('Highlight Mode: Click numbers to see all instances on the board');
+        break;
+        
+      case 'highlight':
+      default:
+        selectionMode = 'default';
+        modeToggleButton.innerHTML = '<span class="icon">🎯</span> Place Mode <span class="keyboard-hint">Tab</span>';
+        modeToggleButton.className = '';
+        showModeIndicator('Place Mode: Click a number then a cell to place it');
+        break;
+    }
+    
+    console.log(`Mode switched to: ${selectionMode}`);
+  }
+
+  /**
+   * Show the mode indicator tooltip briefly
+   * @param {string} message - Message to display
+   */
+  function showModeIndicator(message) {
+    if (!modeIndicator) return;
+    
+    modeIndicator.textContent = message;
+    modeIndicator.classList.add('visible');
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+      modeIndicator.classList.remove('visible');
+    }, 3000);
+  }
+
+  /**
+   * Highlight all cells with a specific number
+   * @param {number} number - Number to highlight
+   */
+  function highlightNumberCells(number) {
+    // Clear any existing highlights
+    clearHighlights();
+    
+    if (!number || number === highlightedNumber) {
+      highlightedNumber = null;
+      return;
+    }
+    
+    highlightedNumber = number;
+    
+    // Get the board element
+    const boardElement = document.getElementById('sudoku-board');
+    if (!boardElement) return;
+    
+    // Get all cells
+    const cells = boardElement.querySelectorAll('.sudoku-cell');
+    
+    // Highlight cells with the matching number
+    cells.forEach(cell => {
+      // Check if the cell contains the number
+      const cellText = cell.textContent.trim();
+      
+      if (cellText === number.toString() || cellText === `${number}️⃣`) {
+        cell.classList.add('number-highlighted');
+      } else {
+        // Check for towers (might have additional elements inside)
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+        
+        // If we have access to the tower data directly
+        if (window.TowersModule && typeof TowersModule.getTowerAt === 'function') {
+          const tower = TowersModule.getTowerAt(row, col);
+          if (tower && tower.type == number) {
+            cell.classList.add('number-highlighted');
+          }
+        }
+      }
     });
   }
 
   /**
-   * Enhance the existing cell click handler
-   * This preserves the original tower placement but adds cell selection
+   * Clear all number highlights
    */
-  function enhanceCellClickHandler() {
-    // Get all sudoku cells
-    const cells = document.querySelectorAll('.sudoku-cell');
-    
-    cells.forEach(cell => {
-      // Remove existing click listener by cloning
-      const newCell = cell.cloneNode(true);
-      cell.parentNode.replaceChild(newCell, cell);
-      
-      // Add our enhanced click handler
-      newCell.addEventListener('click', function(event) {
-        const row = parseInt(this.dataset.row);
-        const col = parseInt(this.dataset.col);
-        
-        // Get current tower and path information
-        const existingTower = TowersModule.getTowerAt(row, col);
-        const isPathCell = BoardManager.getPathCells().has(`${row},${col}`);
-        const isFixed = BoardManager.getFixedCells()[row][col];
-        
-        // If the cell already has a tower, use the original behavior (show tower info)
-        if (existingTower) {
-          // Handle existing tower click - show info or upgrade options
-          if (window.Game && typeof Game.showTowerInfo === 'function') {
-            Game.showTowerInfo(existingTower);
-          } else if (window.showTowerInfo) {
-            window.showTowerInfo(existingTower);
-          }
-          clearCellSelection();
-          return;
-        }
-        
-        // If it's a path cell or fixed cell, just clear selection
-        if (isPathCell || isFixed) {
-          clearCellSelection();
-          return;
-        }
-        
-        // Check for tower selection mode vs cell selection mode
-        const selectedTower = PlayerModule.getSelectedTower();
-        
-        if (selectedTower) {
-          // Tower selection mode - use original tower placement logic
-          const newTower = TowersModule.createTower(selectedTower, row, col);
-          
-          // If tower placement successful, update the UI
-          if (newTower) {
-            if (window.Game && typeof Game.updateUI === 'function') {
-              Game.updateUI();
-            }
-            if (window.Game && typeof Game.updateBoard === 'function') {
-              Game.updateBoard();
-            }
-            
-            // Key fix: Clear the tower selection after placing
-            clearTowerSelection();
-          }
-          
-          // Clear cell selection after tower placement
-          clearCellSelection();
-        } else {
-          // Cell selection mode - show possible values
-          selectCell(row, col);
-        }
-      });
+  function clearHighlights() {
+    const highlightedCells = document.querySelectorAll('.sudoku-cell.number-highlighted');
+    highlightedCells.forEach(cell => {
+      cell.classList.remove('number-highlighted');
     });
+    highlightedNumber = null;
   }
 
   /**
@@ -312,7 +435,104 @@
   }
 
   /**
-   * Enhance tower option click handling for cell selection mode
+   * Clear tower selection from PlayerModule
+   */
+  function clearTowerSelection() {
+    // Deselect tower in PlayerModule
+    if (window.PlayerModule && typeof PlayerModule.selectTower === 'function') {
+      PlayerModule.selectTower(null);
+    }
+    
+    // Remove selected class from all tower options
+    document.querySelectorAll('.tower-option').forEach(option => {
+      option.classList.remove('selected');
+    });
+  }
+
+  /**
+   * Enhanced cell click handler that changes based on mode
+   */
+  function enhanceCellClickHandler() {
+    // Get all sudoku cells
+    const cells = document.querySelectorAll('.sudoku-cell');
+    
+    cells.forEach(cell => {
+      // Remove existing click listener by cloning
+      const newCell = cell.cloneNode(true);
+      cell.parentNode.replaceChild(newCell, cell);
+      
+      // Add our enhanced handler
+      newCell.addEventListener('click', function(event) {
+        const row = parseInt(this.dataset.row);
+        const col = parseInt(this.dataset.col);
+        
+        // Get current tower and path information
+        const existingTower = TowersModule.getTowerAt(row, col);
+        const isPathCell = BoardManager.getPathCells().has(`${row},${col}`);
+        const isFixed = BoardManager.getFixedCells()[row][col];
+        
+        // If the cell already has a tower, show info regardless of mode
+        if (existingTower) {
+          if (window.Game && typeof Game.showTowerInfo === 'function') {
+            Game.showTowerInfo(existingTower);
+          }
+          clearCellSelection();
+          return;
+        }
+        
+        // If it's a path cell or fixed cell, just clear selection
+        if (isPathCell || isFixed) {
+          clearCellSelection();
+          return;
+        }
+        
+        // Handle cell click based on current mode
+        switch (selectionMode) {
+          case 'analyze':
+            // In analyze mode, always show possible values
+            selectCell(row, col);
+            break;
+            
+          case 'highlight':
+            // In highlight mode, just clear selection
+            clearCellSelection();
+            break;
+            
+          case 'default':
+          default:
+            // Default placement mode - check if a tower is selected
+            const selectedTower = PlayerModule.getSelectedTower();
+            
+            if (selectedTower) {
+              // Tower selection mode - place tower
+              const newTower = TowersModule.createTower(selectedTower, row, col);
+              
+              // If tower placement successful, update the UI
+              if (newTower) {
+                if (window.Game && typeof Game.updateUI === 'function') {
+                  Game.updateUI();
+                }
+                if (window.Game && typeof Game.updateBoard === 'function') {
+                  Game.updateBoard();
+                }
+                
+                // If we had a highlighted number, reapply highlighting
+                if (highlightedNumber !== null) {
+                  setTimeout(() => highlightNumberCells(highlightedNumber), 50);
+                }
+              }
+            } else {
+              // No tower selected, show possible values
+              selectCell(row, col);
+            }
+            break;
+        }
+      });
+    });
+  }
+
+  /**
+   * Enhanced tower option click handler that changes based on mode
    */
   function enhanceTowerOptionClickHandlers() {
     const towerOptions = document.querySelectorAll('.tower-option');
@@ -327,6 +547,9 @@
         const towerType = this.dataset.towerType;
         const cost = TowersModule.getTowerCost(towerType);
         
+        // Determine if this is for a selected cell's valid option
+        const wasValidForSelection = selectedCell && this.classList.contains('valid-for-cell');
+        
         // Remove selected class from all options
         document.querySelectorAll('.tower-option').forEach(opt => {
           opt.classList.remove('selected');
@@ -335,97 +558,133 @@
         // Add selected class to clicked option
         this.classList.add('selected');
         
-        // Select the tower in the PlayerModule
-        PlayerModule.selectTower(towerType);
-        
-        // Show status message
-        EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-          `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
-        
-        // If a cell is selected and this is a valid option, place the tower
-        if (selectedCell && this.classList.contains('valid-for-cell')) {
-          const row = selectedCell.row;
-          const col = selectedCell.col;
-          
-          // Try to place the tower
-          const newTower = TowersModule.createTower(towerType, row, col);
-          
-          // If successful, update the board
-          if (newTower) {
-            if (window.Game && typeof Game.updateUI === 'function') {
-              Game.updateUI();
-            }
-            if (window.Game && typeof Game.updateBoard === 'function') {
-              Game.updateBoard();
+        // Handle based on current mode
+        switch (selectionMode) {
+          case 'highlight':
+            // In highlight mode, just highlight and don't select tower
+            if (towerType !== 'special' && !isNaN(parseInt(towerType))) {
+              highlightNumberCells(parseInt(towerType));
+            } else {
+              clearHighlights();
             }
             
-            // Key fix: Clear the tower selection after placing
-            clearTowerSelection();
+            // Show info message about highlighting
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+              `Highlighting all ${towerType === 'special' ? 'Special' : towerType} numbers on the board`);
+            break;
             
-            // Clear the selection after placing
-            clearCellSelection();
-          }
-        } else if (selectedCell && this.classList.contains('invalid-for-cell')) {
-          // If an invalid number is clicked with a cell selected, show warning
-          EventSystem.publish(GameEvents.STATUS_MESSAGE, 
-            `${towerType} is not a valid number for this cell based on Sudoku rules.`);
-        } else {
-          // Normal tower selection mode - clear cell selection
-          clearCellSelection();
-        }
-        
-        // Apply number highlighting (from original tower selection code)
-        if (towerType !== 'special' && !isNaN(parseInt(towerType))) {
-          if (window.highlightNumberCells) {
-            highlightNumberCells(parseInt(towerType));
-          }
-        } else {
-          if (window.clearHighlights) {
-            clearHighlights();
-          }
+          case 'analyze':
+            // In analyze mode, if a cell is selected and this is a valid option, place the tower
+            if (wasValidForSelection) {
+              // Select the tower in PlayerModule
+              PlayerModule.selectTower(towerType);
+              
+              const row = selectedCell.row;
+              const col = selectedCell.col;
+              
+              // Try to place the tower
+              const newTower = TowersModule.createTower(towerType, row, col);
+              
+              // If successful, update the board
+              if (newTower) {
+                if (window.Game && typeof Game.updateUI === 'function') {
+                  Game.updateUI();
+                }
+                if (window.Game && typeof Game.updateBoard === 'function') {
+                  Game.updateBoard();
+                }
+                
+                // Clear the cell selection
+                clearCellSelection();
+                
+                // Clear tower selection after placement
+                clearTowerSelection();
+              }
+            } else if (selectedCell && this.classList.contains('invalid-for-cell')) {
+              // Invalid number warning
+              EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                `${towerType} is not a valid number for this cell based on Sudoku rules.`);
+            } else {
+              // No cell selected, just show info about the number
+              if (towerType !== 'special' && !isNaN(parseInt(towerType))) {
+                EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+                  `Select a cell first to see if ${towerType} can be placed there.`);
+              }
+            }
+            break;
+            
+          case 'default':
+          default:
+            // Default placement mode - select tower and optionally highlight
+            PlayerModule.selectTower(towerType);
+            
+            // Show status message
+            EventSystem.publish(GameEvents.STATUS_MESSAGE, 
+              `Selected ${towerType === 'special' ? 'Special' : towerType} Tower. Cost: ${cost}`);
+            
+            // Also highlight matching numbers if it's a number
+            if (towerType !== 'special' && !isNaN(parseInt(towerType))) {
+              highlightNumberCells(parseInt(towerType));
+            } else {
+              clearHighlights();
+            }
+            
+            // If a cell is selected and this is a valid option, place the tower
+            if (wasValidForSelection) {
+              const row = selectedCell.row;
+              const col = selectedCell.col;
+              
+              // Try to place the tower
+              const newTower = TowersModule.createTower(towerType, row, col);
+              
+              // If successful, update the board
+              if (newTower) {
+                if (window.Game && typeof Game.updateUI === 'function') {
+                  Game.updateUI();
+                }
+                if (window.Game && typeof Game.updateBoard === 'function') {
+                  Game.updateBoard();
+                }
+                
+                // Clear the cell selection
+                clearCellSelection();
+              }
+            }
+            break;
         }
       });
     });
   }
 
   /**
-   * Add cancel selection on document click
-   * This allows players to deselect by clicking elsewhere
-   */
-  function addDocumentClickHandler() {
-    document.addEventListener('click', function(event) {
-      // If the click is outside the sudoku board and tower options, clear selection
-      const boardElement = document.getElementById('sudoku-board');
-      const towerSelection = document.getElementById('tower-selection');
-      
-      // Check if event target is not part of these elements
-      if (boardElement && towerSelection) {
-        if (!boardElement.contains(event.target) && !towerSelection.contains(event.target)) {
-          clearCellSelection();
-        }
-      }
-    });
-  }
-
-  /**
-   * Make sure cell selection system gets reinitialized after board changes
+   * Make sure system gets reinitialized after board changes
    */
   function setupReinitializationHandlers() {
     // Re-initialize when a new puzzle is generated
     EventSystem.subscribe(GameEvents.SUDOKU_GENERATED, function() {
-      setTimeout(enhanceCellClickHandler, 200);
+      setTimeout(function() {
+        enhanceCellClickHandler();
+        enhanceTowerOptionClickHandlers();
+      }, 200);
     });
     
     // Re-initialize when a tower is placed or removed
-    EventSystem.subscribe(GameEvents.TOWER_PLACED, function() {
-      setTimeout(enhanceCellClickHandler, 200);
-      
-      // Also clear tower selection after tower placement
-      clearTowerSelection();
+    EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
+      setTimeout(function() {
+        enhanceCellClickHandler();
+        
+        // Reapply highlighting if needed
+        if (highlightedNumber !== null) {
+          setTimeout(() => highlightNumberCells(highlightedNumber), 50);
+        }
+      }, 200);
     });
     
     EventSystem.subscribe(GameEvents.TOWER_REMOVED, function() {
-      setTimeout(enhanceCellClickHandler, 200);
+      setTimeout(function() {
+        enhanceCellClickHandler();
+        enhanceTowerOptionClickHandlers();
+      }, 200);
     });
     
     // Re-initialize when game board is updated
@@ -433,19 +692,56 @@
       const originalUpdateBoard = Game.updateBoard;
       Game.updateBoard = function() {
         originalUpdateBoard.apply(this, arguments);
-        setTimeout(enhanceCellClickHandler, 200);
+        
+        // Reapply highlighting if there was a highlighted number
+        if (highlightedNumber !== null) {
+          setTimeout(() => highlightNumberCells(highlightedNumber), 50);
+        }
       };
     }
   }
 
   /**
-   * Initialize the cell selection system
+   * Add keyboard shortcuts for mode switching
+   */
+  function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', function(event) {
+      // Tab key to cycle through modes
+      if (event.key === 'Tab') {
+        event.preventDefault(); // Prevent default Tab behavior
+        toggleInteractionMode();
+      }
+      
+      // Escape key to clear selections
+      if (event.key === 'Escape') {
+        clearCellSelection();
+        clearHighlights();
+      }
+      
+      // Number keys 1-9 to select corresponding towers
+      if (event.key >= '1' && event.key <= '9' && !event.ctrlKey && !event.altKey) {
+        const towerType = event.key;
+        const towerOption = document.querySelector(`.tower-option[data-tower-type="${towerType}"]`);
+        
+        if (towerOption) {
+          // Simulate click on the tower option
+          towerOption.click();
+        }
+      }
+    });
+  }
+
+  /**
+   * Initialize the interaction system
    */
   function init() {
-    console.log("Initializing cell selection system (fixed version)");
+    console.log("Initializing Enhanced Sudoku Interaction System");
     
     // Add required styles
     addStyles();
+    
+    // Create mode toggle UI
+    createModeUI();
     
     // Enhance cell click handling
     enhanceCellClickHandler();
@@ -453,23 +749,17 @@
     // Enhance tower option click handlers
     enhanceTowerOptionClickHandlers();
     
-    // Add document click handler for canceling selection
-    addDocumentClickHandler();
+    // Set up keyboard shortcuts
+    setupKeyboardShortcuts();
     
     // Set up reinitialization handlers for board changes
     setupReinitializationHandlers();
     
-    // Add keyboard shortcut (Escape) to clear selection
-    document.addEventListener('keydown', function(event) {
-      if (event.key === 'Escape') {
-        clearCellSelection();
-        
-        // Also clear tower selection when pressing Escape
-        clearTowerSelection();
-      }
-    });
+    // Start in default mode and show initial message
+    selectionMode = 'default';
+    showModeIndicator('Place Mode: Click a number then a cell to place it. Press Tab to change modes');
     
-    console.log("Cell selection system initialized (fixed version)");
+    console.log("Enhanced Sudoku Interaction System initialized successfully");
   }
 
   // Initialize when DOM is loaded
@@ -483,12 +773,22 @@
     setTimeout(init, 1000);
   }
 
-  // Make some functions available globally for debugging and external use
-  window.cellSelectionSystem = {
+  // Make functions available globally for debugging and external use
+  window.highlightNumberCells = highlightNumberCells;
+  window.clearHighlights = clearHighlights;
+  window.selectCell = selectCell;
+  window.clearCellSelection = clearCellSelection;
+  window.toggleInteractionMode = toggleInteractionMode;
+  
+  // Additional utility functions for external use
+  window.sudokuInteractionSystem = {
     init: init,
+    highlightNumber: highlightNumberCells,
+    clearHighlights: clearHighlights,
     selectCell: selectCell,
-    clearSelection: clearCellSelection,
-    clearTowerSelection: clearTowerSelection,
+    clearCellSelection: clearCellSelection,
+    toggleMode: toggleInteractionMode,
+    getCurrentMode: () => selectionMode,
     reinitialize: function() {
       enhanceCellClickHandler();
       enhanceTowerOptionClickHandlers();
