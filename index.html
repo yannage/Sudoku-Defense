@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Tower Defense</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <h1>Sudoku Tower Defense</h1>
+    <!-- Add this HTML code before the game-container in index.html -->
+<div id="setup-menu">
+    <div class="setup-container">
+        <h2>Sudoku Game Setup</h2>
+        
+        <div class="setup-section">
+            <h3>Game Style</h3>
+            <div class="option-container">
+                <div class="option-group">
+                    <button class="setup-option active" data-option="style" data-value="defense">Sudoku Defense</button>
+                    <button class="setup-option" data-option="style" data-value="basic">Sudoku Basic</button>
+                </div>
+                <div class="option-tooltip" id="style-tooltip">
+                    Sudoku Defense: Classic Sudoku combined with tower defense gameplay.
+                </div>
+            </div>
+        </div>
+        
+        <div class="setup-section">
+            <h3>Game Difficulty</h3>
+            <div class="option-container">
+                <div class="option-group">
+                    <button class="setup-option active" data-option="difficulty" data-value="easy">Easy</button>
+                    <button class="setup-option" data-option="difficulty" data-value="medium">Intermediate</button>
+                    <button class="setup-option" data-option="difficulty" data-value="hard">Expert</button>
+                </div>
+                <div class="option-tooltip" id="difficulty-tooltip">
+                    Easy: More numbers revealed, perfect for beginners.
+                </div>
+            </div>
+        </div>
+        
+        <button id="start-game-btn" class="start-game-button">Start Game</button>
+    </div>
+</div>
+    <div id="game-container">
+        <div id="phase-indicator" class="phase-banner"></div>
+        <div id="game-header">
+            <div id="score">Score: <span id="score-value">0</span></div>
+            <div id="lives">Lives: <span id="lives-value">3</span></div>
+            <div id="wave">Wave: <span id="wave-value">1</span></div>
+            
+        </div>
+
+        <div id="sudoku-board"></div>
+        
+       <!-- 
+  Update the tower selection section in index.html with these tooltips
+  that explain the special powers of each tower 
+-->
+<div id="tower-selection">
+  <div class="tower-option" data-tower-type="1" title="Rapid Tower: Fast-firing with 3x attack speed but lower damage">1️⃣</div>
+  <div class="tower-option" data-tower-type="2" title="Slowing Tower: Reduces enemy speed by 30% for 3 seconds">2️⃣</div>
+  <div class="tower-option" data-tower-type="3" title="Splash Tower: Damages multiple enemies in a small radius">3️⃣</div>
+  <div class="tower-option" data-tower-type="4" title="Poison Tower: Applies damage over time effect">4️⃣</div>
+  <div class="tower-option" data-tower-type="5" title="Pierce Tower: Effective against armored enemies">5️⃣</div>
+  <div class="tower-option" data-tower-type="6" title="Stun Tower: 25% chance to freeze enemies for 1 second">6️⃣</div>
+  <div class="tower-option" data-tower-type="7" title="Gambling Tower: Random chance for bonus damage or currency">7️⃣</div>
+  <div class="tower-option" data-tower-type="8" title="Sniper Tower: Long range with 20% chance for critical hits">8️⃣</div>
+  <div class="tower-option" data-tower-type="9" title="Support Tower: Boosts damage of adjacent towers by 20%">9️⃣</div>
+</div>
+        <div id="game-info">
+            <div>Currency: <span id="currency-value">100</span></div>
+            <div id="status-message">Place towers to defend against enemies!</div>
+        </div>
+        <div id="mission-control">
+    <h3>Mission Control</h3>
+    <ul id="mission-tips">
+        <li>Scanning board...</li>
+    </ul>
+</div>
+        <!-- Game controls section -->
+        <div id="game-controls">
+            <button id="start-wave">Start Wave</button>
+            <button id="pause-game">Pause</button>
+            <select id="font-selector" title="Change game font">
+                <option value="font-default" class="font-default">Default Font</option>
+                <option value="font-retro" class="font-retro">Retro Font</option>
+                <option value="font-elegant" class="font-elegant">Elegant Font</option>
+                <option value="font-playful" class="font-playful">Playful Font</option>
+                <option value="font-modern" class="font-modern">Modern Font</option>
+            </select>
+            <button id="new-game">New Game</button>
+        </div>
+    </div>
+<p></p>
+<p></p>
+<p>Made by YanniMakes</p>
+<p></p>
+<p></p>
+    <!-- Load the modules in the correct order -->
+<script src="js/events.js"></script>
+<script src="js/phase-manager.js"></script>
+<script src="js/board-manager.js"></script>
+
+<script src="js/player.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/towers.js"></script>
+<script src="js/save-system.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/tower-animations.js"></script>
+<script src="js/characters.js"></script> 
+<script src="js/ability-system.js"></script> 
+<!-- Position is important -->
+<script src="js/custom-font-manager.js"></script>
+<script src="js/stats-screen.js"></script>
+<script src="js/mission-control.js"></script>
+<script src="js/game.js"></script>
+<script src="js/completion-bonus.js"></script>
+<script src="js/enhanced-tower-rotation.js"></script>
+<script src="js/setup.js"></script>
+
+<script src="js/sudoku-board-select.js"></script>
+
+<script src="js/setup-ui.js"></script>
+<script src="js/init.js"></script> <!-- This initializes everything -->
+
+
+<!-- Force ability system initialization -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      if (window.AbilitySystem && typeof AbilitySystem.init === 'function') {
+        console.log("Fallback: Forcing AbilitySystem init from index.html");
+        AbilitySystem.init();
+      }
+    }, 1000);
+  });
+</script>
+</body>
+</html>
