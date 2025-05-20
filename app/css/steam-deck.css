@@ -1,0 +1,634 @@
+/* Screen size optimizations */
+@media (min-width: 1024px) and (max-width: 1280px) and (min-height: 600px) and (max-height: 800px) {
+    body.steam-deck .sudoku-cell {
+        font-size: clamp(1rem, 2.5vw, 1.5rem);
+    }
+}
+
+/* Prevent text selection/long press issues */
+body.steam-deck {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Improved font styling for better readability */
+body.steam-deck .sudoku-cell.tower-number {
+    font-weight: bold;
+    font-size: 1.3rem;
+    color: #000;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.9);
+}
+
+/* Tower rotation improvements */
+body.steam-deck .tower {
+    transform-origin: center center;
+}
+
+/* Enemy scaling for better visibility */
+body.steam-deck .enemy-sprite {
+    --enemy-scale: 0.25;
+}
+
+/* Grid line improvements */
+body.steam-deck .sudoku-cell:nth-child(3n):not(:nth-child(9n)) {
+    border-right: 2px solid var(--grid-border);
+}
+
+body.steam-deck .sudoku-cell:nth-child(n+19):nth-child(-n+27),
+body.steam-deck .sudoku-cell:nth-child(n+46):nth-child(-n+54),
+body.steam-deck .sudoku-cell:nth-child(n+73):nth-child(-n+81) {
+    border-bottom: 2px solid var(--grid-border);
+}
+
+/* High score highlighting */
+body.steam-deck #high-score-value {
+    color: gold;
+    font-weight: bold;
+}
+
+/* Header info styling */
+body.steam-deck #game-header > div {
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 3px 8px;
+    border-radius: 3px;
+}
+
+/* Touch interaction improvements */
+body.steam-deck button, 
+body.steam-deck .tower-option,
+body.steam-deck .sudoku-cell {
+    touch-action: manipulation;
+}
+
+/* Special animation for the selected tower */
+body.steam-deck .tower-option.selected {
+    animation: pulse-selected 1.5s infinite alternate;
+}
+
+@keyframes pulse-selected {
+    0% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
+    100% { box-shadow: 0 0 0 6px rgba(33, 150, 243, 0); }
+}
+
+/* Fix for potential z-index issues */
+body.steam-deck #sudoku-board {
+    z-index: 10;
+}
+
+body.steam-deck #mission-control {
+    z-index: 5;
+}
+
+body.steam-deck .steam-deck-controls {
+    z-index: 100;
+}
+
+/* Navigation highlight */
+body.steam-deck .vertical-game-controls button:focus,
+body.steam-deck .vertical-tower-selection .tower-option:focus {
+    outline: 2px solid #ffcc00;
+    outline-offset: -2px;
+}
+
+/* Styling for mana and wave progress bars */
+body.steam-deck [class^="wave-progress"], 
+body.steam-deck [class^="mana-bar"] {
+    height: 12px !important;
+    border-radius: 6px !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Add a subtle gradient background to the left and right panels */
+body.steam-deck .steam-deck-left-panel,
+body.steam-deck .steam-deck-right-panel {
+    background: linear-gradient(to bottom, rgba(20, 20, 40, 0.9), rgba(10, 10, 20, 0.9));
+}
+
+/* Add a subtle grid pattern to the center panel background */
+body.steam-deck .steam-deck-center-panel {
+    background-image: 
+        linear-gradient(rgba(50, 50, 70, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(50, 50, 70, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: center center;
+}
+
+/* Add a subtle shine to buttons on hover */
+body.steam-deck .vertical-game-controls button:hover::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+/* Make sure the game header is visually distinct */
+body.steam-deck #game-header {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(to right, #1a1a2e, #333333, #1a1a2e);
+}/* Steam Deck Redesigned Layout - Add to css/steam-deck.css */
+
+/* Basic Steam Deck layout adjustments */
+body.steam-deck {
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    height: 100vh;
+    background-color: #121212;
+}
+
+body.steam-deck h1 {
+    font-size: 1.4rem;
+    margin: 5px 0;
+    text-align: center;
+    color: white;
+}
+
+/* Game container redesign to fill entire Steam Deck screen */
+body.steam-deck #game-container {
+    display: grid;
+    height: calc(100vh - 40px); /* Account for header space */
+    width: 100vw; /* Full width of the viewport */
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    grid-template-areas:
+        "header header header"
+        "left-panel center-panel right-panel";
+    grid-template-columns: minmax(150px, 20%) minmax(auto, 60%) minmax(180px, 20%);
+    grid-template-rows: auto 1fr;
+    position: relative;
+}
+
+/* Game header adjustments */
+body.steam-deck #game-header {
+    grid-area: header;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background-color: #333;
+    color: white;
+    padding: 5px;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    position: relative;
+    width: 100vw;
+}
+
+/* Phase indicator */
+body.steam-deck #phase-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(76, 175, 80, 0.8);
+    color: white;
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 3px 0;
+    z-index: 10;
+}
+
+/* Panels for Steam Deck layout - now utilizing full width */
+body.steam-deck .steam-deck-left-panel {
+    grid-area: left-panel;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    align-items: center;
+    border-right: 1px solid #444;
+    height: calc(100vh - 80px); /* Full height minus header */
+}
+
+body.steam-deck .steam-deck-center-panel {
+    grid-area: center-panel;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5px;
+    position: relative;
+    background-color: rgba(20, 20, 30, 0.5);
+    height: calc(100vh - 80px); /* Full height minus header */
+}
+
+body.steam-deck .steam-deck-right-panel {
+    grid-area: right-panel;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 5px;
+    overflow-y: auto;
+    border-left: 1px solid #444;
+    height: calc(100vh - 80px); /* Full height minus header */
+}
+
+/* Sudoku board optimizations - centered and maximized */
+body.steam-deck #sudoku-board {
+    aspect-ratio: 1;
+    max-height: 90%; /* Allow it to take up most of the center panel height */
+    width: auto;
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    grid-template-rows: repeat(9, 1fr);
+    gap: 1px;
+    background-color: var(--grid-border);
+    border: 2px solid var(--grid-border);
+    margin: 0 auto;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+body.steam-deck .sudoku-cell {
+    font-size: clamp(0.9rem, 2.5vw, 1.4rem);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    transition: transform 0.1s ease;
+}
+
+body.steam-deck .sudoku-cell:hover {
+    transform: scale(1.02);
+}
+
+/* Vertical tower selection - Enhanced for full-height layout */
+body.steam-deck .vertical-tower-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    margin-top: 10px;
+}
+
+body.steam-deck .vertical-tower-selection .tower-option {
+    width: 100% !important;
+    max-width: none !important;
+    height: 44px !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+body.steam-deck .vertical-tower-selection .tower-option:hover,
+body.steam-deck .vertical-tower-selection .tower-option.selected {
+    background-color: var(--cell-highlight);
+    transform: scale(1.05);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Game controls - Enhanced for full-height layout */
+body.steam-deck .vertical-game-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    margin-top: auto; /* Push to bottom of left panel */
+    padding-top: 15px;
+}
+
+body.steam-deck .vertical-game-controls button,
+body.steam-deck .vertical-game-controls select {
+    width: 100%;
+    height: 50px;
+    padding: 8px;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+    background-color: var(--primary-color);
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+body.steam-deck .vertical-game-controls button:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+body.steam-deck .vertical-game-controls #start-wave {
+    background-color: #4CAF50;
+    font-weight: bold;
+    font-size: 1.1rem;
+    height: 60px;
+}
+
+body.steam-deck .vertical-game-controls #pause-game {
+    background-color: #2196F3;
+}
+
+body.steam-deck .vertical-game-controls #new-game {
+    background-color: #ff9800;
+}
+
+/* Game info in left panel - Enhanced styling */
+body.steam-deck #game-info {
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-size: 1rem;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 10px;
+}
+
+body.steam-deck #currency-value {
+    font-weight: bold;
+    color: gold;
+    font-size: 1.2rem;
+}
+
+body.steam-deck #status-message {
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 5px;
+    min-height: auto;
+    font-size: 0.9rem;
+}
+
+/* Mission control - Enhanced and styled for right panel */
+body.steam-deck #mission-control {
+    position: static;
+    right: auto;
+    top: auto;
+    width: 100%;
+    background: rgba(20, 20, 50, 0.9);
+    color: white;
+    font-family: monospace;
+    padding: 12px;
+    border-radius: 6px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    font-size: 12px;
+    margin-top: 10px;
+    height: calc(100% - 20px);
+    display: flex;
+    flex-direction: column;
+}
+
+body.steam-deck #mission-control h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    text-align: center;
+    color: #4CAF50;
+    text-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 5px;
+}
+
+body.steam-deck #mission-tips {
+    padding-left: 15px;
+    margin: 0;
+    overflow-y: auto;
+}
+
+body.steam-deck #mission-tips li {
+    margin-bottom: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* Enhanced Steam Deck floating controls */
+body.steam-deck .steam-deck-controls {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    display: flex;
+    gap: 8px;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 8px;
+    border-radius: 8px;
+    z-index: 1000;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+body.steam-deck .steam-deck-control-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background-color: #333;
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    transition: transform 0.1s, background-color 0.2s;
+}
+
+body.steam-deck .steam-deck-control-btn:hover {
+    background-color: #555;
+    transform: translateY(-2px);
+}
+
+body.steam-deck .steam-deck-control-btn:active {
+    transform: translateY(0);
+}
+
+/* Toggle button for mission control */
+body.steam-deck #toggle-mission {
+    background-color: #2196F3;
+}
+
+/* Touch optimization */
+body.steam-deck .touch-friendly {
+    min-height: 44px !important;
+    min-width: 44px !important;
+}
+
+body.steam-deck .touch-friendly-button {
+    min-height: 50px !important;
+    font-size: 1.1rem !important;
+}
+
+/* Cell styling improvements */
+body.steam-deck .sudoku-cell:nth-child(3n) {
+    border-right-width: 1px;
+}
+
+body.steam-deck .sudoku-cell:nth-child(n+19):nth-child(-n+27),
+body.steam-deck .sudoku-cell:nth-child(n+46):nth-child(-n+54),
+body.steam-deck .sudoku-cell:nth-child(n+73):nth-child(-n+81) {
+    border-bottom-width: 1px;
+}
+
+/* Fix for bottom row cells */
+body.steam-deck .sudoku-cell:nth-last-child(-n+9) {
+    margin-bottom: 0;
+}
+
+/* Font selector styling */
+body.steam-deck #font-selector {
+    max-width: none;
+    width: 100%;
+    font-size: 0.9rem;
+    padding: 5px;
+    height: 50px;
+    background-color: #333;
+    color: white;
+    border: 1px solid #555;
+}
+
+/* Mana bar and bottom elements */
+body.steam-deck [id^="mana-"] {
+    height: 12px !important;
+    font-size: 12px !important;
+    margin: 8px 0 !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    border-radius: 6px !important;
+    overflow: hidden !important;
+}
+
+/* Specific adjustment for portrait mode (rare but supported) */
+@media (max-width: 800px) and (min-height: 1280px) {
+    body.steam-deck #game-container {
+        grid-template-areas:
+            "header"
+            "center-panel"
+            "right-panel"
+            "left-panel";
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto auto;
+    }
+    
+    body.steam-deck .steam-deck-left-panel {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        border-right: none;
+        border-top: 1px solid #444;
+        height: auto;
+        padding: 10px;
+    }
+    
+    body.steam-deck .vertical-tower-selection {
+        flex-direction: row;
+        flex-wrap: wrap;
+        max-width: 600px;
+        gap: 5px;
+    }
+    
+    body.steam-deck .vertical-tower-selection .tower-option {
+        width: calc(20% - 5px) !important;
+        height: 40px !important;
+    }
+    
+    body.steam-deck .vertical-game-controls {
+        flex-direction: row;
+        flex-wrap: wrap;
+        max-width: 600px;
+        gap: 5px;
+        margin-top: 10px;
+    }
+    
+    body.steam-deck .vertical-game-controls button,
+    body.steam-deck .vertical-game-controls select {
+        width: calc(50% - 5px);
+        height: 40px;
+    }
+    
+    body.steam-deck .steam-deck-right-panel {
+        max-height: 150px;
+        border-left: none;
+        border-top: 1px solid #444;
+        border-bottom: 1px solid #444;
+        height: auto;
+    }
+    
+    body.steam-deck .steam-deck-center-panel {
+        height: auto;
+        aspect-ratio: 1;
+    }
+    
+    body.steam-deck #sudoku-board {
+        width: 100%;
+        max-height: none;
+        aspect-ratio: 1;
+    }
+}
+
+/* Make sure board fits without scrolling for most screen sizes */
+@media (min-width: 1024px) and (max-width: 1280px) and (min-height: 600px) and (max-height: 800px) {
+    body.steam-deck .sudoku-cell {
+        font-size: clamp(1rem, 2.5vw, 1.5rem);
+    }
+    
+    body.steam-deck #sudoku-board {
+        max-height: calc(100vh - 100px);
+    }
+}
+
+/* Prevent touch selection issues */
+body.steam-deck {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Font weights for better readability */
+body.steam-deck .sudoku-cell.tower-number {
+    font-weight: bold;
+    font-size: 1.3rem;
+    color: #000;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.9);
+}
+
+/* Tower rotation enhancements */
+body.steam-deck .tower {
+    transform-origin: center center;
+}
+
+/* Enemy adjustments for visibility */
+body.steam-deck .enemy-sprite {
+    --enemy-scale: 0.25;
+}
+
+/* Fix for the grid lines to match original 3x3 box highlighting */
+body.steam-deck .sudoku-cell:nth-child(3n):not(:nth-child(9n)) {
+    border-right: 2px solid var(--grid-border);
+}
+
+body.steam-deck .sudoku-cell:nth-child(n+19):nth-child(-n+27),
+body.steam-deck .sudoku-cell:nth-child(n+46):nth-child(-n+54),
+body.steam-deck .sudoku-cell:nth-child(n+73):nth-child(-n+81) {
+    border-bottom: 2px solid var(--grid-border);
+}
+
+/* Make sure the high score is formatted nicely */
+body.steam-deck #high-score-value {
+    color: gold;
+    font-weight: bold;
+}
+
+/* Improved contrast for readability */
+body.steam-deck #game-header > div {
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 3px 8px;
+    border-radius: 3px;
+}
+
+/* Make sure all buttons have adequate touch targets */
+body.steam-deck button, 
+body.steam-deck .tower-option,
+body.steam-deck .sudoku-cell {
+    touch-action: manipulation;
+}
