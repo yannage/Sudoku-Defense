@@ -12,6 +12,7 @@
     const maxZoom = 1.2;
     const minZoom = 0.8;
     let lastTap = 0; // Initialize lastTap variable
+    let missionControlVisible = true; // Track mission control visibility
     
     // Check if device is likely a Steam Deck
     function detectSteamDeck() {
@@ -48,92 +49,131 @@
             document.body.classList.add('steam-deck-browser');
         }
         
-        // Apply grid layout to container
-        const gameContainer = document.querySelector('#game-container');
-        if (gameContainer) {
-            gameContainer.style.display = 'grid';
-        }
+        // Rearrange the layout for Steam Deck
+        rearrangeLayout();
         
         // Check if we're in horizontal orientation
         applyOrientationOptimizations();
         
-        // Fix for cut-off board cells
-        fixSudokuBoardLayout();
-        
         // Setup touch input optimizations
         setupTouchOptimizations();
-        
-        // Create floating "Start Wave" button for easier access
-        createFloatingStartWaveButton();
         
         console.log("Steam Deck optimizations applied");
     }
     
-    // Create floating "Start Wave" button for easier access on Steam Deck
-    function createFloatingStartWaveButton() {
-        // Check if it already exists
-        if (document.getElementById('steam-deck-start-wave')) {
-            return;
-        }
+    // Rearrange the layout for Steam Deck
+    function rearrangeLayout() {
+        // Get the main elements
+        const gameContainer = document.getElementById('game-container');
+        const sudokuBoard = document.getElementById('sudoku-board');
+        const missionControl = document.getElementById('mission-control');
+        const towerSelection = document.getElementById('tower-selection');
+        const gameInfo = document.getElementById('game-info');
+        const gameControls = document.getElementById('game-controls');
         
-        // Create the floating button container if it doesn't exist
-        let floatingControls = document.querySelector('.steam-deck-controls');
-        if (!floatingControls) {
-            floatingControls = document.createElement('div');
-            floatingControls.className = 'steam-deck-controls';
-            document.body.appendChild(floatingControls);
-        }
+        if (!gameContainer || !sudokuBoard) return;
         
-        // Add a floating start wave button
-        const startWaveBtn = document.createElement('button');
-        startWaveBtn.id = 'steam-deck-start-wave';
-        startWaveBtn.className = 'steam-deck-control-btn start-wave-btn';
-        startWaveBtn.innerHTML = '▶️'; // Play emoji
-        startWaveBtn.title = 'Start Wave';
-        startWaveBtn.style.backgroundColor = '#4CAF50';
-        startWaveBtn.style.width = '48px';
-        startWaveBtn.style.height = '48px';
-        startWaveBtn.style.fontSize = '24px';
-        
-        // Position it in a better spot
-        startWaveBtn.style.position = 'fixed';
-        startWaveBtn.style.bottom = '70px';
-        startWaveBtn.style.right = '10px';
-        startWaveBtn.style.zIndex = '1000';
-        startWaveBtn.style.borderRadius = '50%';
-        startWaveBtn.style.border = 'none';
-        startWaveBtn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
-        
-        // Event listener to trigger the main start wave button
-        startWaveBtn.addEventListener('click', function() {
-            const mainStartWaveBtn = document.getElementById('start-wave');
-            if (mainStartWaveBtn) {
-                mainStartWaveBtn.click();
-                // Add feedback on press
-                this.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    this.style.transform = 'scale(1)';
-                }, 100);
-            }
-        });
-        
-        // Add it to the document
-        document.body.appendChild(startWaveBtn);
-        
-        // Hide it during setup
-        const setupMenu = document.getElementById('setup-menu');
-        if (setupMenu && window.getComputedStyle(setupMenu).display !== 'none') {
-            startWaveBtn.style.display = 'none';
+        // Create left panel
+        let leftPanel = document.getElementById('left-panel');
+        if (!leftPanel) {
+            leftPanel = document.createElement('div');
+            leftPanel.id = 'left-panel';
+            leftPanel.className = 'steam-deck-left-panel';
             
-            // Show it once setup is complete
-            const startGameBtn = document.getElementById('start-game-btn');
-            if (startGameBtn) {
-                startGameBtn.addEventListener('click', function() {
-                    setTimeout(() => {
-                        startWaveBtn.style.display = 'block';
-                    }, 500);
-                });
-            }
+            // Add left panel to game container
+            gameContainer.appendChild(leftPanel);
+        }
+        
+        // Create right panel
+        let rightPanel = document.getElementById('right-panel');
+        if (!rightPanel) {
+            rightPanel = document.createElement('div');
+            rightPanel.id = 'right-panel';
+            rightPanel.className = 'steam-deck-right-panel';
+            
+            // Add right panel to game container
+            gameContainer.appendChild(rightPanel);
+        }
+        
+        // Create center panel for the board
+        let centerPanel = document.getElementById('center-panel');
+        if (!centerPanel) {
+            centerPanel = document.createElement('div');
+            centerPanel.id = 'center-panel';
+            centerPanel.className = 'steam-deck-center-panel';
+            
+            // Add center panel to game container
+            gameContainer.appendChild(centerPanel);
+        }
+        
+        // Move the sudoku board to the center panel
+        if (sudokuBoard.parentNode !== centerPanel) {
+            centerPanel.appendChild(sudokuBoard);
+        }
+        
+        // Move mission control to the right panel
+        if (missionControl && missionControl.parentNode !== rightPanel) {
+            rightPanel.appendChild(missionControl);
+        }
+        
+        // Move tower selection to the left panel
+        if (towerSelection && towerSelection.parentNode !== leftPanel) {
+            // Reorient the tower selection to vertical
+            towerSelection.classList.add('vertical-tower-selection');
+            leftPanel.appendChild(towerSelection);
+        }
+        
+        // Move game controls to the left panel
+        if (gameControls && gameControls.parentNode !== leftPanel) {
+            gameControls.classList.add('vertical-game-controls');
+            leftPanel.appendChild(gameControls);
+        }
+        
+        // Move game info to the left panel
+        if (gameInfo && gameInfo.parentNode !== leftPanel) {
+            leftPanel.appendChild(gameInfo);
+        }
+        
+        // Set grid layout
+        gameContainer.style.display = 'grid';
+        gameContainer.style.gridTemplateColumns = 'auto 1fr auto';
+        gameContainer.style.gridTemplateRows = 'auto 1fr';
+        gameContainer.style.gridTemplateAreas = 
+            '"header header header" ' +
+            '"left-panel center-panel right-panel"';
+        
+        // Set the sudoku board to be square
+        sudokuBoard.style.aspectRatio = '1';
+        sudokuBoard.style.width = '100%';
+        sudokuBoard.style.height = 'auto';
+        
+        // Toggle mission control button
+        setupMissionControlToggle();
+        
+        // Fix sizing for all cells
+        fixSudokuBoardLayout();
+    }
+    
+    // Setup toggle for mission control
+    function setupMissionControlToggle() {
+        const toggleMission = document.getElementById('toggle-mission');
+        if (toggleMission) {
+            toggleMission.addEventListener('click', function() {
+                const missionControl = document.getElementById('mission-control');
+                const rightPanel = document.getElementById('right-panel');
+                
+                if (missionControl) {
+                    if (missionControlVisible) {
+                        missionControl.style.display = 'none';
+                        rightPanel.style.display = 'none';
+                        missionControlVisible = false;
+                    } else {
+                        missionControl.style.display = 'block';
+                        rightPanel.style.display = 'block';
+                        missionControlVisible = true;
+                    }
+                }
+            });
         }
     }
     
@@ -142,30 +182,31 @@
         const sudokuBoard = document.getElementById('sudoku-board');
         if (!sudokuBoard) return;
         
-        // Make sure the board doesn't get cut off
-        const cellHeight = Math.floor(sudokuBoard.offsetHeight / 9);
+        // Make sure the board is square
+        const boardSize = Math.min(
+            sudokuBoard.offsetWidth,
+            window.innerHeight * 0.7 // Max 70% of viewport height
+        );
+        
+        sudokuBoard.style.width = `${boardSize}px`;
+        sudokuBoard.style.height = `${boardSize}px`;
+        
+        // Calculate cell height
+        const cellHeight = Math.floor(boardSize / 9);
         
         // Adjust cells to fit properly
         const cells = sudokuBoard.querySelectorAll('.sudoku-cell');
         cells.forEach(cell => {
             cell.style.height = `${cellHeight}px`;
+            cell.style.width = `${cellHeight}px`;
         });
         
         // Fix font size issues within cells
-        const computedStyle = getComputedStyle(cells[0]);
-        const cellWidth = parseFloat(computedStyle.width);
-        
         // Dynamically adjust font size based on cell dimensions
-        const idealFontSize = Math.min(cellWidth * 0.5, cellHeight * 0.7);
+        const idealFontSize = Math.max(16, Math.min(cellHeight * 0.6, 24)); // Min 16px, Max 24px
         cells.forEach(cell => {
             cell.style.fontSize = `${idealFontSize}px`;
         });
-        
-        // Keep mission control visible
-        const missionControl = document.getElementById('mission-control');
-        if (missionControl) {
-            missionControl.style.maxHeight = `${sudokuBoard.offsetHeight}px`;
-        }
     }
     
     function applyOrientationOptimizations() {
@@ -179,15 +220,35 @@
             document.body.classList.remove('landscape');
         }
         
-        // Adjust mission control based on orientation
-        const missionControl = document.getElementById('mission-control');
-        if (missionControl) {
-            if (isLandscape) {
-                missionControl.style.maxHeight = '100%';
-            } else {
-                missionControl.style.maxHeight = '150px';
+        // Adjust for orientation
+        const leftPanel = document.getElementById('left-panel');
+        const centerPanel = document.getElementById('center-panel');
+        const rightPanel = document.getElementById('right-panel');
+        const gameContainer = document.getElementById('game-container');
+        
+        if (isLandscape) {
+            if (gameContainer) {
+                gameContainer.style.gridTemplateColumns = 'auto 1fr auto';
+                gameContainer.style.gridTemplateRows = 'auto 1fr';
+                gameContainer.style.gridTemplateAreas = 
+                    '"header header header" ' +
+                    '"left-panel center-panel right-panel"';
+            }
+        } else {
+            // Portrait mode (rare on Steam Deck but possible)
+            if (gameContainer) {
+                gameContainer.style.gridTemplateColumns = '1fr';
+                gameContainer.style.gridTemplateRows = 'auto auto 1fr auto';
+                gameContainer.style.gridTemplateAreas = 
+                    '"header" ' +
+                    '"center-panel" ' +
+                    '"right-panel" ' +
+                    '"left-panel"';
             }
         }
+        
+        // Fix sizing after orientation change
+        fixSudokuBoardLayout();
     }
     
     // Setup touch input optimization
@@ -219,6 +280,12 @@
                 return false;
             }
         });
+        
+        // Make tower options larger for touch
+        const towerOptions = document.querySelectorAll('.tower-option');
+        towerOptions.forEach(option => {
+            option.classList.add('touch-friendly');
+        });
     }
     
     // Zoom functionality for Steam Deck
@@ -244,16 +311,6 @@
                 }
             });
         }
-        
-        if (toggleMission) {
-            toggleMission.addEventListener('click', function() {
-                const missionControl = document.getElementById('mission-control');
-                if (missionControl) {
-                    missionControl.style.display = 
-                        missionControl.style.display === 'none' ? 'block' : 'none';
-                }
-            });
-        }
     }
     
     function applyZoom() {
@@ -264,62 +321,42 @@
         }
     }
     
-    // Fix for specific UI elements that might be cut off
-    function fixCutOffElements() {
-        // Fix for mana bar and other bottom elements
+    // Fix for specific UI elements
+    function optimizeUIElements() {
+        // Make game controls more touch-friendly
+        const buttons = document.querySelectorAll('#game-controls button');
+        buttons.forEach(button => {
+            button.classList.add('touch-friendly-button');
+        });
+        
+        // Style tower selection for vertical layout
+        const towerOptions = document.querySelectorAll('.tower-option');
+        towerOptions.forEach(option => {
+            option.classList.add('vertical-option');
+        });
+        
+        // Fix font sizes for better readability
+        const statusMessage = document.getElementById('status-message');
+        if (statusMessage) {
+            statusMessage.style.fontSize = '14px';
+        }
+        
+        // Fix for mana display
         const manaElements = document.querySelectorAll('[id^="mana-"]');
         manaElements.forEach(el => {
             if (el) {
-                el.style.fontSize = '10px';
-                el.style.height = '8px';
-                el.style.lineHeight = '8px';
-                el.style.marginTop = '0';
-                el.style.marginBottom = '0';
+                el.style.fontSize = '12px';
+                el.style.height = '10px';
             }
         });
-        
-        // Ensure tower selection is visible and properly sized
-        const towerOptions = document.querySelectorAll('.tower-option');
-        towerOptions.forEach(option => {
-            option.style.minWidth = '30px';
-            option.style.maxWidth = '30px';
-            option.style.height = '30px';
-            option.style.fontSize = '1rem';
-            option.style.padding = '2px';
-        });
-        
-        // Adjust game controls buttons
-        const buttons = document.querySelectorAll('#game-controls button');
-        buttons.forEach(button => {
-            button.style.padding = '5px 8px';
-            button.style.height = '32px';
-            button.style.minHeight = '32px';
-        });
-        
-        // Ensure game info is visible
-        const gameInfo = document.getElementById('game-info');
-        if (gameInfo) {
-            gameInfo.style.marginTop = '2px';
-            gameInfo.style.marginBottom = '2px';
-            gameInfo.style.fontSize = '0.85rem';
-        }
-        
-        // Make the Start Wave button more prominent
-        const startWaveBtn = document.getElementById('start-wave');
-        if (startWaveBtn) {
-            startWaveBtn.style.backgroundColor = '#4CAF50';
-            startWaveBtn.style.color = 'white';
-            startWaveBtn.style.fontWeight = 'bold';
-            startWaveBtn.style.minHeight = '36px';
-        }
     }
     
     // Listen for resizing to adjust the layout dynamically
     function handleResize() {
         if (document.body.classList.contains('steam-deck')) {
-            fixSudokuBoardLayout();
             applyOrientationOptimizations();
-            fixCutOffElements();
+            fixSudokuBoardLayout();
+            optimizeUIElements();
         }
     }
     
@@ -333,18 +370,6 @@
                 if (document.body.classList.contains('steam-deck')) {
                     // Wait a moment for the UI to update
                     setTimeout(handleResize, 100);
-                    
-                    // Update the floating Start Wave button visibility based on phase
-                    const floatingStartWave = document.getElementById('steam-deck-start-wave');
-                    if (floatingStartWave) {
-                        // Show only during Sudoku phase, hide during battle
-                        const currentPhase = phaseIndicator.textContent.toLowerCase();
-                        if (currentPhase.includes('sudoku')) {
-                            floatingStartWave.style.display = 'block';
-                        } else if (currentPhase.includes('battle')) {
-                            floatingStartWave.style.display = 'none';
-                        }
-                    }
                 }
             });
             
@@ -378,20 +403,113 @@
                 
                 // Toggle Steam Deck mode if we're already in the game
                 if (document.body.classList.contains('steam-deck') && value !== 'steam-deck') {
+                    // Remove Steam Deck mode
                     document.body.classList.remove('steam-deck');
+                    
+                    // Hide Steam Deck controls
                     const controls = document.querySelector('.steam-deck-controls');
                     if (controls) {
                         controls.style.display = 'none';
                     }
-                    // Remove floating start wave button
-                    const floatingStartWave = document.getElementById('steam-deck-start-wave');
-                    if (floatingStartWave) {
-                        floatingStartWave.remove();
-                    }
+                    
+                    // Restore original layout
+                    restoreOriginalLayout();
+                    
                 } else if (!document.body.classList.contains('steam-deck') && value === 'steam-deck') {
                     applySteamDeckMode();
                 }
             });
+        });
+    }
+    
+    // Restore original layout
+    function restoreOriginalLayout() {
+        // Get key elements
+        const gameContainer = document.getElementById('game-container');
+        const sudokuBoard = document.getElementById('sudoku-board');
+        const missionControl = document.getElementById('mission-control');
+        const towerSelection = document.getElementById('tower-selection');
+        const gameInfo = document.getElementById('game-info');
+        const gameControls = document.getElementById('game-controls');
+        const leftPanel = document.getElementById('left-panel');
+        const centerPanel = document.getElementById('center-panel');
+        const rightPanel = document.getElementById('right-panel');
+        
+        if (!gameContainer) return;
+        
+        // Reset game container styles
+        gameContainer.style.display = 'flex';
+        gameContainer.style.flexDirection = 'column';
+        gameContainer.style.gridTemplateColumns = '';
+        gameContainer.style.gridTemplateRows = '';
+        gameContainer.style.gridTemplateAreas = '';
+        
+        // Move elements back to original positions
+        if (sudokuBoard) {
+            gameContainer.appendChild(sudokuBoard);
+            sudokuBoard.style.width = '100%';
+            sudokuBoard.style.height = 'auto';
+            sudokuBoard.style.transform = 'scale(1)';
+            sudokuBoard.style.aspectRatio = '1';
+        }
+        
+        if (missionControl) {
+            gameContainer.appendChild(missionControl);
+            missionControl.style.display = 'block';
+            missionControl.style.position = 'absolute';
+            missionControl.style.right = '20px';
+            missionControl.style.top = '100px';
+        }
+        
+        if (towerSelection) {
+            gameContainer.appendChild(towerSelection);
+            towerSelection.classList.remove('vertical-tower-selection');
+        }
+        
+        if (gameControls) {
+            gameContainer.appendChild(gameControls);
+            gameControls.classList.remove('vertical-game-controls');
+        }
+        
+        if (gameInfo) {
+            gameContainer.appendChild(gameInfo);
+        }
+        
+        // Remove panels if they exist
+        if (leftPanel) {
+            leftPanel.remove();
+        }
+        
+        if (centerPanel && centerPanel.parentNode === gameContainer) {
+            // Move children back to container before removing
+            while (centerPanel.firstChild) {
+                gameContainer.appendChild(centerPanel.firstChild);
+            }
+            centerPanel.remove();
+        }
+        
+        if (rightPanel) {
+            rightPanel.remove();
+        }
+        
+        // Reset all tower options
+        const towerOptions = document.querySelectorAll('.tower-option');
+        towerOptions.forEach(option => {
+            option.classList.remove('vertical-option', 'touch-friendly');
+            option.style = ''; // Clear inline styles
+        });
+        
+        // Reset all buttons
+        const buttons = document.querySelectorAll('#game-controls button');
+        buttons.forEach(button => {
+            button.classList.remove('touch-friendly-button');
+            button.style = ''; // Clear inline styles
+        });
+        
+        // Reset cell styles
+        const cells = document.querySelectorAll('.sudoku-cell');
+        cells.forEach(cell => {
+            cell.style = ''; // Clear inline styles
         });
     }
     
@@ -450,20 +568,34 @@
                     if (allTowers.length) {
                         let currentIndex = selectedTower ? allTowers.indexOf(selectedTower) : -1;
                         
-                        switch (dpadDirection) {
-                            case "right":
-                                currentIndex = (currentIndex + 1) % allTowers.length;
-                                break;
-                            case "left":
-                                currentIndex = (currentIndex - 1 + allTowers.length) % allTowers.length;
-                                break;
-                            // Handle up/down for 3x3 grid of tower options
-                            case "up":
-                                currentIndex = (currentIndex - 3 + allTowers.length) % allTowers.length;
-                                break;
-                            case "down":
-                                currentIndex = (currentIndex + 3) % allTowers.length;
-                                break;
+                        // In vertical layout, up/down need to be primary controls
+                        if (document.body.classList.contains('steam-deck')) {
+                            switch (dpadDirection) {
+                                case "up":
+                                case "left":
+                                    currentIndex = (currentIndex - 1 + allTowers.length) % allTowers.length;
+                                    break;
+                                case "down":
+                                case "right":
+                                    currentIndex = (currentIndex + 1) % allTowers.length;
+                                    break;
+                            }
+                        } else {
+                            // Original horizontal layout
+                            switch (dpadDirection) {
+                                case "right":
+                                    currentIndex = (currentIndex + 1) % allTowers.length;
+                                    break;
+                                case "left":
+                                    currentIndex = (currentIndex - 1 + allTowers.length) % allTowers.length;
+                                    break;
+                                case "up":
+                                    currentIndex = (currentIndex - 3 + allTowers.length) % allTowers.length;
+                                    break;
+                                case "down":
+                                    currentIndex = (currentIndex + 3) % allTowers.length;
+                                    break;
+                            }
                         }
                         
                         if (currentIndex >= 0) {
@@ -512,7 +644,7 @@
             
             // Setup all the other optimizations
             setupZoomControls();
-            fixCutOffElements();
+            optimizeUIElements();
             setupControllerSupport();
             
             // Add resize listener
@@ -541,14 +673,11 @@
                 applySteamDeckMode();
                 localStorage.setItem('display-mode', 'steam-deck');
             } else {
+                restoreOriginalLayout();
                 document.body.classList.remove('steam-deck');
                 const controls = document.querySelector('.steam-deck-controls');
                 if (controls) {
                     controls.style.display = 'none';
-                }
-                const floatingStartWave = document.getElementById('steam-deck-start-wave');
-                if (floatingStartWave) {
-                    floatingStartWave.remove();
                 }
                 localStorage.setItem('display-mode', 'normal');
             }

@@ -65,6 +65,7 @@
             <div id="score">Score: <span id="score-value">0</span></div>
             <div id="lives">Lives: <span id="lives-value">3</span></div>
             <div id="wave">Wave: <span id="wave-value">1</span></div>
+            <div id="high-score">High Score: <span id="high-score-value">0</span></div>
         </div>
 
         <div id="sudoku-board"></div>
@@ -114,12 +115,6 @@
         <button class="steam-deck-control-btn" id="zoom-out">-</button>
         <button class="steam-deck-control-btn" id="toggle-mission">i</button>
     </div>
-    <!-- The floating Start Wave button is added dynamically by the JS -->
-
-    <!-- Simplified footer for Steam Deck -->
-    <div class="footer" style="text-align: center; margin-top: 10px;">
-        <p>Made by YanniMakes</p>
-    </div>
 
     <!-- Load the modules in the correct order -->
 <script src="js/events.js"></script>
@@ -151,7 +146,6 @@
 <script src="js/steam-deck.js"></script>
 
 <script src="js/init.js"></script> <!-- This initializes everything -->
-
 
 <!-- Force ability system initialization -->
 <script>
