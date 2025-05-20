@@ -1,7 +1,9 @@
-// Steam Deck Optimization JavaScript
-// Add this as js/steam-deck.js
+/**
+ * steam-deck.js - Handles Steam Deck layout optimization and controls
+ * This module manages Steam Deck-specific UI layouts and interactions
+ */
 
-(function() {
+const SteamDeckModule = (function() {
     // Configuration
     const STEAM_DECK_WIDTH = 1280;
     const STEAM_DECK_HEIGHT = 800;
@@ -11,29 +13,74 @@
     const zoomIncrement = 0.05;
     const maxZoom = 1.2;
     const minZoom = 0.8;
-    let lastTap = 0; // Initialize lastTap variable
-    let missionControlVisible = true; // Track mission control visibility
+    let lastTap = 0;
+    let missionControlVisible = true;
     
-    // Check if device is likely a Steam Deck
+    /**
+     * Initialize the Steam Deck optimizations
+     * @param {Object} options - Initialization options
+     */
+    function init(options = {}) {
+        console.log("Initializing Steam Deck module...");
+        
+        // Check if user selected Steam Deck mode or if auto-detection matches
+        const savedDisplayMode = localStorage.getItem('display-mode');
+        const isSteamDeck = detectSteamDeck();
+        
+        console.log("Saved display mode:", savedDisplayMode);
+        console.log("Auto-detected Steam Deck:", isSteamDeck);
+        
+        if (savedDisplayMode === 'steam-deck' || (savedDisplayMode !== 'normal' && isSteamDeck)) {
+            console.log("Applying Steam Deck mode...");
+            applySteamDeckMode();
+            
+            // Setup additional optimizations
+            setupZoomControls();
+            optimizeUIElements();
+            
+            // Add resize listener
+            window.addEventListener('resize', handleResize);
+            
+            // Initial layout adjustment
+            setTimeout(handleResize, 200);
+        }
+        
+        // Setup display options in settings menu
+        setupDisplayOptions();
+        
+        // Watch for phase changes to readjust the layout
+        watchForPhaseChanges();
+        
+        console.log("Steam Deck module initialized");
+    }
+    
+    /**
+     * Check if device is likely a Steam Deck
+     * @returns {boolean} Whether device is likely a Steam Deck
+     */
     function detectSteamDeck() {
-        // Screen resolution check (approximate)
+        // Screen resolution check
         const isSteamDeckResolution = 
             (window.innerWidth <= STEAM_DECK_WIDTH && window.innerHeight <= STEAM_DECK_HEIGHT) ||
             (window.innerWidth <= STEAM_DECK_HEIGHT && window.innerHeight <= STEAM_DECK_WIDTH);
             
-        // User agent can sometimes help (Steam browser)
+        // User agent check
         const ua = navigator.userAgent.toLowerCase();
         const containsSteamTerms = ua.includes('steam') || ua.includes('valve');
         
-        // Check for gamepads which are likely Steam Deck controls
+        // Gamepad check
         const hasGamepads = navigator.getGamepads && 
                            navigator.getGamepads().some(gp => gp && gp.id && gp.id.toLowerCase().includes('valve'));
         
         return isSteamDeckResolution || containsSteamTerms || hasGamepads;
     }
     
-    // Apply Steam Deck optimizations
+    /**
+     * Apply Steam Deck optimizations
+     */
     function applySteamDeckMode() {
+        console.log("Applying Steam Deck mode...");
+        
         // Add CSS class to body
         document.body.classList.add('steam-deck');
         
@@ -61,8 +108,12 @@
         console.log("Steam Deck optimizations applied");
     }
     
-    // Rearrange the layout for Steam Deck
+    /**
+     * Rearrange the layout for Steam Deck
+     */
     function rearrangeLayout() {
+        console.log("Rearranging layout for Steam Deck...");
+        
         // Get the main elements
         const gameContainer = document.getElementById('game-container');
         const sudokuBoard = document.getElementById('sudoku-board');
@@ -71,7 +122,12 @@
         const gameInfo = document.getElementById('game-info');
         const gameControls = document.getElementById('game-controls');
         
-        if (!gameContainer || !sudokuBoard) return;
+        if (!gameContainer || !sudokuBoard) {
+            console.error("Cannot find game container or sudoku board");
+            return;
+        }
+        
+        console.log("Found game elements:", { gameContainer, sudokuBoard });
         
         // Create left panel
         let leftPanel = document.getElementById('left-panel');
@@ -79,9 +135,8 @@
             leftPanel = document.createElement('div');
             leftPanel.id = 'left-panel';
             leftPanel.className = 'steam-deck-left-panel';
-            
-            // Add left panel to game container
             gameContainer.appendChild(leftPanel);
+            console.log("Created left panel");
         }
         
         // Create right panel
@@ -90,53 +145,51 @@
             rightPanel = document.createElement('div');
             rightPanel.id = 'right-panel';
             rightPanel.className = 'steam-deck-right-panel';
-            
-            // Add right panel to game container
             gameContainer.appendChild(rightPanel);
+            console.log("Created right panel");
         }
         
-        // Create center panel for the board
+        // Create center panel
         let centerPanel = document.getElementById('center-panel');
         if (!centerPanel) {
             centerPanel = document.createElement('div');
             centerPanel.id = 'center-panel';
             centerPanel.className = 'steam-deck-center-panel';
-            
-            // Add center panel to game container
             gameContainer.appendChild(centerPanel);
+            console.log("Created center panel");
         }
         
-        // Move the sudoku board to the center panel
+        // Move elements to panels
         if (sudokuBoard.parentNode !== centerPanel) {
             centerPanel.appendChild(sudokuBoard);
+            console.log("Moved sudoku board to center panel");
         }
         
-        // Move mission control to the right panel
         if (missionControl && missionControl.parentNode !== rightPanel) {
             rightPanel.appendChild(missionControl);
+            console.log("Moved mission control to right panel");
         }
         
-        // Move tower selection to the left panel
         if (towerSelection && towerSelection.parentNode !== leftPanel) {
-            // Reorient the tower selection to vertical
             towerSelection.classList.add('vertical-tower-selection');
             leftPanel.appendChild(towerSelection);
+            console.log("Moved tower selection to left panel");
         }
         
-        // Move game controls to the left panel
         if (gameControls && gameControls.parentNode !== leftPanel) {
             gameControls.classList.add('vertical-game-controls');
             leftPanel.appendChild(gameControls);
+            console.log("Moved game controls to left panel");
         }
         
-        // Move game info to the left panel
         if (gameInfo && gameInfo.parentNode !== leftPanel) {
             leftPanel.appendChild(gameInfo);
+            console.log("Moved game info to left panel");
         }
         
         // Set grid layout
         gameContainer.style.display = 'grid';
-        gameContainer.style.gridTemplateColumns = 'auto 1fr auto';
+        gameContainer.style.gridTemplateColumns = 'minmax(150px, 20%) minmax(auto, 60%) minmax(180px, 20%)';
         gameContainer.style.gridTemplateRows = 'auto 1fr';
         gameContainer.style.gridTemplateAreas = 
             '"header header header" ' +
@@ -147,15 +200,20 @@
         sudokuBoard.style.width = '100%';
         sudokuBoard.style.height = 'auto';
         
-        // Toggle mission control button
+        // Setup mission control toggle
         setupMissionControlToggle();
         
         // Fix sizing for all cells
         fixSudokuBoardLayout();
+        
+        console.log("Layout rearrangement complete");
     }
     
-    // Setup toggle for mission control
+    /**
+     * Setup toggle for mission control
+     */
     function setupMissionControlToggle() {
+        console.log("Setting up mission control toggle...");
         const toggleMission = document.getElementById('toggle-mission');
         if (toggleMission) {
             toggleMission.addEventListener('click', function() {
@@ -167,75 +225,92 @@
                         missionControl.style.display = 'none';
                         rightPanel.style.display = 'none';
                         missionControlVisible = false;
+                        console.log("Mission control hidden");
                     } else {
                         missionControl.style.display = 'block';
                         rightPanel.style.display = 'block';
                         missionControlVisible = true;
+                        console.log("Mission control shown");
                     }
                 }
             });
+            console.log("Mission control toggle setup complete");
+        } else {
+            console.warn("Mission control toggle button not found");
         }
     }
     
-    // Fix Sudoku board layout specifically for Steam Deck
+    /**
+     * Fix Sudoku board layout for Steam Deck
+     */
     function fixSudokuBoardLayout() {
+        console.log("Fixing Sudoku board layout...");
         const sudokuBoard = document.getElementById('sudoku-board');
-        if (!sudokuBoard) return;
+        if (!sudokuBoard) {
+            console.error("Sudoku board not found");
+            return;
+        }
         
         // Make sure the board is square
         const boardSize = Math.min(
             sudokuBoard.offsetWidth,
-            window.innerHeight * 0.7 // Max 70% of viewport height
+            window.innerHeight * 0.7
         );
         
         sudokuBoard.style.width = `${boardSize}px`;
         sudokuBoard.style.height = `${boardSize}px`;
+        console.log("Set board size to:", boardSize);
         
         // Calculate cell height
         const cellHeight = Math.floor(boardSize / 9);
         
         // Adjust cells to fit properly
         const cells = sudokuBoard.querySelectorAll('.sudoku-cell');
+        console.log(`Found ${cells.length} cells`);
         cells.forEach(cell => {
             cell.style.height = `${cellHeight}px`;
             cell.style.width = `${cellHeight}px`;
         });
         
-        // Fix font size issues within cells
         // Dynamically adjust font size based on cell dimensions
-        const idealFontSize = Math.max(16, Math.min(cellHeight * 0.6, 24)); // Min 16px, Max 24px
+        const idealFontSize = Math.max(16, Math.min(cellHeight * 0.6, 24));
         cells.forEach(cell => {
             cell.style.fontSize = `${idealFontSize}px`;
         });
+        console.log("Cell sizing complete. Font size:", idealFontSize);
     }
     
+    /**
+     * Apply optimizations based on orientation
+     */
     function applyOrientationOptimizations() {
+        console.log("Applying orientation optimizations...");
         const isLandscape = window.innerWidth > window.innerHeight;
         
         if (isLandscape) {
             document.body.classList.add('landscape');
             document.body.classList.remove('portrait');
+            console.log("Applied landscape mode");
         } else {
             document.body.classList.add('portrait');
             document.body.classList.remove('landscape');
+            console.log("Applied portrait mode");
         }
         
-        // Adjust for orientation
-        const leftPanel = document.getElementById('left-panel');
-        const centerPanel = document.getElementById('center-panel');
-        const rightPanel = document.getElementById('right-panel');
+        // Adjust layout based on orientation
         const gameContainer = document.getElementById('game-container');
         
         if (isLandscape) {
             if (gameContainer) {
-                gameContainer.style.gridTemplateColumns = 'auto 1fr auto';
+                gameContainer.style.gridTemplateColumns = 'minmax(150px, 20%) minmax(auto, 60%) minmax(180px, 20%)';
                 gameContainer.style.gridTemplateRows = 'auto 1fr';
                 gameContainer.style.gridTemplateAreas = 
                     '"header header header" ' +
                     '"left-panel center-panel right-panel"';
+                console.log("Applied landscape grid layout");
             }
         } else {
-            // Portrait mode (rare on Steam Deck but possible)
+            // Portrait mode
             if (gameContainer) {
                 gameContainer.style.gridTemplateColumns = '1fr';
                 gameContainer.style.gridTemplateRows = 'auto auto 1fr auto';
@@ -244,16 +319,19 @@
                     '"center-panel" ' +
                     '"right-panel" ' +
                     '"left-panel"';
+                console.log("Applied portrait grid layout");
             }
         }
         
         // Fix sizing after orientation change
-        fixSudokuBoardLayout();
+        setTimeout(fixSudokuBoardLayout, 100);
     }
     
-    // Setup touch input optimization
+    /**
+     * Setup touch input optimizations
+     */
     function setupTouchOptimizations() {
-        // Add touch input class to enable larger tap targets
+        console.log("Setting up touch optimizations...");
         document.body.classList.add('touch-input-active');
         
         // Prevent double tap to zoom
@@ -286,21 +364,27 @@
         towerOptions.forEach(option => {
             option.classList.add('touch-friendly');
         });
+        console.log("Touch optimizations complete");
     }
     
-    // Zoom functionality for Steam Deck
+    /**
+     * Setup zoom controls
+     */
     function setupZoomControls() {
+        console.log("Setting up zoom controls...");
         const zoomIn = document.getElementById('zoom-in');
         const zoomOut = document.getElementById('zoom-out');
-        const toggleMission = document.getElementById('toggle-mission');
         
         if (zoomIn) {
             zoomIn.addEventListener('click', function() {
                 if (currentZoom < maxZoom) {
                     currentZoom += zoomIncrement;
                     applyZoom();
+                    console.log("Zoomed in to:", currentZoom);
                 }
             });
+        } else {
+            console.warn("Zoom-in button not found");
         }
         
         if (zoomOut) {
@@ -308,21 +392,34 @@
                 if (currentZoom > minZoom) {
                     currentZoom -= zoomIncrement;
                     applyZoom();
+                    console.log("Zoomed out to:", currentZoom);
                 }
             });
+        } else {
+            console.warn("Zoom-out button not found");
         }
+        console.log("Zoom controls setup complete");
     }
     
+    /**
+     * Apply zoom level to sudoku board
+     */
     function applyZoom() {
+        console.log("Applying zoom level:", currentZoom);
         const sudokuBoard = document.getElementById('sudoku-board');
         if (sudokuBoard) {
             sudokuBoard.style.transform = `scale(${currentZoom})`;
             sudokuBoard.style.transformOrigin = 'center center';
+        } else {
+            console.error("Sudoku board not found for zoom application");
         }
     }
     
-    // Fix for specific UI elements
+    /**
+     * Optimize UI elements for Steam Deck
+     */
     function optimizeUIElements() {
+        console.log("Optimizing UI elements...");
         // Make game controls more touch-friendly
         const buttons = document.querySelectorAll('#game-controls button');
         buttons.forEach(button => {
@@ -349,10 +446,14 @@
                 el.style.height = '10px';
             }
         });
+        console.log("UI elements optimized");
     }
     
-    // Listen for resizing to adjust the layout dynamically
+    /**
+     * Handle resize events
+     */
     function handleResize() {
+        console.log("Handling resize event");
         if (document.body.classList.contains('steam-deck')) {
             applyOrientationOptimizations();
             fixSudokuBoardLayout();
@@ -360,14 +461,18 @@
         }
     }
     
-    // Watch for phase changes in the game
+    /**
+     * Watch for phase changes
+     */
     function watchForPhaseChanges() {
+        console.log("Setting up phase change watcher...");
         // Use MutationObserver to watch for changes to the phase indicator
         const phaseIndicator = document.getElementById('phase-indicator');
         if (phaseIndicator) {
             const observer = new MutationObserver(function(mutations) {
                 // When phase changes, readjust the layout
                 if (document.body.classList.contains('steam-deck')) {
+                    console.log("Phase change detected, readjusting layout");
                     // Wait a moment for the UI to update
                     setTimeout(handleResize, 100);
                 }
@@ -378,16 +483,24 @@
                 characterData: true,
                 subtree: true
             });
+            console.log("Phase change observer installed");
+        } else {
+            console.warn("Phase indicator not found for observation");
         }
     }
     
-    // Handle display option selection in setup menu
+    /**
+     * Setup display options in the settings menu
+     */
     function setupDisplayOptions() {
+        console.log("Setting up display options...");
         const displayOptions = document.querySelectorAll('[data-option="display"]');
         displayOptions.forEach(option => {
             option.addEventListener('click', function() {
                 const value = this.getAttribute('data-value');
                 const tooltipEl = document.getElementById('display-tooltip');
+                
+                console.log("Display option selected:", value);
                 
                 // Update tooltip text
                 if (tooltipEl) {
@@ -414,16 +527,22 @@
                     
                     // Restore original layout
                     restoreOriginalLayout();
+                    console.log("Reverted to normal mode");
                     
                 } else if (!document.body.classList.contains('steam-deck') && value === 'steam-deck') {
                     applySteamDeckMode();
+                    console.log("Applied Steam Deck mode from display options");
                 }
             });
         });
+        console.log("Display options setup complete");
     }
     
-    // Restore original layout
+    /**
+     * Restore the original layout
+     */
     function restoreOriginalLayout() {
+        console.log("Restoring original layout...");
         // Get key elements
         const gameContainer = document.getElementById('game-container');
         const sudokuBoard = document.getElementById('sudoku-board');
@@ -435,7 +554,10 @@
         const centerPanel = document.getElementById('center-panel');
         const rightPanel = document.getElementById('right-panel');
         
-        if (!gameContainer) return;
+        if (!gameContainer) {
+            console.error("Game container not found");
+            return;
+        }
         
         // Reset game container styles
         gameContainer.style.display = 'flex';
@@ -451,6 +573,7 @@
             sudokuBoard.style.height = 'auto';
             sudokuBoard.style.transform = 'scale(1)';
             sudokuBoard.style.aspectRatio = '1';
+            console.log("Moved sudoku board back to container");
         }
         
         if (missionControl) {
@@ -459,25 +582,30 @@
             missionControl.style.position = 'absolute';
             missionControl.style.right = '20px';
             missionControl.style.top = '100px';
+            console.log("Moved mission control back to container");
         }
         
         if (towerSelection) {
             gameContainer.appendChild(towerSelection);
             towerSelection.classList.remove('vertical-tower-selection');
+            console.log("Moved tower selection back to container");
         }
         
         if (gameControls) {
             gameContainer.appendChild(gameControls);
             gameControls.classList.remove('vertical-game-controls');
+            console.log("Moved game controls back to container");
         }
         
         if (gameInfo) {
             gameContainer.appendChild(gameInfo);
+            console.log("Moved game info back to container");
         }
         
         // Remove panels if they exist
         if (leftPanel) {
             leftPanel.remove();
+            console.log("Removed left panel");
         }
         
         if (centerPanel && centerPanel.parentNode === gameContainer) {
@@ -486,10 +614,12 @@
                 gameContainer.appendChild(centerPanel.firstChild);
             }
             centerPanel.remove();
+            console.log("Removed center panel");
         }
         
         if (rightPanel) {
             rightPanel.remove();
+            console.log("Removed right panel");
         }
         
         // Reset all tower options
@@ -511,178 +641,46 @@
         cells.forEach(cell => {
             cell.style = ''; // Clear inline styles
         });
+        
+        console.log("Original layout restoration complete");
     }
     
-    // Setup Steam Deck controller support
-    function setupControllerSupport() {
-        let gamepadInterval;
-        
-        function startGamepadPolling() {
-            if (gamepadInterval) return;
-            
-            gamepadInterval = setInterval(() => {
-                const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-                const gamepad = gamepads[0]; // Use first gamepad
-                
-                if (!gamepad) return;
-                
-                // A button - Start Wave
-                if (gamepad.buttons[0].pressed) {
-                    const startWaveBtn = document.getElementById('start-wave');
-                    if (startWaveBtn && getComputedStyle(startWaveBtn).display !== 'none') {
-                        startWaveBtn.click();
-                    }
-                }
-                
-                // B button - Pause
-                if (gamepad.buttons[1].pressed) {
-                    const pauseBtn = document.getElementById('pause-game');
-                    if (pauseBtn) {
-                        pauseBtn.click();
-                    }
-                }
-                
-                // Use D-pad or left stick for tower selection
-                let dpadDirection = null;
-                
-                // Check D-pad
-                if (gamepad.buttons[12].pressed) dpadDirection = "up";
-                else if (gamepad.buttons[13].pressed) dpadDirection = "down";
-                else if (gamepad.buttons[14].pressed) dpadDirection = "left";
-                else if (gamepad.buttons[15].pressed) dpadDirection = "right";
-                
-                // Check analog stick if no D-pad input
-                if (!dpadDirection) {
-                    const threshold = 0.5;
-                    if (gamepad.axes[1] < -threshold) dpadDirection = "up";
-                    else if (gamepad.axes[1] > threshold) dpadDirection = "down";
-                    else if (gamepad.axes[0] < -threshold) dpadDirection = "left";
-                    else if (gamepad.axes[0] > threshold) dpadDirection = "right";
-                }
-                
-                // Handle tower selection with D-pad/analog
-                if (dpadDirection) {
-                    const selectedTower = document.querySelector('.tower-option.selected');
-                    const allTowers = Array.from(document.querySelectorAll('.tower-option'));
-                    
-                    if (allTowers.length) {
-                        let currentIndex = selectedTower ? allTowers.indexOf(selectedTower) : -1;
-                        
-                        // In vertical layout, up/down need to be primary controls
-                        if (document.body.classList.contains('steam-deck')) {
-                            switch (dpadDirection) {
-                                case "up":
-                                case "left":
-                                    currentIndex = (currentIndex - 1 + allTowers.length) % allTowers.length;
-                                    break;
-                                case "down":
-                                case "right":
-                                    currentIndex = (currentIndex + 1) % allTowers.length;
-                                    break;
-                            }
-                        } else {
-                            // Original horizontal layout
-                            switch (dpadDirection) {
-                                case "right":
-                                    currentIndex = (currentIndex + 1) % allTowers.length;
-                                    break;
-                                case "left":
-                                    currentIndex = (currentIndex - 1 + allTowers.length) % allTowers.length;
-                                    break;
-                                case "up":
-                                    currentIndex = (currentIndex - 3 + allTowers.length) % allTowers.length;
-                                    break;
-                                case "down":
-                                    currentIndex = (currentIndex + 3) % allTowers.length;
-                                    break;
-                            }
-                        }
-                        
-                        if (currentIndex >= 0) {
-                            // Remove selected class from all
-                            allTowers.forEach(t => t.classList.remove('selected'));
-                            // Add to new selected
-                            allTowers[currentIndex].classList.add('selected');
-                            allTowers[currentIndex].click();
-                        }
-                    }
-                }
-            }, 100);
-        }
-        
-        // Listen for gamepad connections
-        window.addEventListener('gamepadconnected', function(e) {
-            console.log("Gamepad connected:", e.gamepad.id);
-            if (document.body.classList.contains('steam-deck')) {
-                startGamepadPolling();
-            }
-        });
-        
-        window.addEventListener('gamepaddisconnected', function(e) {
-            console.log("Gamepad disconnected");
-            if (gamepadInterval) {
-                clearInterval(gamepadInterval);
-                gamepadInterval = null;
-            }
-        });
-        
-        // Start polling if a gamepad is already connected
-        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-        if (gamepads[0] && document.body.classList.contains('steam-deck')) {
-            startGamepadPolling();
-        }
-    }
-    
-    // Initialize Steam Deck optimizations
-    function init() {
-        // Check if user selected Steam Deck mode or if auto-detection matches
-        const savedDisplayMode = localStorage.getItem('display-mode');
-        const isSteamDeck = detectSteamDeck();
-        
-        if (savedDisplayMode === 'steam-deck' || (savedDisplayMode !== 'normal' && isSteamDeck)) {
+    /**
+     * Toggle Steam Deck mode
+     * @param {boolean} enable - Whether to enable Steam Deck mode
+     */
+    function toggleSteamDeckMode(enable) {
+        console.log("Toggling Steam Deck mode:", enable);
+        if (enable) {
             applySteamDeckMode();
-            
-            // Setup all the other optimizations
-            setupZoomControls();
-            optimizeUIElements();
-            setupControllerSupport();
-            
-            // Add resize listener
-            window.addEventListener('resize', handleResize);
-            
-            // Run initial adjustments after a slight delay to ensure everything is rendered
-            setTimeout(handleResize, 100);
+            localStorage.setItem('display-mode', 'steam-deck');
+        } else {
+            restoreOriginalLayout();
+            document.body.classList.remove('steam-deck');
+            const controls = document.querySelector('.steam-deck-controls');
+            if (controls) {
+                controls.style.display = 'none';
+            }
+            localStorage.setItem('display-mode', 'normal');
         }
-        
-        // Setup display options in settings menu
-        setupDisplayOptions();
-        
-        // Watch for phase changes to readjust the layout
-        watchForPhaseChanges();
-        
-        console.log("Steam Deck optimization module initialized");
     }
     
-    // Wait for DOM to be ready
-    document.addEventListener('DOMContentLoaded', init);
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM loaded, initializing Steam Deck module");
+        init();
+    });
     
-    // Expose public methods
-    window.SteamDeckOptimizer = {
-        toggleSteamDeckMode: function(enable) {
-            if (enable) {
-                applySteamDeckMode();
-                localStorage.setItem('display-mode', 'steam-deck');
-            } else {
-                restoreOriginalLayout();
-                document.body.classList.remove('steam-deck');
-                const controls = document.querySelector('.steam-deck-controls');
-                if (controls) {
-                    controls.style.display = 'none';
-                }
-                localStorage.setItem('display-mode', 'normal');
-            }
-        },
+    // Public API
+    return {
+        init,
+        applySteamDeckMode,
+        rearrangeLayout,
+        toggleSteamDeckMode,
         isSteamDeck: detectSteamDeck,
         fixLayout: handleResize
     };
 })();
+
+// Make module available globally
+window.SteamDeckModule = SteamDeckModule;
