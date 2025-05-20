@@ -2,9 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Updated viewport meta tag with optimal settings for Steam Deck -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sudoku Tower Defense</title>
     <link rel="stylesheet" href="css/styles.css">
+    <!-- Add the Steam Deck specific CSS -->
+    <link rel="stylesheet" href="css/steam-deck.css">
 </head>
 <body>
     <h1>Sudoku Tower Defense</h1>
@@ -40,6 +43,19 @@
             </div>
         </div>
         
+        <div class="setup-section">
+            <h3>Display Options</h3>
+            <div class="option-container">
+                <div class="option-group">
+                    <button class="setup-option active" data-option="display" data-value="normal">Normal</button>
+                    <button class="setup-option" data-option="display" data-value="steam-deck">Steam Deck</button>
+                </div>
+                <div class="option-tooltip" id="display-tooltip">
+                    Steam Deck: Optimized layout for Steam Deck's display.
+                </div>
+            </div>
+        </div>
+        
         <button id="start-game-btn" class="start-game-button">Start Game</button>
     </div>
 </div>
@@ -49,36 +65,34 @@
             <div id="score">Score: <span id="score-value">0</span></div>
             <div id="lives">Lives: <span id="lives-value">3</span></div>
             <div id="wave">Wave: <span id="wave-value">1</span></div>
-            
         </div>
 
         <div id="sudoku-board"></div>
         
-       <!-- 
-  Update the tower selection section in index.html with these tooltips
-  that explain the special powers of each tower 
--->
-<div id="tower-selection">
-  <div class="tower-option" data-tower-type="1" title="Rapid Tower: Fast-firing with 3x attack speed but lower damage">1️⃣</div>
-  <div class="tower-option" data-tower-type="2" title="Slowing Tower: Reduces enemy speed by 30% for 3 seconds">2️⃣</div>
-  <div class="tower-option" data-tower-type="3" title="Splash Tower: Damages multiple enemies in a small radius">3️⃣</div>
-  <div class="tower-option" data-tower-type="4" title="Poison Tower: Applies damage over time effect">4️⃣</div>
-  <div class="tower-option" data-tower-type="5" title="Pierce Tower: Effective against armored enemies">5️⃣</div>
-  <div class="tower-option" data-tower-type="6" title="Stun Tower: 25% chance to freeze enemies for 1 second">6️⃣</div>
-  <div class="tower-option" data-tower-type="7" title="Gambling Tower: Random chance for bonus damage or currency">7️⃣</div>
-  <div class="tower-option" data-tower-type="8" title="Sniper Tower: Long range with 20% chance for critical hits">8️⃣</div>
-  <div class="tower-option" data-tower-type="9" title="Support Tower: Boosts damage of adjacent towers by 20%">9️⃣</div>
-</div>
+        <div id="mission-control">
+            <h3>Mission Control</h3>
+            <ul id="mission-tips">
+                <li>Scanning board...</li>
+            </ul>
+        </div>
+        
+        <div id="tower-selection">
+          <div class="tower-option" data-tower-type="1" title="Rapid Tower: Fast-firing with 3x attack speed but lower damage">1️⃣</div>
+          <div class="tower-option" data-tower-type="2" title="Slowing Tower: Reduces enemy speed by 30% for 3 seconds">2️⃣</div>
+          <div class="tower-option" data-tower-type="3" title="Splash Tower: Damages multiple enemies in a small radius">3️⃣</div>
+          <div class="tower-option" data-tower-type="4" title="Poison Tower: Applies damage over time effect">4️⃣</div>
+          <div class="tower-option" data-tower-type="5" title="Pierce Tower: Effective against armored enemies">5️⃣</div>
+          <div class="tower-option" data-tower-type="6" title="Stun Tower: 25% chance to freeze enemies for 1 second">6️⃣</div>
+          <div class="tower-option" data-tower-type="7" title="Gambling Tower: Random chance for bonus damage or currency">7️⃣</div>
+          <div class="tower-option" data-tower-type="8" title="Sniper Tower: Long range with 20% chance for critical hits">8️⃣</div>
+          <div class="tower-option" data-tower-type="9" title="Support Tower: Boosts damage of adjacent towers by 20%">9️⃣</div>
+        </div>
+        
         <div id="game-info">
             <div>Currency: <span id="currency-value">100</span></div>
             <div id="status-message">Place towers to defend against enemies!</div>
         </div>
-        <div id="mission-control">
-    <h3>Mission Control</h3>
-    <ul id="mission-tips">
-        <li>Scanning board...</li>
-    </ul>
-</div>
+        
         <!-- Game controls section -->
         <div id="game-controls">
             <button id="start-wave">Start Wave</button>
@@ -93,11 +107,20 @@
             <button id="new-game">New Game</button>
         </div>
     </div>
-<p></p>
-<p></p>
-<p>Made by YanniMakes </p>
-<p></p>
-<p></p>
+
+    <!-- Optional floating controls for Steam Deck -->
+    <div class="steam-deck-controls" style="display: none;">
+        <button class="steam-deck-control-btn" id="zoom-in">+</button>
+        <button class="steam-deck-control-btn" id="zoom-out">-</button>
+        <button class="steam-deck-control-btn" id="toggle-mission">i</button>
+    </div>
+    <!-- The floating Start Wave button is added dynamically by the JS -->
+
+    <!-- Simplified footer for Steam Deck -->
+    <div class="footer" style="text-align: center; margin-top: 10px;">
+        <p>Made by YanniMakes</p>
+    </div>
+
     <!-- Load the modules in the correct order -->
 <script src="js/events.js"></script>
 <script src="js/phase-manager.js"></script>
@@ -123,12 +146,23 @@
 <script src="js/sudoku-board-select.js"></script>
 
 <script src="js/setup-ui.js"></script>
+
+<!-- Add Steam Deck specific JS -->
+<script src="js/steam-deck.js"></script>
+
 <script src="js/init.js"></script> <!-- This initializes everything -->
 
 
 <!-- Force ability system initialization -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // Detect if we're on Steam Deck (rough approximation)
+    const isSteamDeck = window.innerWidth <= 1280 && window.innerHeight <= 800;
+    if (isSteamDeck) {
+      document.body.classList.add('steam-deck');
+      document.querySelector('.steam-deck-controls').style.display = 'flex';
+    }
+    
     setTimeout(function() {
       if (window.AbilitySystem && typeof AbilitySystem.init === 'function') {
         console.log("Fallback: Forcing AbilitySystem init from index.html");
