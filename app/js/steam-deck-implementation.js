@@ -7,20 +7,30 @@
 (function() {
     // Check if we should apply Steam Deck layout
     // Either explicitly requested or auto-detected by resolution
-    function shouldApplySteamDeckLayout() {
-        // Check for explicit parameter in URL (?steamdeck=1)
-        if (window.location.search.includes('steamdeck=1')) {
-            return true;
-        }
-        
-        // Check for Steam Deck resolution (1280×800) or similar
-        const { width, height } = window.screen;
-        const isNearSteamDeckResolution = 
-            (width <= 1280 && height <= 800) || 
-            (height <= 1280 && width <= 800);
-            
-        return isNearSteamDeckResolution;
+function shouldApplySteamDeckLayout() {
+    // Force layout on for Steam Deck
+    if (navigator.userAgent.toLowerCase().includes('steam') || 
+        navigator.userAgent.toLowerCase().includes('valve')) {
+        return true;
     }
+    
+    // Improved resolution detection (Steam Deck is 1280×800 or 800×1280)
+    const { width, height } = window.screen;
+    const minDim = Math.min(width, height);
+    const maxDim = Math.max(width, height);
+    
+    // Steam Deck resolution check
+    if ((minDim >= 790 && minDim <= 810) && (maxDim >= 1270 && maxDim <= 1290)) {
+        return true;
+    }
+    
+    // URL parameter check (for testing)
+    if (window.location.search.includes('steamdeck=1')) {
+        return true;
+    }
+    
+    return false;
+}
     
     // Main function to apply Steam Deck optimized layout
     function applySteamDeckLayout() {
@@ -296,6 +306,31 @@
         
         return header;
     }
+
+    function fixStartWaveButton() {
+    const startWaveBtn = document.getElementById('start-wave');
+    if (startWaveBtn) {
+        // Remove existing event listeners by cloning
+        const newStartBtn = startWaveBtn.cloneNode(true);
+        startWaveBtn.parentNode.replaceChild(newStartBtn, startWaveBtn);
+        
+        // Add new direct event listener
+        newStartBtn.addEventListener('click', function() {
+            console.log("Start Wave button clicked");
+            if (window.LevelsModule && typeof LevelsModule.startWave === 'function') {
+                LevelsModule.startWave();
+            } else if (window.Game && typeof Game.startWave === 'function') {
+                Game.startWave();
+            } else {
+                console.error("Cannot find startWave function");
+                // Fallback: publish event directly
+                if (window.EventSystem && window.GameEvents) {
+                    EventSystem.publish(GameEvents.WAVE_START);
+                }
+            }
+        });
+    }
+}
     
     function createMissionControl() {
         const missionControl = document.createElement('div');

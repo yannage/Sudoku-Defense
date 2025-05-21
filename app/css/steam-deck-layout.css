@@ -390,3 +390,112 @@ h1 {
 .debug .right-column {
     outline: 1px dashed red;
 }
+
+/* Compact left column styles for Steam Deck */
+body.steam-deck-mode .left-column {
+    padding: 5px;
+    gap: 5px;
+    max-width: 100%;
+}
+
+/* Optimize tower selection */
+body.steam-deck-mode #tower-selection {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    margin: 0 0 5px 0;
+}
+
+body.steam-deck-mode .tower-option {
+    height: 36px;
+    min-height: 36px;
+    font-size: 1.1rem;
+    padding: 0;
+    border-width: 1px;
+}
+
+/* Compact game info */
+body.steam-deck-mode #game-info {
+    margin-top: 0;
+    margin-bottom: 3px;
+}
+
+body.steam-deck-mode #game-info > div {
+    font-size: 0.85rem;
+    margin-bottom: 2px;
+}
+
+body.steam-deck-mode #status-message {
+    font-size: 0.75rem;
+    padding: 3px;
+    min-height: 24px;
+    margin-top: 2px;
+}
+
+/* Compact game controls */
+body.steam-deck-mode #game-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-top: 3px;
+}
+
+body.steam-deck-mode #game-controls button,
+body.steam-deck-mode #game-controls select {
+    padding: 6px 4px;
+    font-size: 0.8rem;
+    min-height: 32px;
+}
+
+/* Make Start Wave button stand out */
+body.steam-deck-mode #start-wave,
+body.steam-deck-mode #start-wave-fixed {
+    grid-column: 1 / -1;
+    background-color: #4CAF50;
+    color: white;
+    font-weight: bold;
+}
+
+/* Compact selectors and other buttons */
+body.steam-deck-mode #font-selector {
+    grid-column: 1 / -1;
+    height: 32px;
+    padding: 5px;
+}
+
+/* Optimize the tower selection numbers */
+body.steam-deck-mode #tower-selection {
+    /* Three columns grid */
+    grid-template-columns: repeat(3, 1fr);
+}
+
+
+/* Optimize mission control for Steam Deck */
+body.steam-deck-mode .right-column {
+    padding: 5px;
+    overflow-y: auto;
+}
+
+body.steam-deck-mode #mission-control {
+    height: auto;
+    max-height: 100%;
+    padding: 8px;
+    font-size: 0.75rem;
+    overflow-y: auto;
+}
+
+body.steam-deck-mode #mission-control h3 {
+    font-size: 0.9rem;
+    margin-top: 0;
+    margin-bottom: 8px;
+    padding-bottom: 3px;
+}
+
+body.steam-deck-mode #mission-tips {
+    padding-left: 15px;
+}
+
+body.steam-deck-mode #mission-tips li {
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
