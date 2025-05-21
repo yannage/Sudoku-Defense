@@ -1,0 +1,289 @@
+/* Character ability visual effects */
+.ability-highlight {
+  animation: ability-highlight-pulse 1s infinite;
+}
+
+.effect-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 15px 30px;
+  border-radius: 10px;
+  text-align: center;
+  z-index: 950;
+  pointer-events: none;
+  animation: effect-fade-in-out 2.5s forwards;
+}
+
+.effect-indicator-title {
+  font-size: 24px;
+  margin-bottom: 5px;
+  color: gold;
+}
+
+.effect-indicator-desc {
+  font-size: 16px;
+}
+
+/* Character-specific effects */
+.phased {
+  opacity: 0.5;
+  filter: brightness(1.5) hue-rotate(180deg);
+}
+
+.frozen {
+  filter: brightness(1.5) sepia(0.5) hue-rotate(180deg);
+  animation: freeze-pulse 1.5s infinite !important;
+}
+
+.temporary-tower {
+  animation: temporary-pulse 1.5s infinite !important;
+}
+
+.support-boosted {
+  box-shadow: 0 0 10px gold;
+}
+
+/* Heat vision highlight effects */
+.heat-vision-highlight-1 {
+  background-color: rgba(76, 175, 80, 0.3) !important;
+  position: relative;
+}
+
+.heat-vision-highlight-2 {
+  background-color: rgba(255, 193, 7, 0.3) !important;
+  position: relative;
+}
+
+.heat-vision-highlight-3 {
+  background-color: rgba(244, 67, 54, 0.3) !important;
+  position: relative;
+}
+
+.heat-vision-highlight-1::after,
+.heat-vision-highlight-2::after,
+.heat-vision-highlight-3::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  animation: heat-pulse 2s infinite;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.heat-vision-highlight-1::after {
+  box-shadow: inset 0 0 8px rgba(76, 175, 80, 0.7);
+}
+
+.heat-vision-highlight-2::after {
+  box-shadow: inset 0 0 8px rgba(255, 193, 7, 0.7);
+}
+
+.heat-vision-highlight-3::after {
+  box-shadow: inset 0 0 8px rgba(244, 67, 54, 0.7);
+}
+
+.cells-remaining {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 1px 3px;
+  border-radius: 3px;
+  font-size: 10px;
+  z-index: 5;
+}
+
+.heat-vision-legend {
+  position: fixed;
+  top: 20%;
+  right: 20px;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 10px;
+  border-radius: 5px;
+  color: white;
+  z-index: 99;
+  font-size: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.legend-color {
+  width: 15px;
+  height: 15px;
+  margin-right: 5px;
+  border-radius: 3px;
+}
+
+.legend-color-1 {
+  background-color: rgba(76, 175, 80, 0.7);
+}
+
+.legend-color-2 {
+  background-color: rgba(255, 193, 7, 0.7);
+}
+
+.legend-color-3 {
+  background-color: rgba(244, 67, 54, 0.7);
+}
+
+/* Speed solver effects */
+.speed-challenge-timer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 64px;
+  color: #ff7043;
+  z-index: 100;
+  opacity: 0.7;
+  text-shadow: 0 0 10px rgba(0,0,0,0.5);
+  pointer-events: none;
+  transition: transform 0.2s;
+}
+
+.speed-challenge-timer.warning {
+  color: #f44336;
+  animation: pulse 0.5s infinite alternate;
+}
+
+.speed-solve-correct {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  color: #4caf50;
+  pointer-events: none;
+  animation: correct-mark 0.5s forwards;
+  z-index: 10;
+}
+
+.speed-solve-stats {
+  position: fixed;
+  top: 30%;
+  right: 20px;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 10px;
+  border-radius: 5px;
+  color: white;
+  z-index: 99;
+  pointer-events: none;
+  font-size: 14px;
+}
+
+.tower-damage-boosted {
+  animation: damage-boost-pulse 2s infinite alternate;
+}
+
+.damage-boost-indicator {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-weight: bold;
+  z-index: 95;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.damage-boost-indicator .boost-icon {
+  color: #ff7043;
+  margin-right: 5px;
+  font-size: 14px;
+}
+
+.damage-boost-indicator .boost-value {
+  color: #ff7043;
+  font-weight: bold;
+}
+
+.damage-boost-indicator .boost-time {
+  margin-left: 5px;
+  opacity: 0.8;
+  font-size: 11px;
+  font-weight: normal;
+}
+
+.damage-boost-indicator.active {
+  border: 1px solid rgba(255, 112, 67, 0.3);
+}
+
+.damage-boost-indicator.active .boost-icon {
+  animation: icon-pulse 1s infinite alternate;
+}
+
+/* Animations for character abilities */
+@keyframes ability-highlight-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+@keyframes freeze-pulse {
+  0% { filter: brightness(1.5) sepia(0.5) hue-rotate(180deg); }
+  50% { filter: brightness(1.7) sepia(0.7) hue-rotate(200deg); }
+  100% { filter: brightness(1.5) sepia(0.5) hue-rotate(180deg); }
+}
+
+@keyframes temporary-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(135, 206, 250, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(135, 206, 250, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(135, 206, 250, 0); }
+}
+
+@keyframes effect-fade-in-out {
+  0% { opacity: 0; transform: translate(-50%, -70%); }
+  10% { opacity: 1; transform: translate(-50%, -50%); }
+  80% { opacity: 1; transform: translate(-50%, -50%); }
+  100% { opacity: 0; transform: translate(-50%, -30%); }
+}
+
+@keyframes heat-pulse {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+  100% { opacity: 0.3; }
+}
+
+@keyframes pulse {
+  from { transform: translate(-50%, -50%) scale(1); }
+  to { transform: translate(-50%, -50%) scale(1.1); }
+}
+
+@keyframes correct-mark {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.5); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+@keyframes damage-boost-pulse {
+  from { filter: drop-shadow(0 0 3px rgba(255, 112, 67, 0.5)); }
+  to { filter: drop-shadow(0 0 8px rgba(255, 112, 67, 0.9)); }
+}
+
+@keyframes icon-pulse {
+  from { opacity: 0.7; }
+  to { opacity: 1; transform: scale(1.1); }
+}

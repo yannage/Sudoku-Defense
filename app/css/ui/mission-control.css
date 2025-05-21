@@ -1,0 +1,36 @@
+#mission-control {
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  padding: 10px;
+  color: white;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+#mission-control h3 {
+  color: #4caf50;
+  margin-top: 0;
+  margin-bottom: 10px;
+  text-align: center;
+  font-size: 18px;
+}
+
+#mission-tips {
+  padding-left: 20px;
+  margin: 0;
+}
+
+#mission-tips li {
+  padding: 8px 0;
+  line-height: 1.4;
+}
+
+#mission-tips .boost-icon {
+  color: #4caf50;
+  margin-right: 5px;
+}
+
+#mission-tips .location {
+  font-weight: bold;
+  color: #4caf50;
+}

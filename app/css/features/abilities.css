@@ -1,0 +1,478 @@
+/* ======================================
+   Ability System Styling
+   ====================================== */
+
+/* === Ability Bar - Positioned at bottom-center with fixed width === */
+.ability-bar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    gap: 10px;
+    z-index: 900;
+    justify-content: center;
+}
+
+.ability-slot {
+    width: 70px;
+    height: 70px;
+    background-color: #333;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.1s;
+    border: 2px solid transparent;
+}
+
+.ability-slot:hover {
+    border-color: white;
+}
+
+.ability-slot.active:hover {
+    transform: scale(1.05);
+}
+
+.ability-slot.active {
+    border-color: gold;
+}
+
+.ability-slot.inactive {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ability-icon {
+    font-size: 24px;
+    margin-bottom: 2px;
+}
+
+.ability-cost {
+    font-size: 12px;
+    color: #aaf;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 2px 5px;
+    border-radius: 10px;
+    position: absolute;
+    bottom: -5px;
+}
+
+.ability-cooldown {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    background-color: rgba(100, 100, 255, 0.3);
+    border-radius: 0 0 8px 8px;
+}
+
+.ability-tooltip {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 12px;
+    white-space: nowrap;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    z-index: 901;
+}
+
+.ability-slot:hover .ability-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* === Mana Bar - Horizontal at bottom-center === */
+.mana-bar-container {
+    position: fixed;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 10px;
+    background-color: #111;
+    border-radius: 5px;
+    overflow: hidden;
+    z-index: 899;
+}
+
+.mana-bar-fill {
+    height: 100%;
+    background-color: #4477ff;
+    transition: width 0.3s;
+}
+
+/* === Experience Bar - Positioned at top-left === */
+.experience-bar {
+    position: fixed;
+    top: 35px;
+    left: 15px;
+    width: 200px;
+    height: 10px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 5px;
+    overflow: hidden;
+    z-index: 899;
+}
+
+.experience-fill {
+    height: 100%;
+    background-color: #4caf50;
+    transition: width 0.3s;
+}
+
+.mana-text, .experience-text {
+    position: fixed;
+    font-size: 12px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    z-index: 900;
+}
+
+.mana-text {
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.experience-text {
+    top: 15px;
+    left: 15px;
+}
+
+.level-up-effect {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(76, 175, 80, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+    z-index: 898;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+/* === Character Indicator - Now positioned at top-right === */
+.character-indicator {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 8px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    color: white;
+    font-size: 12px;
+    z-index: 899;
+}
+
+.character-indicator-icon {
+    font-size: 20px;
+    margin-right: 5px;
+}
+
+/* === Character Selection === */
+.character-selection {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.character-selection-content {
+    background-color: #1a1a1a;
+    border-radius: 10px;
+    padding: 20px;
+    color: white;
+    max-width: 90%;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.character-selection-title {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: gold;
+}
+
+.character-cards {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 15px;
+    padding-bottom: 15px;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+    scrollbar-color: #555 #222;
+}
+
+.character-cards::-webkit-scrollbar {
+    height: 8px;
+}
+
+.character-cards::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 4px;
+}
+
+.character-cards::-webkit-scrollbar-track {
+    background-color: #222;
+    border-radius: 4px;
+}
+
+.character-card {
+    background-color: #333;
+    border-radius: 8px;
+    padding: 15px;
+    min-width: 220px;
+    max-width: 220px;
+    flex: 0 0 auto;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 2px solid transparent;
+    scroll-snap-align: start;
+}
+
+.character-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.character-card.selected {
+    border-color: gold;
+}
+
+.character-icon {
+    font-size: 36px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.character-name {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.character-description {
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 10px;
+    color: #ccc;
+    min-height: 60px;
+}
+
+.character-ability {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 8px;
+    border-radius: 5px;
+}
+
+.character-ability-title {
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.character-ability-icon {
+    margin-right: 5px;
+}
+
+.character-ability-description {
+    font-size: 12px;
+    color: #ccc;
+}
+
+.character-select-button {
+    background-color: gold;
+    color: black;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 20px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.character-select-button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+/* === Visual Effect Classes === */
+.effect-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 10px;
+    text-align: center;
+    z-index: 950;
+    pointer-events: none;
+    animation: fade-in-out 2.5s forwards;
+}
+
+.effect-indicator-title {
+    font-size: 24px;
+    margin-bottom: 5px;
+    color: gold;
+}
+
+.effect-indicator-desc {
+    font-size: 16px;
+}
+
+.damage-flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 0, 0, 0.2);
+    z-index: 950;
+    pointer-events: none;
+    animation: flash 0.3s forwards;
+}
+
+.ability-highlight {
+    animation: highlight-pulse 1s infinite;
+}
+
+.frozen {
+    filter: brightness(1.5) sepia(0.5) hue-rotate(180deg);
+    animation: freeze-pulse 1.5s infinite !important;
+}
+
+.temporary-tower {
+    animation: temporary-pulse 1.5s infinite !important;
+}
+
+/* === Animations === */
+@keyframes highlight-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+@keyframes freeze-pulse {
+    0% { filter: brightness(1.5) sepia(0.5) hue-rotate(180deg); }
+    50% { filter: brightness(1.7) sepia(0.7) hue-rotate(200deg); }
+    100% { filter: brightness(1.5) sepia(0.5) hue-rotate(180deg); }
+}
+
+@keyframes temporary-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(135, 206, 250, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(135, 206, 250, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(135, 206, 250, 0); }
+}
+
+@keyframes fade-in-out {
+    0% { opacity: 0; transform: translate(-50%, -70%); }
+    10% { opacity: 1; transform: translate(-50%, -50%); }
+    80% { opacity: 1; transform: translate(-50%, -50%); }
+    100% { opacity: 0; transform: translate(-50%, -30%); }
+}
+
+@keyframes flash {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* === Mobile Responsiveness === */
+@media (max-width: 768px) {
+    .character-selection-content {
+        padding: 15px;
+        max-height: 90vh;
+    }
+    
+    .character-selection-title {
+        font-size: 20px;
+        margin-bottom: 15px;
+    }
+    
+    .character-card {
+        min-width: 200px;
+        max-width: 200px;
+        padding: 12px;
+    }
+    
+    .character-icon {
+        font-size: 30px;
+    }
+    
+    .character-name {
+        font-size: 16px;
+    }
+    
+    .character-description {
+        font-size: 12px;
+    }
+    
+    .character-ability-title {
+        font-size: 12px;
+    }
+    
+    .character-ability-description {
+        font-size: 10px;
+    }
+    
+    .character-select-button {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+
+    .ability-bar {
+        bottom: 10px;
+        padding: 5px;
+    }
+    
+    .ability-slot {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .mana-bar-container, .experience-bar {
+        height: 10px;
+    }
+}
