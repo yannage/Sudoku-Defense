@@ -5,7 +5,7 @@
  * - Makes Continue button reset game and prompt for new character selection
  */
  
- // Add these variables near the top of your IIFE (after any existing let declarations)
+ // Combo system state
 let comboCount = 0;
 let comboTimer = null;
 let comboBonusMultiplier = 0.2; // 20% bonus per combo level
@@ -300,10 +300,8 @@ let hasCelebrated = false;
     document.head.appendChild(style);
   }
   
-  // Add this function to handle the combo system
-// Updated function to handle the combo system with proper timer
-// Add this to your code to debug the combo system
-function debugComboSystem() {
+  // Debug helper for the combo system
+  function debugComboSystem() {
   console.log("=== COMBO SYSTEM DEBUG ===");
   console.log(`Current combo count: ${comboCount}`);
   console.log(`Max combo reached: ${comboMaxReached}`);
@@ -322,7 +320,6 @@ function debugComboSystem() {
   return "Check browser console for debug info";
 }
 
-// Add this to window for access in console
 window.debugComboSystem = debugComboSystem;
 
 // Modify handleCombo to track timer creation time
@@ -397,7 +394,7 @@ function handleCombo() {
   };
 }
 
-// Add this function to add styles for the combo system
+// Styles for visualizing the combo system
 function addComboStyles() {
   if (document.getElementById('combo-styles')) return;
   
@@ -874,9 +871,8 @@ function showComboMessage(combo) {
   
   // Reset game and prompt for new character
   /**
- * Updates to completion-bonus.js to integrate with PhaseManager
- * Find these functions in your completion-bonus.js file and modify them
- */
+   * Integration with PhaseManager for celebration flow
+   */
 
 // Update this function to work with PhaseManager
 function resetGameAfterCelebration() {
@@ -1255,8 +1251,7 @@ function onUnitCompleted(unitType, unitIndex) {
 }
   
   /**
-   * Add this to your completion-bonus.js file to add lightweight animations
-   * for row, column, and grid completions
+   * Lightweight animations for row, column and grid completions
    */
   
   // === ADD THESE FUNCTIONS INSIDE YOUR MAIN IIFE ===
@@ -1371,7 +1366,7 @@ function addCompletionAnimationStyles() {
       message.remove();
     }, 1500);
   }
-  // Add this function to your code
+  // Styles for lines connecting completed units
 function addConnectedLineStyles() {
   if (document.getElementById('connected-line-styles')) return;
   
@@ -1406,7 +1401,7 @@ function addConnectedLineStyles() {
   document.head.appendChild(style);
 }
 
-// Add this function to your code
+// Draw an animated line connecting completed cells
 function drawConnectingLine(cells, unitType) {
   // Create SVG container
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -1975,8 +1970,6 @@ function animateUnitCompletion(unitType, unitIndex, bonusAmount, comboCount = 1)
   
   // Hook into game events
   // Hook into game events
-  // Add this to the bottom of completion-bonus.js or modify your existing function
-  
   /**
    * Hook into game events with explicit animation calls
    */

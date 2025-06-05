@@ -1958,10 +1958,8 @@ function createDefeatParticles(enemy, enemyEl) {
     }
     
     /**
- * This code needs to be added to make the status effects visible on enemies.
- * Add this to the end of your enemies.js file or at the end of your game.js file
- * where the renderEnemies function is defined.
- */
+     * Visual helpers for enemy status effects
+     */
 
 // Apply status effect visuals to enemies
 function applyStatusEffectsVisuals() {

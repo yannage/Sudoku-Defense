@@ -1,6 +1,5 @@
 /**
  * Game Statistics Screen - Shows player statistics and achievements
- * Add this to your game and incorporate with a "Stats" button in your UI
  */
 
 const StatsScreen = (function() {

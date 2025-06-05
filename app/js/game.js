@@ -1,4 +1,3 @@
-// Add this at the beginning of the Game module to ensure events are properly initialized
 const Game = (function() {
     // Private variables
     let isInitialized = false;
@@ -540,7 +539,6 @@ function setupUIEventListeners() {
 
 /**
  * Add a debug button to the UI (optional)
- * Add this to your game.js file in the setupUIEventListeners function
  */
 // Add debug solution button for development
 function addDebugSolutionButton() {
@@ -730,8 +728,8 @@ document.getElementById('new-game').addEventListener('click', function() {
   });
   
 /**
- * Modify the GameEvents.GAME_OVER subscription in game.js
- * Replace the existing handler with this one in the setupEventListeners function
+ * Handle GameEvents.GAME_OVER by transitioning phases and
+ * saving the final score.
  */
 
 
