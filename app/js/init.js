@@ -27,11 +27,14 @@ body {
 document.head.appendChild(emojiFontStyle);
 
 
-    
-    // First, add the SaveSystem module
-    const saveSystemScript = document.createElement('script');
-    saveSystemScript.innerHTML = SaveSystem.toString().replace('const SaveSystem = ', 'window.SaveSystem = ') + ';';
-    document.head.appendChild(saveSystemScript);
+
+    // Ensure SaveSystem is available
+    if (!window.SaveSystem) {
+        console.warn('SaveSystem not found, attempting to load dynamically');
+        const saveSystemScript = document.createElement('script');
+        saveSystemScript.src = 'js/save-system.js';
+        document.head.appendChild(saveSystemScript);
+    }
     
     // Apply our fixes
     function applyGameFixes() {
