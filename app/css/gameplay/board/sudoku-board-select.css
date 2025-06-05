@@ -13,13 +13,13 @@
 }
 
 /* Tower options when a cell is selected */
-.tower-option.valid-for-cell {
+#tower-selection li.tower-option.valid-for-cell {
   opacity: 1;
   cursor: pointer;
   position: relative;
 }
 
-.tower-option.valid-for-cell::after {
+#tower-selection li.tower-option.valid-for-cell::after {
   content: '';
   position: absolute;
   top: 0;
@@ -32,7 +32,7 @@
   animation: pulse-border 1.5s infinite;
 }
 
-.tower-option.invalid-for-cell {
+#tower-selection li.tower-option.invalid-for-cell {
   opacity: 0.4;
   cursor: not-allowed;
   filter: grayscale(70%);
