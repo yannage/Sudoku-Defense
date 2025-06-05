@@ -825,9 +825,18 @@ h1 {
 /* === Game Controls === */
 #game-controls {
     display: flex;
-    justify-content: center;
-    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
     margin-top: 15px;
+    background-color: var(--dark-bg);
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+#game-controls button,
+#game-controls select {
+    flex: 1;
 }
 
 button {
@@ -1078,6 +1087,7 @@ button:active {
     #game-controls {
         flex-direction: column;
         width: 100%;
+        gap: 0.5rem;
     }
     
     button {

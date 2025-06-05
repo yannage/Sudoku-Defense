@@ -28,6 +28,13 @@
     gap: 1rem;
 }
 
+/* Game control bar */
+#game-controls {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
 .right-column {
     display: none;
 }
@@ -49,6 +56,10 @@
          */
         grid-template-columns: minmax(80px, 10%) 1fr minmax(80px, 10%);
         align-items: start;
+    }
+
+    #game-controls {
+        flex-direction: row;
     }
 
     #sudoku-board {
@@ -129,5 +140,10 @@
     #mission-toggle {
         bottom: 0.5rem;
         right: 0.5rem;
+    }
+
+    #game-controls {
+        flex-direction: column;
+        width: 100%;
     }
 }
