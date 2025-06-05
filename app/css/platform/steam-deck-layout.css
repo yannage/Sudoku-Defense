@@ -90,7 +90,7 @@ h1 {
 }
 
 /* Left column for tower selection and controls */
-.left-column {
+aside.left-column {
     display: flex;
     flex-direction: column;
     background-color: rgba(0, 0, 0, 0.05);
@@ -111,7 +111,7 @@ h1 {
 }
 
 /* Right column for mission control */
-.right-column {
+aside.right-column {
     display: flex;
     flex-direction: column;
     background-color: rgba(0, 0, 0, 0.05);
@@ -283,7 +283,7 @@ h1 {
         grid-template-rows: auto 1fr auto;
     }
     
-    .left-column {
+    aside.left-column {
         grid-row: 3;
         border-right: none;
         border-top: 1px solid #ccc;
@@ -295,7 +295,7 @@ h1 {
         grid-row: 2;
     }
     
-    .right-column {
+    aside.right-column {
         grid-row: 1;
         border-left: none;
         border-bottom: 1px solid #ccc;
@@ -385,14 +385,14 @@ h1 {
 }
 
 /* Debugging outlines - remove in production */
-.debug .left-column,
+.debug aside.left-column,
 .debug .middle-column,
-.debug .right-column {
+.debug aside.right-column {
     outline: 1px dashed red;
 }
 
 /* Compact left column styles for Steam Deck */
-body.steam-deck-mode .left-column {
+body.steam-deck-mode aside.left-column {
     padding: 5px;
     gap: 5px;
     max-width: 100%;
@@ -471,7 +471,7 @@ body.steam-deck-mode #tower-selection {
 
 
 /* Optimize mission control for Steam Deck */
-body.steam-deck-mode .right-column {
+body.steam-deck-mode aside.right-column {
     padding: 5px;
     overflow-y: auto;
 }
