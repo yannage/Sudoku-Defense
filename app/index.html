@@ -152,16 +152,5 @@
 <script src="js/init.js"></script> <!-- This initializes everything -->
 
 
-<!-- Force ability system initialization -->
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-      if (window.AbilitySystem && typeof AbilitySystem.init === 'function') {
-        console.log("Fallback: Forcing AbilitySystem init from index.html");
-        AbilitySystem.init();
-      }
-    }, 1000);
-  });
-</script>
 </body>
 </html>
