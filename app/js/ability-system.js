@@ -763,19 +763,3 @@ window.AbilitySystem = AbilitySystem;
 
 // Log availability
 console.log("AbilitySystem module registered:", !!window.AbilitySystem);
-
-// Auto-initialize after a delay
-document.addEventListener('DOMContentLoaded', function() {
-  console.log("DOM loaded for ability system");
-  
-  // Force display character selection if not shown after a delay
-  setTimeout(function() {
-    console.log("Force checking for character selection");
-    if (!AbilitySystem.getCurrentCharacter()) {
-      console.log("Character not selected, forcing character selection UI");
-      if (typeof AbilitySystem.init === 'function') {
-        AbilitySystem.init();
-      }
-    }
-  }, 1000);
-});
