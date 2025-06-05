@@ -391,35 +391,6 @@ function removeIncorrectTowers() {
   }
 }
 
-// Initialize event listeners for tower-related actions
-function initEventListeners() {
-  // Listen for game initialization
-  EventSystem.subscribe(GameEvents.GAME_INIT, function(options) {
-    init(options);
-  });
-  
-  // Listen for new game
-  EventSystem.subscribe(GameEvents.GAME_START, function() {
-    init();
-  });
-  
-  // Listen for wave completion to remove incorrect towers
-  EventSystem.subscribe(GameEvents.WAVE_COMPLETE, function() {
-    console.log("Wave complete - checking for incorrect towers to remove");
-    removeIncorrectTowers();
-  });
-  
-  // Listen for BoardManager initialization
-  if (window.BoardManager) {
-    EventSystem.subscribe('boardmanager:initialized', function() {
-      console.log("TowersModule: BoardManager initialized, synchronizing state");
-      // Fix any discrepancies between towers and board
-      if (typeof BoardManager.fixBoardDiscrepancies === 'function') {
-        BoardManager.fixBoardDiscrepancies();
-      }
-    });
-  }
-}
 
 // Highlight newly placed towers that don't match the puzzle
 EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
