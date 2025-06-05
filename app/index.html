@@ -77,23 +77,11 @@
 
         <div id="layout-grid">
             <div class="left-column">
-                <div id="tower-selection">
-  <div class="tower-option" data-tower-type="1" title="Rapid Tower: Fast-firing with 3x attack speed but lower damage">1️⃣</div>
-  <div class="tower-option" data-tower-type="2" title="Slowing Tower: Reduces enemy speed by 30% for 3 seconds">2️⃣</div>
-  <div class="tower-option" data-tower-type="3" title="Splash Tower: Damages multiple enemies in a small radius">3️⃣</div>
-  <div class="tower-option" data-tower-type="4" title="Poison Tower: Applies damage over time effect">4️⃣</div>
-  <div class="tower-option" data-tower-type="5" title="Pierce Tower: Effective against armored enemies">5️⃣</div>
-  <div class="tower-option" data-tower-type="6" title="Stun Tower: 25% chance to freeze enemies for 1 second">6️⃣</div>
-  <div class="tower-option" data-tower-type="7" title="Gambling Tower: Random chance for bonus damage or currency">7️⃣</div>
-  <div class="tower-option" data-tower-type="8" title="Sniper Tower: Long range with 20% chance for critical hits">8️⃣</div>
-  <div class="tower-option" data-tower-type="9" title="Support Tower: Boosts damage of adjacent towers by 20%">9️⃣</div>
-                </div>
                 <div id="game-info">
                     <div>Currency: <span id="currency-value">100</span></div>
                     <div id="status-message">Place towers to defend against enemies!</div>
                 </div>
                 <div id="game-controls">
-                    <button id="start-wave">Start Wave</button>
                     <button id="pause-game">Pause</button>
                     <select id="font-selector" title="Change game font">
                         <option value="font-default" class="font-default">Default Font</option>
@@ -107,16 +95,28 @@
             </div>
             <div class="middle-column">
                 <div id="sudoku-board"></div>
-            </div>
-            <div class="right-column">
-                <div id="mission-control">
-    <h3>Mission Control</h3>
-    <ul id="mission-tips">
-        <li>Scanning board...</li>
-    </ul>
+                <div id="tower-selection">
+  <div class="tower-option" data-tower-type="1" title="Rapid Tower: Fast-firing with 3x attack speed but lower damage">1️⃣</div>
+  <div class="tower-option" data-tower-type="2" title="Slowing Tower: Reduces enemy speed by 30% for 3 seconds">2️⃣</div>
+  <div class="tower-option" data-tower-type="3" title="Splash Tower: Damages multiple enemies in a small radius">3️⃣</div>
+  <div class="tower-option" data-tower-type="4" title="Poison Tower: Applies damage over time effect">4️⃣</div>
+  <div class="tower-option" data-tower-type="5" title="Pierce Tower: Effective against armored enemies">5️⃣</div>
+  <div class="tower-option" data-tower-type="6" title="Stun Tower: 25% chance to freeze enemies for 1 second">6️⃣</div>
+  <div class="tower-option" data-tower-type="7" title="Gambling Tower: Random chance for bonus damage or currency">7️⃣</div>
+  <div class="tower-option" data-tower-type="8" title="Sniper Tower: Long range with 20% chance for critical hits">8️⃣</div>
+  <div class="tower-option" data-tower-type="9" title="Support Tower: Boosts damage of adjacent towers by 20%">9️⃣</div>
                 </div>
+                <button id="start-wave" class="next-wave">Next Wave</button>
             </div>
+            <div class="right-column"></div>
         </div>
+        <div id="mission-control" class="overlay">
+            <h3>Mission Control</h3>
+            <ul id="mission-tips">
+                <li>Scanning board...</li>
+            </ul>
+        </div>
+        <button id="mission-toggle" class="mission-toggle">Mission Control</button>
     </div>
 <p></p>
 <p></p>
@@ -154,6 +154,7 @@
 <script src="js/sudoku-board-select.js"></script>
 
 <script src="js/setup-ui.js"></script>
+<script src="js/main-ui-reframe.js"></script>
 <script src="js/init.js"></script> <!-- This initializes everything -->
 <script src="js/test-game-button.js"></script>
 
