@@ -76,10 +76,56 @@ aside.right-column {
 .middle-column #tower-selection {
     width: 100%;
     max-width: 360px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+@media (min-width: 768px) {
+    .middle-column #tower-selection {
+        display: flex;
+    }
 }
 
 .next-wave {
     margin-top: 0.5rem;
+}
+
+#bottom-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    grid-column: 1 / -1;
+}
+
+#bottom-controls #tower-selection li.tower-option {
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .middle-column #tower-selection {
+        display: flex;
+    }
+    #bottom-controls #tower-selection li.tower-option {
+        width: calc(10% - 8px);
+    }
+}
+
+@media (max-width: 480px) {
+    #bottom-controls {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #fff;
+        padding: 0.5rem;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+        z-index: 1000;
+    }
+
+    #game-container {
+        padding-bottom: 140px;
+    }
 }
 
 
