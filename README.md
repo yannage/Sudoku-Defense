@@ -38,3 +38,14 @@ app/
 ```
 
 The `package.json` file includes a `start` script that launches the HTTP server described above.
+
+## Running tests
+
+This project uses [Jest](https://jestjs.io/) for unit testing. After cloning the repository, install dependencies and run:
+
+```bash
+npm install
+npm test
+```
+
+This will execute all test suites located in the `test/` directory.
