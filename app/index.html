@@ -82,7 +82,7 @@
                     <div>Currency: <span id="currency-value">100</span></div>
                     <div id="status-message">Place towers to defend against enemies!</div>
                 </div>
-                <div id="game-controls">
+                <nav id="game-controls">
                     <button id="pause-game">Pause</button>
                     <select id="font-selector" title="Change game font">
                         <option value="font-default" class="font-default">Default Font</option>
@@ -92,21 +92,21 @@
                         <option value="font-modern" class="font-modern">Modern Font</option>
                     </select>
                     <button id="new-game">New Game</button>
-                </div>
+                </nav>
             </aside>
             <div class="middle-column">
                 <div id="sudoku-board"></div>
-                <div id="tower-selection">
-  <div class="tower-option" data-tower-type="1" title="Rapid Tower: Fast-firing with 3x attack speed but lower damage">1️⃣</div>
-  <div class="tower-option" data-tower-type="2" title="Slowing Tower: Reduces enemy speed by 30% for 3 seconds">2️⃣</div>
-  <div class="tower-option" data-tower-type="3" title="Splash Tower: Damages multiple enemies in a small radius">3️⃣</div>
-  <div class="tower-option" data-tower-type="4" title="Poison Tower: Applies damage over time effect">4️⃣</div>
-  <div class="tower-option" data-tower-type="5" title="Pierce Tower: Effective against armored enemies">5️⃣</div>
-  <div class="tower-option" data-tower-type="6" title="Stun Tower: 25% chance to freeze enemies for 1 second">6️⃣</div>
-  <div class="tower-option" data-tower-type="7" title="Gambling Tower: Random chance for bonus damage or currency">7️⃣</div>
-  <div class="tower-option" data-tower-type="8" title="Sniper Tower: Long range with 20% chance for critical hits">8️⃣</div>
-  <div class="tower-option" data-tower-type="9" title="Support Tower: Boosts damage of adjacent towers by 20%">9️⃣</div>
-                </div>
+                <ul id="tower-selection">
+  <li class="tower-option" data-tower-type="1" title="Rapid Tower: Fast-firing with 3x attack speed but lower damage">1️⃣</li>
+  <li class="tower-option" data-tower-type="2" title="Slowing Tower: Reduces enemy speed by 30% for 3 seconds">2️⃣</li>
+  <li class="tower-option" data-tower-type="3" title="Splash Tower: Damages multiple enemies in a small radius">3️⃣</li>
+  <li class="tower-option" data-tower-type="4" title="Poison Tower: Applies damage over time effect">4️⃣</li>
+  <li class="tower-option" data-tower-type="5" title="Pierce Tower: Effective against armored enemies">5️⃣</li>
+  <li class="tower-option" data-tower-type="6" title="Stun Tower: 25% chance to freeze enemies for 1 second">6️⃣</li>
+  <li class="tower-option" data-tower-type="7" title="Gambling Tower: Random chance for bonus damage or currency">7️⃣</li>
+  <li class="tower-option" data-tower-type="8" title="Sniper Tower: Long range with 20% chance for critical hits">8️⃣</li>
+  <li class="tower-option" data-tower-type="9" title="Support Tower: Boosts damage of adjacent towers by 20%">9️⃣</li>
+                </ul>
                 <button id="start-wave" class="next-wave">Next Wave</button>
             </div>
             <aside class="right-column"></aside>
@@ -120,7 +120,6 @@
         </div>
         <button id="mission-toggle" class="mission-toggle">Hide Tips</button>
     </div>
-<p>Made by YanniMakes </p>
     <!-- Load the modules in the correct order -->
 <script src="js/events.js"></script>
 <script src="js/phase-manager.js"></script>
