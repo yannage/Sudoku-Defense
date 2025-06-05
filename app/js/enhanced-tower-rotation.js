@@ -42,39 +42,7 @@ loadEnhancedBarrelSystem();
     
     console.log("Initializing Enhanced Tower Rotation System");
     
-    // Add required styles
-    const style = document.createElement('style');
-    style.textContent = `
-.tower-barrel {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 32px;
-  height: 32px;
-  z-index: 10;
-  transform-origin: center center;
-  transition: transform 0.2s ease-out;
-  pointer-events: none;
-
-  background-image: url("assets/aimsheet3.png");
-  background-size: 96px 96px;
-  background-repeat: no-repeat;
-  image-rendering: pixelated;
-
-  transform: translate(-50%, -50%) scale(1.3); /* 30% larger */
-}
-
-.tower-barrel.attacking {
-  animation: tower-attack-recoil 0.3s ease-out forwards;
-}
-
-@keyframes tower-attack-recoil {
-  0%   { transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1.3); }
-  20%  { transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1.1); }
-  100% { transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1.3); }
-}
-`;
-    document.head.appendChild(style);
+    // Styles are defined in CSS
     
     // Define sprite positions for each tower type
     const spritePositions = {

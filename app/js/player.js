@@ -118,33 +118,10 @@ function showFloatingScoreText(message, color) {
     // Create element for score animation
     const scoreText = document.createElement('div');
     scoreText.textContent = message;
-    scoreText.style.position = 'fixed';
-    scoreText.style.top = '50%';
-    scoreText.style.left = '50%';
-    scoreText.style.transform = 'translate(-50%, -50%)';
+    scoreText.className = 'float-score';
     scoreText.style.color = color;
-    scoreText.style.fontWeight = 'bold';
-    scoreText.style.fontSize = '24px';
-    scoreText.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
-    scoreText.style.zIndex = '9999';
-    scoreText.style.pointerEvents = 'none';
-    scoreText.style.animation = 'score-float 1.5s forwards';
     
     // Add animation style if not already present
-    if (!document.getElementById('score-animation-style')) {
-        const style = document.createElement('style');
-        style.id = 'score-animation-style';
-        style.textContent = `
-            @keyframes score-float {
-                0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-                10% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-                20% { transform: translate(-50%, -50%) scale(1); }
-                80% { opacity: 1; transform: translate(-50%, -80px) scale(1); }
-                100% { opacity: 0; transform: translate(-50%, -100px) scale(0.8); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
     
     document.body.appendChild(scoreText);
     
@@ -327,23 +304,3 @@ window.showFloatingScoreText = showFloatingScoreText;
 window.PlayerModule = PlayerModule;
 
 // Add bonus reward animation styles
-(function() {
-    // Add CSS for bonus reward animations if not already present
-    if (!document.getElementById('bonus-reward-styles')) {
-        const style = document.createElement('style');
-        style.id = 'bonus-reward-styles';
-        style.textContent = `
-            @keyframes bonus-reward-pulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.1); filter: brightness(1.5); }
-                100% { transform: scale(1); }
-            }
-            
-            .bonus-reward {
-                animation: bonus-reward-pulse 0.3s ease-in-out;
-                z-index: 25;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-})();

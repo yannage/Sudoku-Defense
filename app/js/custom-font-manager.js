@@ -71,60 +71,15 @@ const CustomFontManager = (function() {
         fontSection.id = 'custom-font-section';
         fontSection.innerHTML = `
             <button id="toggle-font-upload" class="small-button">Add Custom Font</button>
-            <div id="font-upload-panel" style="display: none;">
+            <div id="font-upload-panel">
                 <input type="file" id="font-file" accept=".ttf,.otf,.woff,.woff2" />
                 <input type="text" id="font-name" placeholder="Font name" maxlength="20" />
                 <button id="upload-font" class="small-button">Upload</button>
             </div>
         `;
         
-        // Add styles
-        const style = document.createElement('style');
-        style.textContent = `
-            #custom-font-section {
-                margin-top: 10px;
-                text-align: center;
-            }
-            
-            .small-button {
-                padding: 5px 10px;
-                background-color: var(--primary-color, #4CAF50);
-                color: white;
-                border: none;
-                border-radius: 4px;
-                font-size: 0.8rem;
-                cursor: pointer;
-                margin: 0 5px;
-            }
-            
-            .small-button:hover {
-                background-color: var(--primary-dark, #3e8e41);
-            }
-            
-            #font-upload-panel {
-                margin-top: 10px;
-                padding: 10px;
-                background-color: #f9f9f9;
-                border-radius: 4px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            }
-            
-            #font-name {
-                padding: 5px;
-                margin: 0 5px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-            }
-            
-            .font-sample {
-                margin-top: 5px;
-                font-size: 1.2em;
-            }
-        `;
-        
         // Insert after font selector
         fontSelector.parentNode.insertBefore(fontSection, fontSelector.nextSibling);
-        document.head.appendChild(style);
     }
     
     /**

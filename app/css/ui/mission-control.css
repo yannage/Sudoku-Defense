@@ -34,3 +34,9 @@
   font-weight: bold;
   color: #4caf50;
 }
+
+#mission-tips .mission-divider {
+  border: none;
+  border-top: 1px solid #444;
+  margin: 5px 0;
+}

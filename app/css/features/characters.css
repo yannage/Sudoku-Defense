@@ -113,6 +113,18 @@
   font-size: 12px;
 }
 
+.heat-vision-title {
+  text-align: center;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.heat-vision-note {
+  font-size: 10px;
+  margin-top: 8px;
+  text-align: center;
+}
+
 .legend-item {
   display: flex;
   align-items: center;

@@ -1,0 +1,20 @@
+@keyframes score-float {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  10% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  20% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; transform: translate(-50%, -80px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -100px) scale(0.8); }
+}
+
+.float-score {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  font-size: 24px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  z-index: 9999;
+  pointer-events: none;
+  animation: score-float 1.5s forwards;
+}

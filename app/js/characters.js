@@ -908,130 +908,6 @@ speedSolver: {
         existingIndicator.remove();
       }
       
-      // Add the CSS for the speed challenge
-      if (!document.getElementById('speed-solver-styles')) {
-        const styles = document.createElement('style');
-        styles.id = 'speed-solver-styles';
-        styles.textContent = `
-          .speed-challenge-timer {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 64px;
-            color: #ff7043;
-            z-index: 100;
-            opacity: 0.7;
-            text-shadow: 0 0 10px rgba(0,0,0,0.5);
-            pointer-events: none;
-            transition: transform 0.2s;
-          }
-          
-          .speed-challenge-timer.warning {
-            color: #f44336;
-            animation: pulse 0.5s infinite alternate;
-          }
-          
-          @keyframes pulse {
-            from { transform: translate(-50%, -50%) scale(1); }
-            to { transform: translate(-50%, -50%) scale(1.1); }
-          }
-          
-          .speed-solve-correct {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            color: #4caf50;
-            pointer-events: none;
-            animation: correct-mark 0.5s forwards;
-            z-index: 10;
-          }
-          
-          @keyframes correct-mark {
-            0% { transform: scale(0.5); opacity: 0; }
-            50% { transform: scale(1.5); opacity: 1; }
-            100% { transform: scale(1); opacity: 0; }
-          }
-          
-          .speed-solve-stats {
-            position: fixed;
-            top: 30%;
-            right: 20px;
-            background-color: rgba(0, 0, 0, 0.6);
-            padding: 10px;
-            border-radius: 5px;
-            color: white;
-            z-index: 99;
-            pointer-events: none;
-            font-size: 14px;
-          }
-          
-          .tower-damage-boosted {
-            animation: damage-boost-pulse 2s infinite alternate;
-          }
-          
-          @keyframes damage-boost-pulse {
-            from { filter: drop-shadow(0 0 3px rgba(255, 112, 67, 0.5)); }
-            to { filter: drop-shadow(0 0 8px rgba(255, 112, 67, 0.9)); }
-          }
-          
-          .damage-boost-indicator {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 15px;
-            font-weight: bold;
-            z-index: 95;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            white-space: nowrap;
-          }
-          
-          .damage-boost-indicator .boost-icon {
-            color: #ff7043;
-            margin-right: 5px;
-            font-size: 14px;
-          }
-          
-          .damage-boost-indicator .boost-value {
-            color: #ff7043;
-            font-weight: bold;
-          }
-          
-          .damage-boost-indicator .boost-time {
-            margin-left: 5px;
-            opacity: 0.8;
-            font-size: 11px;
-            font-weight: normal;
-          }
-          
-          .damage-boost-indicator.active {
-            border: 1px solid rgba(255, 112, 67, 0.3);
-          }
-          
-          .damage-boost-indicator.active .boost-icon {
-            animation: icon-pulse 1s infinite alternate;
-          }
-          
-          @keyframes icon-pulse {
-            from { opacity: 0.7; }
-            to { opacity: 1; transform: scale(1.1); }
-          }
-        `;
-        document.head.appendChild(styles);
-      }
       
       // Create countdown timer UI
       const timerElement = document.createElement('div');
@@ -1233,109 +1109,6 @@ visualizer: {
     icon: "🔍",
     cooldown: 0,
     execute: function() {
-      // Add the CSS for heat vision if not already added
-      if (!document.getElementById('visualizer-styles')) {
-        const styles = document.createElement('style');
-        styles.id = 'visualizer-styles';
-        styles.textContent = `
-          .heat-vision-highlight-1 {
-            background-color: rgba(76, 175, 80, 0.3) !important;
-            position: relative;
-          }
-          
-          .heat-vision-highlight-2 {
-            background-color: rgba(255, 193, 7, 0.3) !important;
-            position: relative;
-          }
-          
-          .heat-vision-highlight-3 {
-            background-color: rgba(244, 67, 54, 0.3) !important;
-            position: relative;
-          }
-          
-          .heat-vision-highlight-1::after,
-          .heat-vision-highlight-2::after,
-          .heat-vision-highlight-3::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            animation: heat-pulse 2s infinite;
-            pointer-events: none;
-            z-index: 4;
-          }
-          
-          .heat-vision-highlight-1::after {
-            box-shadow: inset 0 0 8px rgba(76, 175, 80, 0.7);
-          }
-          
-          .heat-vision-highlight-2::after {
-            box-shadow: inset 0 0 8px rgba(255, 193, 7, 0.7);
-          }
-          
-          .heat-vision-highlight-3::after {
-            box-shadow: inset 0 0 8px rgba(244, 67, 54, 0.7);
-          }
-          
-          @keyframes heat-pulse {
-            0% { opacity: 0.3; }
-            50% { opacity: 0.7; }
-            100% { opacity: 0.3; }
-          }
-          
-          .cells-remaining {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background-color: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 1px 3px;
-            border-radius: 3px;
-            font-size: 10px;
-            z-index: 5;
-          }
-          
-          .heat-vision-legend {
-            position: fixed;
-            top: 20%;
-            right: 20px;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 5px;
-            color: white;
-            z-index: 99;
-            font-size: 12px;
-          }
-          
-          .legend-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 5px;
-          }
-          
-          .legend-color {
-            width: 15px;
-            height: 15px;
-            margin-right: 5px;
-            border-radius: 3px;
-          }
-          
-          .legend-color-1 {
-            background-color: rgba(76, 175, 80, 0.7);
-          }
-          
-          .legend-color-2 {
-            background-color: rgba(255, 193, 7, 0.7);
-          }
-          
-          .legend-color-3 {
-            background-color: rgba(244, 67, 54, 0.7);
-          }
-        `;
-        document.head.appendChild(styles);
-      }
       
       // Get board data from BoardManager
       const board = BoardManager.getBoard();
@@ -1386,14 +1159,14 @@ visualizer: {
       const legendElement = document.createElement('div');
       legendElement.className = 'heat-vision-legend';
       legendElement.innerHTML = `
-        <div style="text-align: center; margin-bottom: 8px; font-weight: bold;">Heat Vision</div>
+        <div class="heat-vision-title">Heat Vision</div>
         ${topUnits.map((unit, i) => `
           <div class="legend-item">
             <div class="legend-color legend-color-${i+1}"></div>
             <div>${unit.type.charAt(0).toUpperCase() + unit.type.slice(1)} ${unit.index}: ${unit.emptyCells} empty</div>
           </div>
         `).join('')}
-        <div style="font-size: 10px; margin-top: 8px;">Heat vision active for 15 seconds</div>
+        <div class="heat-vision-note">Heat vision active for 15 seconds</div>
       `;
       document.body.appendChild(legendElement);
       

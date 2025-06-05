@@ -189,6 +189,11 @@
 .character-indicator-icon {
     font-size: 20px;
     margin-right: 5px;
+    color: var(--character-color);
+}
+
+.character-indicator-name {
+    color: var(--character-color);
 }
 
 /* === Character Selection === */
@@ -278,6 +283,7 @@
     font-size: 36px;
     text-align: center;
     margin-bottom: 10px;
+    color: var(--character-color);
 }
 
 .character-name {
@@ -285,6 +291,7 @@
     font-weight: bold;
     text-align: center;
     margin-bottom: 5px;
+    color: var(--character-color);
 }
 
 .character-description {
@@ -439,10 +446,12 @@
     
     .character-icon {
         font-size: 30px;
+        color: var(--character-color);
     }
     
     .character-name {
         font-size: 16px;
+        color: var(--character-color);
     }
     
     .character-description {
