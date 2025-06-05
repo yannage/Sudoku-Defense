@@ -371,8 +371,7 @@ setTimeout(() => {
 });
 
 /**
- * Add this code to the end of your init.js file, before the final closing brace
- * This initializes the phase manager and fixes the game flow
+ * Initialize the phase manager to keep the game flow consistent
  */
 
 // Initialize the Phase Manager 

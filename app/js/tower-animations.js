@@ -1,6 +1,6 @@
 /**
- * A simplified fix that reverts to the original position calculation but ensures first wave projectiles.
- * Replace your tower-animations.js with this version.
+ * Simplified tower animation logic that restores original
+ * position calculation while ensuring first-wave projectiles.
  */
  
  function getTowerTypeData(towerType) {
@@ -122,9 +122,6 @@ const TowerAnimationsModule = (function() {
      * @param {Object} enemy - The enemy object
      * @returns {Object} Position {x, y} relative to the board
      */
-/**
- * Drop this function into your tower-animations.js file to replace the current calculateEnemyPosition function
- */
 function calculateEnemyPosition(enemy) {
     // Check if enemy has direct x,y coordinates
     if (enemy && typeof enemy.x === 'number' && typeof enemy.y === 'number') {
@@ -608,7 +605,7 @@ function createHitEffect(projectile, effectType) {
     };
 })();
 
-// Add this to window for global access
+// Expose the module globally
 window.TowerAnimationsModule = TowerAnimationsModule;
 
 // Add CSS styles for tower attack animations

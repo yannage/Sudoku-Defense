@@ -358,11 +358,11 @@ const AbilitySystem = (function() {
     if (existingIndicator) existingIndicator.remove();
     createCharacterIndicatorUI();
     
-    // Add this to the AbilitySystem.selectCharacter function in ability-system.js
-// Place at the end of the function before the "return true;" line:
-if (window.EventSystem) {
-  EventSystem.publish('character:selected', characterId);
-}
+
+    // Notify other modules that the character was selected
+    if (window.EventSystem) {
+        EventSystem.publish('character:selected', characterId);
+    }
   
     
     return true;
@@ -590,13 +590,9 @@ if (window.EventSystem) {
     return false;
   }
   /**
- * Simple fix for abilities not triggering completion bonuses
- * 
- * Just update the placeTowerWithBoardSync function to explicitly check
- * for completions after placing a tower.
- */
-
-// Replace the existing placeTowerWithBoardSync function with this improved version
+   * Place a tower while keeping the board state in sync and
+   * checking for unit completions.
+   */
 function placeTowerWithBoardSync(value, row, col, options = {}) {
   const boardManager = window.BoardManager;
   const towersModule = window.TowersModule;

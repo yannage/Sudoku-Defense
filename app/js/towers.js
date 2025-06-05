@@ -9,11 +9,10 @@ const TowersModule = (function() {
     let towerId = 0;
     let cellSize = 0;
     
-    // Tower types with their properties - ENHANCED DAMAGE VERSION
+    // Tower types with their properties - enhanced version
   /**
- * Tower types with specialized behaviors
- * Replace the existing towerTypes object in towers.js with this enhanced version
- */
+   * Tower types with specialized behaviors
+   */
 const towerTypes = {
   // 1: Fast-firing "machine gun" towers with low damage but high attack speed
   1: {
@@ -155,54 +154,13 @@ const towerTypes = {
     }
     
     /**
-     * Create a new tower
+     * Create a new tower. Allows placement that may violate Sudoku rules so
+     * incorrect towers can be removed later.
      * @param {number|string} type - Tower type
      * @param {number} row - Row index on the grid
      * @param {number} col - Column index on the grid
      * @returns {Object|null} The created tower or null if creation failed
      */
-    /**
- * Update for the TowersModule to allow strategic placement of towers
- * that violate Sudoku rules.
- */
-
-/**
- * Create a new tower
- * @param {number|string} type - Tower type
- * @param {number} row - Row index on the grid
- * @param {number} col - Column index on the grid
- * @returns {Object|null} The created tower or null if creation failed
- */
-/**
- * Create a new tower
- * @param {number|string} type - Tower type
- * @param {number} row - Row index on the grid
- * @param {number} col - Column index on the grid
- * @returns {Object|null} The created tower or null if creation failed
- */
-/**
- * Create a new tower
- * @param {number|string} type - Tower type
- * @param {number} row - Row index on the grid
- * @param {number} col - Column index on the grid
- * @returns {Object|null} The created tower or null if creation failed
- */
-/**
- * Create a new tower with improved validation and UI updates
- * @param {number|string} type - Tower type
- * @param {number} row - Row index on the grid
- * @param {number} col - Column index on the grid
- * @returns {Object|null} The created tower or null if creation failed
- */
-/**
- * Add this code to your TowersModule to fix incorrect tower removal
- * Place these functions inside the TowersModule IIFE
- */
-
-/**
- * Tracking recent tower placements to influence enemy paths
- * Add this to the createTower function in TowersModule
- */
 function createTower(type, row, col, options = {}) {
     const { free = false } = options;
     console.log(`Creating tower: Type=${type}, Position=(${row},${col})`);
@@ -320,7 +278,7 @@ function createTower(type, row, col, options = {}) {
             window.recentTowerPlacements = [];
         }
         
-        // Add this placement to recent towers
+        // Track this placement for path generation
         window.recentTowerPlacements.push({ row, col, type });
         
         // Keep the list manageable (last 5 placements)
@@ -344,7 +302,7 @@ function createTower(type, row, col, options = {}) {
     return tower;
 }
 
-// Replace your removeIncorrectTowers function with this version
+// Remove any towers that don't match the Sudoku solution
 function removeIncorrectTowers() {
   console.log("Checking for incorrect towers to remove...");
   console.log(`Currently tracking ${incorrectTowers.size} incorrect towers`);
@@ -433,7 +391,7 @@ function removeIncorrectTowers() {
   }
 }
 
-// Add this to your initEventListeners function or create it if it doesn't exist
+// Initialize event listeners for tower-related actions
 function initEventListeners() {
   // Listen for game initialization
   EventSystem.subscribe(GameEvents.GAME_INIT, function(options) {
@@ -463,7 +421,7 @@ function initEventListeners() {
   }
 }
 
-// Add this to your Event Subscription for better visual indicators
+// Highlight newly placed towers that don't match the puzzle
 EventSystem.subscribe(GameEvents.TOWER_PLACED, function(tower) {
   if (tower && tower.id && incorrectTowers.has(tower.id)) {
     // Add visual indicator for incorrect towers
