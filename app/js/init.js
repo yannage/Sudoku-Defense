@@ -60,22 +60,6 @@ document.head.appendChild(emojiFontStyle);
                         highScoreDiv.innerHTML = 'High Score: <span id="high-score-value">' + highScore + '</span>';
                         gameHeader.appendChild(highScoreDiv);
                         
-                        // Add high score styles if not already present
-                        if (!document.getElementById('high-score-styles')) {
-                            const style = document.createElement('style');
-                            style.id = 'high-score-styles';
-                            style.textContent = `
-                                #high-score {
-                                    color: white;
-                                    font-weight: bold;
-                                }
-                                
-                                #high-score-value {
-                                    color: gold;
-                                }
-                            `;
-                            document.head.appendChild(style);
-                        }
                     }
                 } else {
                     // Update existing high score element
@@ -147,64 +131,67 @@ document.head.appendChild(emojiFontStyle);
         });
         
         // 5. Add level completion modal styles
-        const style = document.createElement('style');
-        style.textContent = `
-            #high-score {
-                color: white;
-                font-weight: bold;
-            }
-            
-            #high-score-value {
-                color: gold;
-            }
-            
-            /* Level complete modal styles */
-            #level-complete-modal {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.7);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 100;
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity 0.3s;
-            }
-            
-            #level-complete-modal.active {
-                opacity: 1;
-                pointer-events: all;
-            }
-            
-            #level-complete-modal .modal-content {
-                background-color: white;
-                padding: 30px;
-                border-radius: 8px;
-                text-align: center;
-                max-width: 80%;
-                transform: translateY(-20px);
-                transition: transform 0.3s;
-            }
-            
-            #level-complete-modal.active .modal-content {
-                transform: translateY(0);
-            }
-            
-            #level-complete-title {
-                color: #4CAF50;
-                margin-bottom: 15px;
-            }
-            
-            #level-complete-score {
-                font-size: 1.2rem;
-                margin-bottom: 20px;
-            }
-        `;
-        document.head.appendChild(style);
+        if (!document.getElementById('high-score-modal-styles')) {
+            const style = document.createElement('style');
+            style.id = 'high-score-modal-styles';
+            style.textContent = `
+                #high-score {
+                    color: white;
+                    font-weight: bold;
+                }
+
+                #high-score-value {
+                    color: gold;
+                }
+
+                /* Level complete modal styles */
+                #level-complete-modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.7);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 100;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.3s;
+                }
+
+                #level-complete-modal.active {
+                    opacity: 1;
+                    pointer-events: all;
+                }
+
+                #level-complete-modal .modal-content {
+                    background-color: white;
+                    padding: 30px;
+                    border-radius: 8px;
+                    text-align: center;
+                    max-width: 80%;
+                    transform: translateY(-20px);
+                    transition: transform 0.3s;
+                }
+
+                #level-complete-modal.active .modal-content {
+                    transform: translateY(0);
+                }
+
+                #level-complete-title {
+                    color: #4CAF50;
+                    margin-bottom: 15px;
+                }
+
+                #level-complete-score {
+                    font-size: 1.2rem;
+                    margin-bottom: 20px;
+                }
+            `;
+            document.head.appendChild(style);
+        }
         
         // 6. Fix LevelsModule to not restart after 5 waves
         // This requires a deeper modification - overriding event handlers
