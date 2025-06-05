@@ -251,6 +251,7 @@ const PhaseManager = (function() {
         if (gameContainer) {
             gameContainer.style.visibility = 'hidden';
             gameContainer.style.opacity = '0';
+            gameContainer.style.display = 'none';
             gameContainer.style.transition = 'opacity 0.3s';
         }
     }
@@ -482,9 +483,10 @@ if (currencyDisplay) {
     function showGameBoard() {
         const gameContainer = document.getElementById('game-container');
         if (gameContainer) {
+            gameContainer.style.display = 'flex';
             gameContainer.style.visibility = 'visible';
             gameContainer.style.opacity = '1';
-            
+
             // Re-render the board to ensure it's visible
             if (window.Game && typeof Game.updateBoard === 'function') {
                 setTimeout(() => {
