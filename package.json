@@ -4,11 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "npx http-server ./app"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs"
+  ,
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
 }
