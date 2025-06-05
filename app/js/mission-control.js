@@ -91,8 +91,7 @@ const MissionControl = (function() {
       if (tip.location) {
         const locationSpan = document.createElement('span');
         locationSpan.textContent = tip.location;
-        locationSpan.style.fontWeight = 'bold';
-        locationSpan.style.color = '#4caf50';
+        locationSpan.className = 'location';
         
         // Replace placeholder with styled location
         li.innerHTML = li.innerHTML.replace(tip.location, locationSpan.outerHTML);
@@ -102,7 +101,9 @@ const MissionControl = (function() {
       
       if (index < selected.length - 1) {
         const divider = document.createElement('li');
-        divider.innerHTML = '<hr style="border: none; border-top: 1px solid #444; margin: 5px 0;">';
+        const hr = document.createElement('hr');
+        hr.className = 'mission-divider';
+        divider.appendChild(hr);
         tipList.appendChild(divider);
       }
     });

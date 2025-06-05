@@ -2046,83 +2046,9 @@ function injectStatusEffectVisuals() {
 }
 
 // Additional CSS for the status effect indicators
-function addStatusEffectStyles() {
-  // Check if styles already exist
-  if (document.getElementById('status-effect-styles')) return;
-  
-  const styles = document.createElement('style');
-  styles.id = 'status-effect-styles';
-  styles.textContent = `
-        /* Poisoned enemy */
-        .enemy.poisoned {
-            box-shadow: 0 0 8px #00ff00 !important;
-            position: relative;
-        }
-        
-        .enemy.poisoned::after {
-            content: "☢️";
-            position: absolute;
-            top: -10px;
-            right: -5px;
-            font-size: 12px;
-            z-index: 35;
-        }
-        
-        /* Slowed enemy */
-        .enemy.slowed {
-            box-shadow: 0 0 8px #00ffff !important;
-            position: relative;
-            filter: brightness(0.7);
-            transition: transform 0.5s !important; /* Make movement visibly slower */
-        }
-        
-        .enemy.slowed::after {
-            content: "🐌";
-            position: absolute;
-            top: -10px;
-            right: -5px;
-            font-size: 12px;
-            z-index: 35;
-        }
-        
-        /* Stunned enemy */
-        .enemy.stunned {
-            box-shadow: 0 0 8px #ffff00 !important;
-            position: relative;
-            animation: shake 0.5s infinite;
-        }
-        
-        .enemy.stunned::after {
-            content: "💫";
-            position: absolute;
-            top: -10px;
-            right: -5px;
-            font-size: 12px;
-            z-index: 35;
-        }
-        
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(3px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(3px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(1px, 2px) rotate(0deg); }
-            100% { transform: translate(1px, -2px) rotate(-1deg); }
-        }
-    `;
-  
-  document.head.appendChild(styles);
-}
 
 // Initialize everything
 (function() {
-  // Add the styles
-  addStatusEffectStyles();
   
   // Set up the visual update system
   injectStatusEffectVisuals();

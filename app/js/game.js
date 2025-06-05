@@ -832,16 +832,6 @@ window.Game = Game;
 
 // Function to add highlighting feature to the game
 (function() {
-    // Add CSS for highlighting
-    const style = document.createElement('style');
-    style.textContent = `
-        .sudoku-cell.number-highlighted {
-            background-color: rgba(135, 206, 250, 0.4) !important; /* Light blue highlight */
-            box-shadow: inset 0 0 0 2px #2196F3; /* Blue border */
-            transition: all 0.2s ease;
-        }
-    `;
-    document.head.appendChild(style);
     
     // Track the currently highlighted number
     let highlightedNumber = null;
@@ -964,39 +954,6 @@ window.Game = Game;
  * This addresses issues with the cell background color and makes the X mark more subtle
  */
 (function() {
-    // Add CSS for the incorrect tower indicators with a more subtle X mark
-    const style = document.createElement('style');
-    style.textContent = `
-        /* Force all existing incorrect tower styles to be overridden */
-        .sudoku-cell.incorrect-tower {
-            background-color: rgba(255, 0, 0, 0.5) !important;
-            box-shadow: inset 0 0 0 2px #ff0000 !important;
-            z-index: 5 !important;
-        }
-        
-        /* Reset any hover effects that might override our styling */
-        .sudoku-cell.incorrect-tower:hover {
-            background-color: rgba(255, 0, 0, 0.6) !important;
-        }
-        
-        /* Make X mark semi-transparent so the tower number is still visible */
-        .incorrect-marker {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            font-size: 1.6em !important;
-            color: rgba(255, 0, 0, 0.25) !important; /* Semi-transparent red */
-            pointer-events: none !important;
-            z-index: 10 !important;
-            text-shadow: none !important; /* Remove text shadow for subtlety */
-        }
-    `;
-    document.head.appendChild(style);
     
     // Directly override the updateBoard function in Game module
     if (window.Game && typeof window.Game.updateBoard === 'function') {
@@ -1135,34 +1092,7 @@ function emergencyFixTowerIndicators() {
         cell.classList.remove('incorrect-tower');
     });
     
-    // Create a style element if it doesn't exist
-    if (!document.getElementById('emergency-indicator-style')) {
-        const style = document.createElement('style');
-        style.id = 'emergency-indicator-style';
-        style.textContent = `
-            .emergency-incorrect {
-                background-color: rgba(255, 0, 0, 0.3) !important;
-                box-shadow: inset 0 0 0 2px #ff0000 !important;
-                position: relative;
-            }
-            
-            .emergency-x-mark {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                font-size: 24px;
-                color: rgba(255, 0, 0, 0.5);
-                z-index: 100;
-                pointer-events: none;
-            }
-        `;
-        document.head.appendChild(style);
-    }
+    // Ensure emergency indicator styles are defined in CSS
     
     // Apply indicators using direct DOM manipulation
     towers.forEach(tower => {

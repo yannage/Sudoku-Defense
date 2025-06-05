@@ -37,7 +37,6 @@ const AbilitySystem = (function() {
    * Create UI elements for ability system
    */
   function createUI() {
-    createStyles();
     createCharacterSelectionUI();
     createAbilityBarUI();
     createExperienceBarUI();
@@ -46,25 +45,6 @@ const AbilitySystem = (function() {
   /**
    * Create CSS styles for the ability system
    */
-  function createStyles() {
-  // Check if we already created the styles element
-  if (document.getElementById('ability-system-styles')) return;
-  
-  // Instead of embedding styles, ensure the CSS file is loaded
-  const linkExists = Array.from(document.querySelectorAll('link')).some(
-    link => link.href && link.href.includes('styles.css')
-  );
-  
-  if (!linkExists) {
-    console.warn('Ability System CSS file not detected. Some styling may be missing.');
-    
-    // Create a minimal style element as fallback for critical styles
-    const fallbackStyle = document.createElement('style');
-    fallbackStyle.id = 'ability-system-styles-fallback';
-    fallbackStyle.textContent = '.ability-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); }';
-    document.head.appendChild(fallbackStyle);
-  }
-}
   
   /**
    * Create character selection UI
@@ -140,8 +120,8 @@ const AbilitySystem = (function() {
       card.dataset.character = id;
       
       card.innerHTML = `
-        <div class="character-icon" style="color: ${char.color}">${char.icon}</div>
-        <div class="character-name" style="color: ${char.color}">${char.name}</div>
+        <div class="character-icon">${char.icon}</div>
+        <div class="character-name">${char.name}</div>
         <div class="character-description">${char.description}</div>
         <div class="character-ability">
           <div class="character-ability-title">
@@ -151,6 +131,7 @@ const AbilitySystem = (function() {
           <div class="character-ability-description">${char.uniqueAbility.description}</div>
         </div>
       `;
+      card.style.setProperty('--character-color', char.color);
       
       card.addEventListener('click', () => {
         document.querySelectorAll('.character-card').forEach(c => c.classList.remove('selected'));
@@ -284,9 +265,10 @@ const AbilitySystem = (function() {
     if (currentCharacter) {
       const character = window.characters[currentCharacter] || characters[currentCharacter];
       characterIndicator.innerHTML = `
-                <div class="character-indicator-icon" style="color: ${character.color}">${character.icon}</div>
+                <div class="character-indicator-icon">${character.icon}</div>
                 <div class="character-indicator-name">${character.name}</div>
             `;
+      characterIndicator.style.setProperty('--character-color', character.color);
     }
     
     document.body.appendChild(characterIndicator);
@@ -413,8 +395,10 @@ if (window.EventSystem) {
       <div class="ability-icon">${ability.icon}</div>
       <div class="ability-cost">${ability.manaCost}</div>
       <div class="ability-tooltip">${ability.name}: ${ability.description}</div>
-      <div class="ability-cooldown" style="height: ${ability.cooldown > 0 ? '100%' : '0%'}"></div>
+      <div class="ability-cooldown"></div>
     `;
+    const cooldownEl = slot.querySelector('.ability-cooldown');
+    cooldownEl.style.height = ability.cooldown > 0 ? '100%' : '0%';
     
     // Add click handler
     slot.addEventListener('click', function() {

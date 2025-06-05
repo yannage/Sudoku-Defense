@@ -353,127 +353,13 @@ function shouldApplySteamDeckLayout() {
     
     // Add Steam Deck CSS to page
     function addSteamDeckCSS() {
-        const steamDeckCSS = `
-            /* Minimal critical CSS for Steam Deck layout */
-            body.steam-deck-mode {
-                margin: 0;
-                padding: 0;
-                overflow: hidden;
-                width: 100vw;
-                height: 100vh;
-            }
-            
-            body.steam-deck-mode #game-container {
-                width: 100%;
-                height: 100%;
-                display: grid;
-                grid-template-rows: auto auto 1fr;
-                max-width: unset;
-                margin: 0;
-                padding: 0;
-                box-shadow: none;
-                border-radius: 0;
-                background-color: transparent;
-            }
-            
-            body.steam-deck-mode .steam-deck-layout {
-                display: grid;
-                grid-template-columns: minmax(100px, 20%) minmax(350px, 60%) minmax(150px, 20%);
-                grid-template-rows: 1fr;
-                width: 100%;
-                height: 100%;
-                overflow: hidden;
-            }
-            
-            body.steam-deck-mode .left-column,
-            body.steam-deck-mode .middle-column,
-            body.steam-deck-mode .right-column {
-                overflow-y: auto;
-                padding: 10px;
-            }
-            
-            body.steam-deck-mode #sudoku-board {
-                width: 100%;
-                max-width: 100%;
-                max-height: 100%;
-                aspect-ratio: 1;
-                margin: 0 auto;
-            }
-            
-            body.steam-deck-mode #tower-selection {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 10px;
-                margin-bottom: 15px;
-                width: 100%;
-            }
-            
-            body.steam-deck-mode .tower-option {
-                width: 100%;
-                height: 44px;
-                min-height: 44px;
-                font-size: 1.5rem;
-            }
-            
-            body.steam-deck-mode #game-controls {
-                display: flex;
-                flex-direction: column;
-                width: 100%;
-                gap: 10px;
-                margin-top: 10px;
-            }
-            
-            body.steam-deck-mode #game-controls button,
-            body.steam-deck-mode #game-controls select {
-                width: 100%;
-                min-height: 44px;
-                font-size: 1rem;
-                padding: 8px 12px;
-            }
-            
-            body.steam-deck-mode .floating-controls {
-                position: fixed;
-                bottom: 15px;
-                right: 15px;
-                display: flex;
-                gap: 8px;
-                z-index: 1000;
-            }
-            
-            body.steam-deck-mode .float-button {
-                width: 44px;
-                height: 44px;
-                background: rgba(0, 0, 0, 0.6);
-                color: white;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                border-radius: 50%;
-                cursor: pointer;
-                font-size: 18px;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-            }
-            
-            body.steam-deck-mode.portrait .steam-deck-layout {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto 1fr auto;
-            }
-            
-            body.steam-deck-mode .hidden {
-                display: none !important;
-            }
-        `;
-        
-        const style = document.createElement('style');
-        style.textContent = steamDeckCSS;
-        document.head.appendChild(style);
+        // Styles are provided in external CSS
     }
     
     // Wait for DOM to be ready
     function initialize() {
         if (shouldApplySteamDeckLayout()) {
-            // Add initial CSS
-            addSteamDeckCSS();
+            // Add initial CSS via external file
             
             // If page is already loaded, apply the layout immediately
             if (document.readyState === 'complete' || document.readyState === 'interactive') {
