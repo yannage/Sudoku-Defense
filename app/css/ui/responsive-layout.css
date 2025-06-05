@@ -126,6 +126,11 @@ aside.right-column {
     #game-container {
         padding-bottom: 140px;
     }
+
+    /* Ensure the Sudoku board fits in the viewport when bottom controls are fixed */
+    #sudoku-board {
+        width: min(100vw, calc(100vh - 200px));
+    }
 }
 
 
