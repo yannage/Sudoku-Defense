@@ -82,6 +82,7 @@
     margin-top: 0.5rem;
 }
 
+
 .mission-toggle {
     position: fixed;
     bottom: 0.5rem;
@@ -93,6 +94,15 @@
     border-radius: 20px;
     padding: 6px 12px;
     cursor: pointer;
+}
+
+#mission-control.overlay {
+    transform: translateX(100%);
+    transition: transform 0.3s;
+}
+
+#mission-control.overlay.open {
+    transform: translateX(0);
 }
 
 @media (orientation: portrait) {

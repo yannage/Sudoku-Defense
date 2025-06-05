@@ -7,6 +7,11 @@
     if (panel && toggle) {
       toggle.addEventListener('click', function() {
         panel.classList.toggle('open');
+        if (panel.classList.contains('open')) {
+          toggle.textContent = 'Hide Tips';
+        } else {
+          toggle.textContent = 'Show Tips';
+        }
       });
     }
   });
