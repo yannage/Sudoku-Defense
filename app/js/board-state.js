@@ -5,6 +5,7 @@ const BoardState = (function() {
   let completedRows = new Set();
   let completedColumns = new Set();
   let completedGrids = new Set();
+  let displayMode = 'numbers';
 
   function setState(newBoard, newSolution, newFixed) {
     board = JSON.parse(JSON.stringify(newBoard));
@@ -96,8 +97,73 @@ const BoardState = (function() {
     };
   }
 
-  function fixBoardDiscrepancies() { return 0; }
-  function toggleDisplayMode() {}
+  function fixBoardDiscrepancies() {
+    if (!window.TowersModule || typeof TowersModule.getTowers !== 'function') {
+      return 0;
+    }
+
+    const towers = TowersModule.getTowers();
+    const towerMap = new Map();
+    towers.forEach(t => towerMap.set(`${t.row},${t.col}`, t.type));
+    const pathCells = (window.PathGenerator && PathGenerator.getPathCells)
+      ? PathGenerator.getPathCells()
+      : new Set();
+
+    let fixes = 0;
+
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const key = `${r},${c}`;
+        const towerType = towerMap.get(key);
+        const numericVal = parseInt(towerType);
+
+        if (towerType && board[r][c] !== numericVal) {
+          board[r][c] = numericVal;
+          fixes++;
+        }
+
+        if (!towerType && board[r][c] !== 0 && !fixedCells[r][c]) {
+          board[r][c] = 0;
+          fixes++;
+        }
+
+        if (pathCells.has(key) && board[r][c] !== 0) {
+          board[r][c] = 0;
+          fixes++;
+        }
+      }
+    }
+
+    if (fixes > 0) {
+      checkUnitCompletion();
+      if (typeof Game !== 'undefined' && typeof Game.updateBoard === 'function') {
+        setTimeout(() => Game.updateBoard(), 0);
+      }
+    }
+
+    return fixes;
+  }
+
+  function toggleDisplayMode(showNumbers = true) {
+    const newMode = showNumbers ? 'numbers' : 'sprites';
+    if (displayMode === newMode) return displayMode;
+    displayMode = newMode;
+
+    if (typeof Game !== 'undefined') {
+      Game.displayMode = displayMode;
+      if (typeof Game.updateBoard === 'function') {
+        Game.updateBoard();
+      }
+    }
+
+    const boardEl = document.getElementById('sudoku-board');
+    if (boardEl) {
+      boardEl.classList.toggle('number-mode', showNumbers);
+      boardEl.classList.toggle('sprite-mode', !showNumbers);
+    }
+
+    return displayMode;
+  }
 
   return {
     setState,
