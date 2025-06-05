@@ -33,9 +33,17 @@ const characters = {
           }
           
           return true;
-        } else if (window.BoardManager && typeof BoardManager.generateEnemyPath === 'function') {
-          BoardManager.generateEnemyPath();
+        } else if (window.PathGenerator && typeof PathGenerator.generateEnemyPath === 'function') {
+          const newPath = PathGenerator.generateEnemyPath();
+
+          // Fallback notifications
+          EventSystem.publish(GameEvents.PATH_CHANGED, newPath);
           EventSystem.publish(GameEvents.STATUS_MESSAGE, "Enemy path redirected!");
+
+          if (window.Game && typeof Game.updateBoard === 'function') {
+            Game.updateBoard();
+          }
+
           return true;
         }
         
