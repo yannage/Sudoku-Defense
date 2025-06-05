@@ -68,15 +68,16 @@
 </div>
     <div id="game-container">
         <div id="phase-indicator" class="phase-banner"></div>
-        <div id="game-header">
+        <header id="game-header">
             <div id="score">Score: <span id="score-value">0</span></div>
             <div id="lives">Lives: <span id="lives-value">3</span></div>
             <div id="wave">Wave: <span id="wave-value">1</span></div>
-            
-        </div>
 
+        </header>
+
+        <main id="game-area">
         <div id="layout-grid">
-            <div class="left-column">
+            <aside class="left-column">
                 <div id="game-info">
                     <div>Currency: <span id="currency-value">100</span></div>
                     <div id="status-message">Place towers to defend against enemies!</div>
@@ -92,7 +93,7 @@
                     </select>
                     <button id="new-game">New Game</button>
                 </div>
-            </div>
+            </aside>
             <div class="middle-column">
                 <div id="sudoku-board"></div>
                 <div id="tower-selection">
@@ -108,8 +109,9 @@
                 </div>
                 <button id="start-wave" class="next-wave">Next Wave</button>
             </div>
-            <div class="right-column"></div>
+            <aside class="right-column"></aside>
         </div>
+        </main>
         <div id="mission-control" class="overlay open">
             <h3>Mission Control</h3>
             <ul id="mission-tips">
@@ -118,11 +120,7 @@
         </div>
         <button id="mission-toggle" class="mission-toggle">Hide Tips</button>
     </div>
-<p></p>
-<p></p>
 <p>Made by YanniMakes </p>
-<p></p>
-<p></p>
     <!-- Load the modules in the correct order -->
 <script src="js/events.js"></script>
 <script src="js/phase-manager.js"></script>
