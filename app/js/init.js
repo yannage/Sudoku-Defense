@@ -18,7 +18,8 @@ const emojiFontStyle = document.createElement('style');
 emojiFontStyle.textContent = `
 @font-face {
   font-family: 'NotoColorEmoji';
-  src: url('assets/fonts/NotoColorEmoji-Regular.ttf') format('truetype');
+  /* Use an absolute path so the font loads correctly from the /app root */
+  src: url('/assets/fonts/NotoColorEmoji-Regular.ttf') format('truetype');
 }
 body {
   font-family: 'NotoColorEmoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;

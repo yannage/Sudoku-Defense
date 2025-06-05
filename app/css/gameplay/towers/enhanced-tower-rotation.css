@@ -9,7 +9,8 @@
   transition: transform 0.2s ease-out;
   pointer-events: none;
 
-  background-image: url("assets/aimsheet3.png");
+  /* Use absolute path so the image resolves correctly when served from /app */
+  background-image: url("../../../assets/aimsheet3.png");
   background-size: 96px 96px;
   background-repeat: no-repeat;
   image-rendering: pixelated;
