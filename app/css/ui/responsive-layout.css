@@ -98,11 +98,14 @@
 
 #mission-control.overlay {
     transform: translateX(100%);
-    transition: transform 0.3s;
+    visibility: hidden;
+    transition: transform 0.3s, visibility 0s linear 0.3s;
 }
 
 #mission-control.overlay.open {
     transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.3s;
 }
 
 @media (orientation: portrait) {
@@ -112,12 +115,15 @@
         left: 0;
         right: 0;
         transform: translateY(100%);
-        transition: transform 0.3s;
+        visibility: hidden;
+        transition: transform 0.3s, visibility 0s linear 0.3s;
         z-index: 1000;
     }
 
     #mission-control.overlay.open {
         transform: translateY(0);
+        visibility: visible;
+        transition: transform 0.3s;
     }
 
     #mission-toggle {
