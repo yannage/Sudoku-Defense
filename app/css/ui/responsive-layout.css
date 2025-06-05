@@ -37,13 +37,16 @@
 @media (min-width: 768px) {
     #layout-grid {
         /*
-         * Allocate more space to the Sudoku board on medium and larger
-         * screens so that it consistently occupies at least half of the
-         * available width. The side columns are reduced to 160px each,
-         * giving the board the majority of the layout.
+         * Give the puzzle the lion's share of the width. The side columns
+         * shrink down to roughly 10% of the viewport each (never smaller
+         * than 80px) so the board can occupy close to 80%.
          */
-        grid-template-columns: 160px 1fr 160px;
+        grid-template-columns: minmax(80px, 10%) 1fr minmax(80px, 10%);
         align-items: start;
+    }
+
+    #sudoku-board {
+        max-width: 80vw;
     }
 }
 

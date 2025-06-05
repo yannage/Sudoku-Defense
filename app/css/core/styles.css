@@ -2352,7 +2352,7 @@ h1 {
 /* === Main Game Grid === */
 .steam-deck-layout {
     display: grid;
-    grid-template-columns: minmax(100px, 20%) minmax(350px, 60%) minmax(150px, 20%);
+    grid-template-columns: minmax(80px, 10%) minmax(0, 80%) minmax(80px, 10%);
     grid-template-rows: 1fr;
     width: 100%;
     height: calc(100% - 45px); /* Account for header */
@@ -2393,7 +2393,7 @@ h1 {
 /* === Sudoku Board === */
 #sudoku-board {
     width: 100%;
-    max-width: 100%;
+    max-width: 80vw;
     max-height: 100%;
     aspect-ratio: 1;
     margin: 0 auto;
@@ -2530,7 +2530,7 @@ h1 {
 /* === Responsive Adjustments === */
 @media (max-width: 768px) {
     .steam-deck-layout {
-        grid-template-columns: minmax(80px, 25%) minmax(200px, 50%) minmax(100px, 25%);
+        grid-template-columns: minmax(60px, 15%) 1fr minmax(60px, 15%);
     }
     
     .tower-option {
