@@ -993,67 +993,6 @@ function boostNearbyTowers(supportTower) {
 }
     
     /**
-     * Remove incorrect towers after a wave
-     */
-  function removeIncorrectTowers() {
-  if (incorrectTowers.size === 0) return;
-  
-  let refundAmount = 0;
-  const towersToRemove = [];
-  
-  // Identify towers to remove and calculate refund
-  towers.forEach(tower => {
-    if (incorrectTowers.has(tower.id)) {
-      console.log(`Identifying incorrect tower for removal:
-        Tower ID: ${tower.id}
-        Type: ${tower.type}
-        Position: (${tower.row},${tower.col})
-        Is Correct (Sudoku Rules): ${tower.isCorrect}
-        Matches Solution: ${tower.matchesSolution}`);
-      
-      towersToRemove.push(tower);
-      
-      // Calculate 50% refund
-      const towerData = towerTypes[tower.type];
-      if (towerData) {
-        const baseRefund = Math.floor(towerData.cost * 0.5);
-        const upgradeRefund = Math.floor(baseRefund * (tower.level - 1) * 0.75);
-        refundAmount += baseRefund + upgradeRefund;
-      }
-    }
-  });
-  
-  // Process refund
-  if (refundAmount > 0) {
-    PlayerModule.addCurrency(refundAmount);
-    EventSystem.publish(GameEvents.STATUS_MESSAGE,
-      `${towersToRemove.length} incorrect towers removed. Refunded ${refundAmount} currency.`);
-  }
-  
-  // Remove towers
-  towersToRemove.forEach(tower => {
-    // Clear cell value using BoardManager
-    const boardManager = window.BoardManager;
-    if (boardManager && typeof boardManager.setCellValue === 'function') {
-      boardManager.setCellValue(tower.row, tower.col, 0);
-    }
-    
-    // Remove tower from array
-    towers = towers.filter(t => t.id !== tower.id);
-    
-    // Publish tower removed event
-    EventSystem.publish(GameEvents.TOWER_REMOVED, tower);
-  });
-  
-  // Clear tracking set
-  incorrectTowers.clear();
-  
-  // Update board display
-  if (Game.updateBoard) {
-    Game.updateBoard();
-  }
-}
-    /**
      * Get all towers
      * @returns {Object[]} Array of towers
      */
