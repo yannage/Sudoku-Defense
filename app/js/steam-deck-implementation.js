@@ -32,10 +32,24 @@ function shouldApplySteamDeckLayout() {
     return false;
 }
     
+    // Ensure the Steam Deck stylesheet is loaded only when needed
+    function loadSteamDeckStyles() {
+        if (!document.getElementById('steam-deck-css')) {
+            const link = document.createElement('link');
+            link.id = 'steam-deck-css';
+            link.rel = 'stylesheet';
+            link.href = 'css/platform/steam-deck-layout.css';
+            document.head.appendChild(link);
+        }
+    }
+
     // Main function to apply Steam Deck optimized layout
     function applySteamDeckLayout() {
         console.log("Applying Steam Deck optimized layout");
-        
+
+        // Load Steam Deck specific styles
+        loadSteamDeckStyles();
+
         // Add the main CSS class to the body
         document.body.classList.add('steam-deck-mode');
         
