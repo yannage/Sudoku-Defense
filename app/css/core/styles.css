@@ -1157,17 +1157,6 @@ button:active {
     margin-top: 10px;
 }
 
-/* === High Score Display === */
-#high-score {
-    color: white;
-    font-weight: bold;
-}
-
-#high-score-value {
-    color: gold;
-    font-weight: bold;
-}
-
 /* === Save Notification === */
 .save-notification {
     position: fixed;
