@@ -20,12 +20,12 @@
 <link rel="stylesheet" href="css/gameplay/phase-manager.css">
 
 <!-- Platform CSS -->
-<link rel="stylesheet" href="css/platform/steam-deck-layout.css">
 
 <!-- UI CSS -->
 <link rel="stylesheet" href="css/ui/game-ui.css">
 <link rel="stylesheet" href="css/ui/mission-control.css">
 <link rel="stylesheet" href="css/ui/stats-screen.css">
+<link rel="stylesheet" href="css/ui/responsive-layout.css">
 </head>
 <body>
     <h1>Sudoku Tower Defense</h1>
@@ -73,13 +73,9 @@
             
         </div>
 
-        <div id="sudoku-board"></div>
-        
-       <!-- 
-  Update the tower selection section in index.html with these tooltips
-  that explain the special powers of each tower 
--->
-<div id="tower-selection">
+        <div id="layout-grid">
+            <div class="left-column">
+                <div id="tower-selection">
   <div class="tower-option" data-tower-type="1" title="Rapid Tower: Fast-firing with 3x attack speed but lower damage">1️⃣</div>
   <div class="tower-option" data-tower-type="2" title="Slowing Tower: Reduces enemy speed by 30% for 3 seconds">2️⃣</div>
   <div class="tower-option" data-tower-type="3" title="Splash Tower: Damages multiple enemies in a small radius">3️⃣</div>
@@ -89,29 +85,35 @@
   <div class="tower-option" data-tower-type="7" title="Gambling Tower: Random chance for bonus damage or currency">7️⃣</div>
   <div class="tower-option" data-tower-type="8" title="Sniper Tower: Long range with 20% chance for critical hits">8️⃣</div>
   <div class="tower-option" data-tower-type="9" title="Support Tower: Boosts damage of adjacent towers by 20%">9️⃣</div>
-</div>
-        <div id="game-info">
-            <div>Currency: <span id="currency-value">100</span></div>
-            <div id="status-message">Place towers to defend against enemies!</div>
-        </div>
-        <div id="mission-control">
+                </div>
+                <div id="game-info">
+                    <div>Currency: <span id="currency-value">100</span></div>
+                    <div id="status-message">Place towers to defend against enemies!</div>
+                </div>
+                <div id="game-controls">
+                    <button id="start-wave">Start Wave</button>
+                    <button id="pause-game">Pause</button>
+                    <select id="font-selector" title="Change game font">
+                        <option value="font-default" class="font-default">Default Font</option>
+                        <option value="font-retro" class="font-retro">Retro Font</option>
+                        <option value="font-elegant" class="font-elegant">Elegant Font</option>
+                        <option value="font-playful" class="font-playful">Playful Font</option>
+                        <option value="font-modern" class="font-modern">Modern Font</option>
+                    </select>
+                    <button id="new-game">New Game</button>
+                </div>
+            </div>
+            <div class="middle-column">
+                <div id="sudoku-board"></div>
+            </div>
+            <div class="right-column">
+                <div id="mission-control">
     <h3>Mission Control</h3>
     <ul id="mission-tips">
         <li>Scanning board...</li>
     </ul>
-</div>
-        <!-- Game controls section -->
-        <div id="game-controls">
-            <button id="start-wave">Start Wave</button>
-            <button id="pause-game">Pause</button>
-            <select id="font-selector" title="Change game font">
-                <option value="font-default" class="font-default">Default Font</option>
-                <option value="font-retro" class="font-retro">Retro Font</option>
-                <option value="font-elegant" class="font-elegant">Elegant Font</option>
-                <option value="font-playful" class="font-playful">Playful Font</option>
-                <option value="font-modern" class="font-modern">Modern Font</option>
-            </select>
-            <button id="new-game">New Game</button>
+                </div>
+            </div>
         </div>
     </div>
 <p></p>
@@ -142,7 +144,6 @@
 <script src="js/setup.js"></script>
 
 
-<script src="js/steam-deck-implementation.js"></script>
 <script src="js/ui-polish-script.js"></script>
 
 <script src="js/sudoku-board-select.js"></script>
