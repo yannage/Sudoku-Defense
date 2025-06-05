@@ -4,7 +4,12 @@
     flex-direction: column;
     gap: 1rem;
     width: 100%;
-    max-width: 1200px;
+    /*
+     * Remove the narrow 600px limit defined in core styles so the board
+     * can expand. The container now stretches with the viewport while
+     * still centering the content.
+     */
+    max-width: none;
     margin: 0 auto;
     padding: 1rem;
     box-sizing: border-box;
@@ -31,8 +36,25 @@
 
 @media (min-width: 768px) {
     #layout-grid {
-        grid-template-columns: 200px 1fr 220px;
+        /*
+         * Allocate more space to the Sudoku board on medium and larger
+         * screens so that it consistently occupies at least half of the
+         * available width. The side columns are reduced to 160px each,
+         * giving the board the majority of the layout.
+         */
+        grid-template-columns: 160px 1fr 160px;
         align-items: start;
+    }
+}
+
+/*
+ * On very wide displays, let the container breathe by capping its width
+ * to 90% of the viewport. This keeps the board well over half the screen
+ * while preventing an excessively stretched layout.
+ */
+@media (min-width: 1200px) {
+    #game-container {
+        max-width: 90vw;
     }
 }
 
