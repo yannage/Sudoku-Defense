@@ -765,9 +765,12 @@ h1 {
     gap: 8px;
     justify-content: center;
     margin-top: 10px;
+    list-style: none;
+    padding: 0;
+    margin-bottom: 0;
 }
 
-.tower-option {
+#tower-selection li.tower-option {
     width: calc(10% - 8px);
     min-width: 40px;
     aspect-ratio: 1;
@@ -782,12 +785,12 @@ h1 {
     transition: all 0.2s;
 }
 
-.tower-option:hover {
+#tower-selection li.tower-option:hover {
     transform: translateY(-2px);
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-.tower-option.selected {
+#tower-selection li.tower-option.selected {
     background-color: var(--cell-highlight);
     border: 2px solid var(--secondary-color);
     transform: translateY(-2px);
@@ -1044,7 +1047,7 @@ button:active {
         font-size: 0.9rem;
     }
     
-    .tower-option {
+    #tower-selection li.tower-option {
         min-width: 35px;
         font-size: 1.2rem;
     }
@@ -1070,7 +1073,7 @@ button:active {
         font-size: 0.8rem;
     }
     
-    .tower-option {
+    #tower-selection li.tower-option {
         min-width: 30px;
         font-size: 1rem;
     }
