@@ -2212,3 +2212,5 @@ window.debugEnemyPath = function() {
     return false;
   }
 };
+
+export {};

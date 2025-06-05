@@ -808,3 +808,5 @@
   // Schedule another initialization attempt
   setTimeout(tryLateInitialization, 2000);
 })();
+
+export {};

@@ -312,3 +312,5 @@ window.SaveSystem = SaveSystem;
 
 // Log availability status
 console.log(`Save System initialized. Storage available: ${SaveSystem.isStorageAvailable()}`);
+
+export {};

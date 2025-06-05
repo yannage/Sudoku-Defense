@@ -53,3 +53,6 @@
     window.addOrientationSupport = addOrientationSupport;
     window.checkOrientation = checkOrientation;
 })();
+
+
+export {};

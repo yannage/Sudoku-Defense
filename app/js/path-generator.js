@@ -36,3 +36,6 @@ const PathGenerator = (function() {
 })();
 
 if (typeof window !== 'undefined') window.PathGenerator = PathGenerator;
+
+
+export {};

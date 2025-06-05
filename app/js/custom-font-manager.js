@@ -389,3 +389,5 @@ const CustomFontManager = (function() {
 
 // Make module available globally
 window.CustomFontManager = CustomFontManager;
+
+export {};

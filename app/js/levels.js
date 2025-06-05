@@ -270,3 +270,5 @@ setTimeout(() => BoardManager.toggleDisplayMode(true), 100);
 
 // Make module available globally
 window.LevelsModule = LevelsModule;
+
+export {};

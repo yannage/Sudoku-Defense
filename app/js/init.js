@@ -371,3 +371,6 @@ setTimeout(function() {
     console.warn("PhaseManager not found, structured game flow will not be available");
   }
 }, 800); // Initialize after other systems
+
+
+export {};

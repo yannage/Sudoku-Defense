@@ -662,3 +662,5 @@ setTimeout(() => {
         console.log("Created projectile container after initial timeout");
     }
 }, 1000);
+
+export {};

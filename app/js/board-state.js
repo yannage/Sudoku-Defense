@@ -182,3 +182,6 @@ const BoardState = (function() {
 })();
 
 if (typeof window !== 'undefined') window.BoardState = BoardState;
+
+
+export {};

@@ -201,3 +201,5 @@ const StatsScreen = (function() {
 
 // Make accessible globally
 window.StatsScreen = StatsScreen;
+
+export {};

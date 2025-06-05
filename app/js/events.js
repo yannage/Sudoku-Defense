@@ -127,3 +127,6 @@ const GameEvents = {
 // Export both objects for global use
 window.EventSystem = EventSystem;
 window.GameEvents = GameEvents;
+
+
+export {};

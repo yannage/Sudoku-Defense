@@ -1202,3 +1202,5 @@ function emergencyFixTowerIndicators() {
     console.log("Tower attack animations integration complete!");
 })();
 })();
+
+export {};
