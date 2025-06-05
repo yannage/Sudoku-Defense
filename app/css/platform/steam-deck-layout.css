@@ -142,9 +142,11 @@ aside.right-column {
     gap: 10px;
     margin-bottom: 15px;
     width: 100%;
+    list-style: none;
+    padding-left: 0;
 }
 
-.tower-option {
+#tower-selection li.tower-option {
     width: 100%;
     height: var(--touch-min-size);
     min-height: var(--touch-min-size);
@@ -263,7 +265,7 @@ aside.right-column {
         grid-template-columns: minmax(60px, 15%) 1fr minmax(60px, 15%);
     }
     
-    .tower-option {
+    #tower-selection li.tower-option {
         font-size: 1.2rem;
     }
     
@@ -406,7 +408,7 @@ body.steam-deck-mode #tower-selection {
     margin: 0 0 5px 0;
 }
 
-body.steam-deck-mode .tower-option {
+body.steam-deck-mode #tower-selection li.tower-option {
     height: 36px;
     min-height: 36px;
     font-size: 1.1rem;
