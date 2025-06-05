@@ -55,18 +55,24 @@
             // Add touch event handlers
             button.addEventListener('touchstart', function(e) {
                 this.classList.add('touch-active');
-                
+
                 // Haptic feedback if available and enabled
                 if (config.enableHapticFeedback && navigator.vibrate) {
                     navigator.vibrate(50);
                 }
-                
+
                 // Prevent long-press context menu
                 e.preventDefault();
             }, { passive: false });
-            
-            button.addEventListener('touchend', function() {
+
+            button.addEventListener('touchend', function(e) {
                 this.classList.remove('touch-active');
+
+                // Manually trigger click so regular click handlers fire
+                // on touch devices when preventDefault() is used above
+                if (!e.defaultPrevented) {
+                    this.click();
+                }
             });
             
             // Expand touch target area with a pseudo-element if needed
