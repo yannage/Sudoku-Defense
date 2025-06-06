@@ -17,4 +17,11 @@ describe('PathGenerator.generateEnemyPath', () => {
     const set = new Set(pathArr.map(p=>p.join(',')));
     expect(set.size).toBe(pathArr.length);
   });
+
+  test('path progresses one column at a time', () => {
+    const pathArr = window.PathGenerator.generateEnemyPath(13);
+    for (let i = 1; i < pathArr.length; i++) {
+      expect(pathArr[i][1]).toBe(pathArr[i - 1][1] + 1);
+    }
+  });
 });

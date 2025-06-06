@@ -8,16 +8,15 @@ const PathGenerator = (function() {
     pathCells.add(`${row},${col}`);
 
     while (col < 8 && pathCells.size < maxLength) {
-      const moves = [];
-      if (row > 0) moves.push([row-1,col]);
-      if (row < 8) moves.push([row+1,col]);
-      moves.push([row,col+1]);
-      const [r,c] = moves[Math.floor(Math.random()*moves.length)];
-      row = r; col = c;
+      col++; // always progress to the right
+      const rows = [row];
+      if (row > 0) rows.push(row - 1);
+      if (row < 8) rows.push(row + 1);
+      row = rows[Math.floor(Math.random() * rows.length)];
       pathCells.add(`${row},${col}`);
     }
 
-    while(col < 8){
+    while (col < 8) {
       col++;
       pathCells.add(`${row},${col}`);
     }
