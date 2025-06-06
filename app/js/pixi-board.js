@@ -48,8 +48,8 @@ const PixiBoard = (function() {
     canvas.style.height = '100%';
     canvas.style.pointerEvents = 'none';
     canvas.style.imageRendering = 'pixelated';
-    canvas.style.zIndex = '0';
-    boardElement.insertBefore(canvas, boardElement.firstChild);
+    canvas.style.zIndex = '2'; // above board cells so sprites are visible
+    boardElement.appendChild(canvas); // overlay on top of grid
 
     boardContainer = new PIXI.Container();
     entityContainer = new PIXI.Container();
