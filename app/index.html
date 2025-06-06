@@ -109,16 +109,17 @@
                 </ul>
                 <button id="start-wave" class="next-wave">Next Wave</button>
             </div>
-            <aside class="right-column"></aside>
+            <aside class="right-column open">
+                <div id="mission-control" class="overlay open">
+                    <h3>Mission Control</h3>
+                    <ul id="mission-tips">
+                        <li>Scanning board...</li>
+                    </ul>
+                </div>
+                <button id="mission-toggle" class="mission-toggle">Hide Tips</button>
+            </aside>
         </div>
         </main>
-        <div id="mission-control" class="overlay open">
-            <h3>Mission Control</h3>
-            <ul id="mission-tips">
-                <li>Scanning board...</li>
-            </ul>
-        </div>
-        <button id="mission-toggle" class="mission-toggle">Hide Tips</button>
     </div>
     <!-- Load the modules in the correct order -->
 <script src="js/events.js"></script>
