@@ -126,10 +126,6 @@ const BoardState = (function() {
           fixes++;
         }
 
-        if (pathCells.has(key) && board[r][c] !== 0) {
-          board[r][c] = 0;
-          fixes++;
-        }
       }
     }
 
