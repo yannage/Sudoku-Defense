@@ -16,12 +16,19 @@ const PixiBoard = (function() {
       console.warn('PIXI not available');
       return;
     }
+
+    PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
+
     cellSize = options.cellSize || cellSize;
     clickHandler = options.onCellClick || null;
 
     towerBaseTexture = PIXI.BaseTexture.from('assets/spritesheet4.png');
     towerBarrelTexture = PIXI.BaseTexture.from('assets/aimsheet3.png');
     enemyBaseTexture = PIXI.BaseTexture.from('assets/enemy-sprites.png');
+    [towerBaseTexture, towerBarrelTexture, enemyBaseTexture].forEach(t => {
+      t.scaleMode = PIXI.SCALE_MODES.NEAREST;
+    });
+
     const boardElement = document.getElementById('sudoku-board');
     boardElement.style.position = 'relative';
     const boardSize = boardElement.clientWidth || cellSize * 9;
@@ -29,7 +36,9 @@ const PixiBoard = (function() {
     app = new PIXI.Application({
       width: boardSize,
       height: boardSize,
-      backgroundAlpha: 0
+      backgroundAlpha: 0,
+      autoDensity: true,
+      resolution: window.devicePixelRatio || 1
     });
     const canvas = app.view;
     canvas.style.position = 'absolute';
@@ -38,6 +47,7 @@ const PixiBoard = (function() {
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     canvas.style.pointerEvents = 'none';
+    canvas.style.imageRendering = 'pixelated';
     boardElement.appendChild(canvas);
 
     boardContainer = new PIXI.Container();
@@ -124,7 +134,19 @@ const PixiBoard = (function() {
       });
     }
 
-    towers.forEach(updateTowerSprite);
+    towers.forEach(t => {
+      if (!towerSprites[t.id]) {
+        addTowerSprite(t);
+      } else {
+        updateTowerSprite(t);
+      }
+    });
+
+    Object.values(towerSprites).forEach(obj => {
+      if (obj.container) {
+        obj.container.visible = isWavePhase;
+      }
+    });
   }
 
   function addTowerSprite(tower) {
@@ -132,6 +154,8 @@ const PixiBoard = (function() {
     const container = new PIXI.Container();
     const base = new PIXI.Sprite(getTowerTexture(tower.type));
     const barrel = new PIXI.Sprite(getBarrelTexture(tower.type));
+    base.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+    barrel.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
     base.anchor.set(0.5);
     barrel.anchor.set(0.5);
     base.width = cellSize;
@@ -144,6 +168,7 @@ const PixiBoard = (function() {
     container.y = tower.row * cellSize + cellSize / 2;
     container._row = tower.row;
     container._col = tower.col;
+    container._id = tower.id;
     entityContainer.addChild(container);
     towerSprites[tower.id] = { container, base, barrel };
     tower.sprite = container;
@@ -173,6 +198,7 @@ const PixiBoard = (function() {
   function addEnemySprite(enemy) {
     if (!app) return;
     const sprite = new PIXI.Sprite(getEnemyTexture(enemy.spriteClass));
+    sprite.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
     sprite.width = cellSize;
     sprite.height = cellSize;
     sprite.anchor.set(0.5);
