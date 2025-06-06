@@ -270,6 +270,11 @@ function createTower(type, row, col, options = {}) {
     
     // Add to towers array
     towers.push(tower);
+
+    // Create Pixi sprite representation
+    if (window.PixiBoard && typeof PixiBoard.addTowerSprite === 'function') {
+        PixiBoard.addTowerSprite(tower);
+    }
     
     // Record this placement for path generation (only if it's a valid Sudoku placement)
     if (tower.isCorrect !== false && type !== 'special') {
@@ -469,6 +474,10 @@ function manuallyCheckSudokuRules(row, col, value) {
   
   // Remove from towers array
   towers = towers.filter(t => t.id !== towerId);
+
+  if (window.PixiBoard && typeof PixiBoard.removeTowerSprite === 'function') {
+    PixiBoard.removeTowerSprite(towerId);
+  }
   
   // Remove number from Sudoku grid
   const boardManager = window.BoardManager;

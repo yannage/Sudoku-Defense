@@ -679,8 +679,12 @@ function createEnemy(type, adjustment = { health: 1.0, speed: 1.0 }) {
   };
   
   console.log(`Enhanced enemy created at position: (${enemy.row}, ${enemy.col})`);
-  
+
   enemies.push(enemy);
+
+  if (window.PixiBoard && typeof PixiBoard.addEnemySprite === 'function') {
+    PixiBoard.addEnemySprite(enemy);
+  }
   EventSystem.publish(GameEvents.ENEMY_SPAWN, enemy);
   
   return enemy;
@@ -1419,14 +1423,22 @@ function moveEnemy(enemy, deltaTime) {
         enemy.row = currentCell[0] + (nextCell[0] - currentCell[0]) * enemy.progress;
         enemy.col = currentCell[1] + (nextCell[1] - currentCell[1]) * enemy.progress;
     }
+
+    if (window.PixiBoard && typeof PixiBoard.updateEnemySprite === 'function') {
+        PixiBoard.updateEnemySprite(enemy);
+    }
 }
     
     /**
      * Handle an enemy reaching the end of the path
      * @param {Object} enemy - The enemy that reached the end
      */
-    function enemyReachedEnd(enemy) {
-        enemy.active = false;
+function enemyReachedEnd(enemy) {
+    enemy.active = false;
+
+    if (window.PixiBoard && typeof PixiBoard.removeEnemySprite === 'function') {
+        PixiBoard.removeEnemySprite(enemy.id);
+    }
         
         // Remove from enemies array
         enemies = enemies.filter(e => e.id !== enemy.id);
@@ -1558,7 +1570,11 @@ function splitEnemy(enemy) {
  * @param {Object} enemy - The enemy to defeat
  */
 function defeatEnemy(enemy) {
-  enemy.active = false;
+        enemy.active = false;
+
+        if (window.PixiBoard && typeof PixiBoard.removeEnemySprite === 'function') {
+            PixiBoard.removeEnemySprite(enemy.id);
+        }
   
   // Remove from enemies array
   enemies = enemies.filter(e => e.id !== enemy.id);
@@ -1670,6 +1686,10 @@ function createDefeatParticles(enemy, enemyEl) {
      */
     function defeatEnemy(enemy) {
         enemy.active = false;
+
+        if (window.PixiBoard && typeof PixiBoard.removeEnemySprite === 'function') {
+            PixiBoard.removeEnemySprite(enemy.id);
+        }
         
         // Remove from enemies array
         enemies = enemies.filter(e => e.id !== enemy.id);
