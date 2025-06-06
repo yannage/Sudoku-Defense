@@ -83,10 +83,6 @@
       
       /* Mode toggle button */
       #sudoku-mode-toggle {
-        position: fixed;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
         background-color: #333;
         color: white;
         border: none;
@@ -94,7 +90,6 @@
         padding: 6px 15px;
         font-size: 14px;
         cursor: pointer;
-        z-index: 1000;
         display: flex;
         align-items: center;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -161,7 +156,8 @@
       modeToggleButton = document.createElement('button');
       modeToggleButton.id = 'sudoku-mode-toggle';
       modeToggleButton.innerHTML = '<span class="icon">🎯</span> Place Mode <span class="keyboard-hint">Tab</span>';
-      document.body.appendChild(modeToggleButton);
+      const bar = document.getElementById('utility-bar') || document.body;
+      bar.appendChild(modeToggleButton);
       
       // Add click handler for mode toggle
       modeToggleButton.addEventListener('click', toggleInteractionMode);

@@ -1,0 +1,11 @@
+#utility-bar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0.5rem 0;
+}
+
+#utility-bar button {
+  margin: 0;
+}

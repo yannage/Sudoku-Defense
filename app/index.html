@@ -30,6 +30,7 @@
 <link rel="stylesheet" href="css/ui/game-menu.css">
 <link rel="stylesheet" href="css/ui/stats-screen.css">
 <link rel="stylesheet" href="css/ui/responsive-layout.css">
+<link rel="stylesheet" href="css/ui/utility-bar.css">
 </head>
 <body>
     <h1>Sudoku Tower Defense</h1>
@@ -77,6 +78,11 @@
 
         </header>
 
+        <div id="utility-bar">
+            <button id="menu-toggle" class="menu-toggle">Menu</button>
+            <button id="mission-toggle" class="mission-toggle">Hide Tips</button>
+        </div>
+
         <main id="game-area">
         <div id="layout-grid">
             <aside class="left-column">
@@ -118,14 +124,12 @@
                 <button id="new-game">New Game</button>
             </nav>
         </div>
-        <button id="menu-toggle" class="menu-toggle">Menu</button>
         <div id="mission-control" class="overlay open">
             <h3>Mission Control</h3>
             <ul id="mission-tips">
                 <li>Scanning board...</li>
             </ul>
         </div>
-        <button id="mission-toggle" class="mission-toggle">Hide Tips</button>
     </div>
     <!-- Load the modules in the correct order -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.0/pixi.min.js"></script>
