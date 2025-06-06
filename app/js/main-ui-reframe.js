@@ -3,15 +3,18 @@
 (function() {
   document.addEventListener('DOMContentLoaded', function() {
     const panel = document.getElementById('mission-control');
+    const column = panel ? panel.closest('aside.right-column') : null;
     const toggle = document.getElementById('mission-toggle');
-    if (panel && toggle) {
+    if (panel && column && toggle) {
+      const updateLabel = (open) => {
+        toggle.textContent = open ? 'Hide Tips' : 'Show Tips';
+      };
+
       toggle.addEventListener('click', function() {
-        panel.classList.toggle('open');
-        if (panel.classList.contains('open')) {
-          toggle.textContent = 'Hide Tips';
-        } else {
-          toggle.textContent = 'Show Tips';
-        }
+        const wide = window.matchMedia('(min-width: 768px)').matches;
+        const target = wide ? column : panel;
+        const open = target.classList.toggle('open');
+        updateLabel(open);
       });
     }
   });

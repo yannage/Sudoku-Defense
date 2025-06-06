@@ -112,12 +112,16 @@ aside.left-column {
 
 /* Right column for mission control */
 aside.right-column {
-    display: flex;
+    display: none;
     flex-direction: column;
     background-color: rgba(0, 0, 0, 0.05);
     border-left: 1px solid #ccc;
     overflow-y: auto;
     padding: 10px;
+}
+
+aside.right-column.open {
+    display: flex;
 }
 
 /* === Sudoku Board === */
@@ -297,7 +301,7 @@ aside.right-column {
         grid-row: 2;
     }
     
-    aside.right-column {
+    aside.right-column.open {
         grid-row: 1;
         border-left: none;
         border-bottom: 1px solid #ccc;

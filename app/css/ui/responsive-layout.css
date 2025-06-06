@@ -32,6 +32,25 @@ aside.right-column {
     display: none;
 }
 
+@media (min-width: 768px) {
+    aside.right-column {
+        display: none;
+    }
+    aside.right-column.open {
+        display: flex;
+    }
+    #mission-control.overlay,
+    #mission-control.overlay.open {
+        position: static;
+        transform: none;
+        visibility: visible;
+        transition: none;
+    }
+    .mission-toggle {
+        display: none;
+    }
+}
+
 .middle-column {
     display: flex;
     flex-direction: column;
@@ -83,51 +102,48 @@ aside.right-column {
 }
 
 
-.mission-toggle {
-    position: fixed;
-    bottom: 0.5rem;
-    right: 0.5rem;
-    z-index: 1100;
-    background: #333;
-    color: #fff;
-    border: none;
-    border-radius: 20px;
-    padding: 6px 12px;
-    cursor: pointer;
-}
+@media (max-width: 767px) {
+    .mission-toggle {
+        position: fixed;
+        bottom: 0.5rem;
+        right: 0.5rem;
+        z-index: 1100;
+        background: #333;
+        color: #fff;
+        border: none;
+        border-radius: 20px;
+        padding: 6px 12px;
+        cursor: pointer;
+    }
 
-#mission-control.overlay {
-    transform: translateX(100%);
-    visibility: hidden;
-    transition: transform 0.3s, visibility 0s linear 0.3s;
-}
-
-#mission-control.overlay.open {
-    transform: translateX(0);
-    visibility: visible;
-    transition: transform 0.3s;
-}
-
-@media (orientation: portrait) {
     #mission-control.overlay {
         position: fixed;
+        top: 0;
         bottom: 0;
-        left: 0;
         right: 0;
-        transform: translateY(100%);
+        transform: translateX(100%);
         visibility: hidden;
         transition: transform 0.3s, visibility 0s linear 0.3s;
         z-index: 1000;
     }
 
     #mission-control.overlay.open {
-        transform: translateY(0);
+        transform: translateX(0);
         visibility: visible;
         transition: transform 0.3s;
     }
+}
 
-    #mission-toggle {
-        bottom: 0.5rem;
-        right: 0.5rem;
+@media (max-width: 767px) and (orientation: portrait) {
+    #mission-control.overlay {
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        transform: translateY(100%);
+    }
+
+    #mission-control.overlay.open {
+        transform: translateY(0);
     }
 }
