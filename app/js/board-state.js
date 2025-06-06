@@ -48,7 +48,6 @@ const BoardState = (function() {
     if (row<0||row>8||col<0||col>8) return false;
     if (fixedCells[row][col]) return false;
     if (PathGenerator && PathGenerator.getPathCells && PathGenerator.getPathCells().has(`${row},${col}`)) return false;
-    if (value !== 0 && !isValidMove(row,col,value)) return false;
     board[row][col] = value;
     checkUnitCompletion();
     return true;
