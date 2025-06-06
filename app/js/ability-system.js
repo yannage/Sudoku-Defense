@@ -186,9 +186,14 @@ const AbilitySystem = (function() {
     const abilityBar = document.createElement('div');
     abilityBar.className = 'ability-bar';
     abilityBar.id = 'ability-bar';
-    
-    // Initially, the bar will be empty until a character is selected
-    document.body.appendChild(abilityBar);
+
+    // Place the ability bar inside the main game layout so it's
+    // positioned close to the board rather than floating over the
+    // entire page.
+    const parent = document.querySelector('.middle-column') ||
+                   document.getElementById('game-container') ||
+                   document.body;
+    parent.appendChild(abilityBar);
     
     // Create mana bar separately
     const manaBarContainer = document.createElement('div');
@@ -199,15 +204,15 @@ const AbilitySystem = (function() {
     manaBarFill.className = 'mana-bar-fill';
     manaBarFill.style.height = '100%';
     manaBarContainer.appendChild(manaBarFill);
-    
-    document.body.appendChild(manaBarContainer);
+
+    parent.appendChild(manaBarContainer);
     
     // Create mana text separately
     const manaText = document.createElement('div');
     manaText.className = 'mana-text';
     manaText.id = 'mana-text';
     manaText.textContent = 'Mana: 10/10';
-    document.body.appendChild(manaText);
+    parent.appendChild(manaText);
     
     // Hide until character is selected
     abilityBar.style.display = 'none';
