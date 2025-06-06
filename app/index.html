@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="css/ui/game-ui.css">
 <link rel="stylesheet" href="css/ui/mission-control.css">
 <link rel="stylesheet" href="css/ui/player-effects.css">
+<link rel="stylesheet" href="css/ui/game-menu.css">
 <link rel="stylesheet" href="css/ui/stats-screen.css">
 <link rel="stylesheet" href="css/ui/responsive-layout.css">
 </head>
@@ -82,17 +83,7 @@
                     <div>Currency: <span id="currency-value">100</span></div>
                     <div id="status-message">Place towers to defend against enemies!</div>
                 </div>
-                <nav id="game-controls">
-                    <button id="pause-game">Pause</button>
-                    <select id="font-selector" title="Change game font">
-                        <option value="font-default" class="font-default">Default Font</option>
-                        <option value="font-retro" class="font-retro">Retro Font</option>
-                        <option value="font-elegant" class="font-elegant">Elegant Font</option>
-                        <option value="font-playful" class="font-playful">Playful Font</option>
-                        <option value="font-modern" class="font-modern">Modern Font</option>
-                    </select>
-                    <button id="new-game">New Game</button>
-                </nav>
+
             </aside>
             <div class="middle-column">
                 <div id="sudoku-board"></div>
@@ -112,6 +103,20 @@
             <aside class="right-column"></aside>
         </div>
         </main>
+        <div id="game-menu" class="overlay">
+            <nav id="game-controls">
+                <button id="pause-game">Pause</button>
+                <select id="font-selector" title="Change game font">
+                    <option value="font-default" class="font-default">Default Font</option>
+                    <option value="font-retro" class="font-retro">Retro Font</option>
+                    <option value="font-elegant" class="font-elegant">Elegant Font</option>
+                    <option value="font-playful" class="font-playful">Playful Font</option>
+                    <option value="font-modern" class="font-modern">Modern Font</option>
+                </select>
+                <button id="new-game">New Game</button>
+            </nav>
+        </div>
+        <button id="menu-toggle" class="menu-toggle">Menu</button>
         <div id="mission-control" class="overlay open">
             <h3>Mission Control</h3>
             <ul id="mission-tips">
