@@ -144,4 +144,13 @@ aside.right-column {
     .middle-column {
         gap: 0.5rem;
     }
+
+    /*
+     * Constrain the Sudoku board height on small portrait screens so the
+     * header, tower buttons and ability bar can fit without scrolling.
+     */
+    #sudoku-board {
+        max-height: 60vh;
+        max-width: 60vh;
+    }
 }
