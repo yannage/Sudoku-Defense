@@ -1,0 +1,306 @@
+{
+  "strategist": {
+    "name": "Strategist",
+    "description": "Master of battlefield control and enemy redirection.",
+    "icon": "🧠",
+    "color": "#7e57c2",
+    "baseMaxMana": 10,
+    "startingMana": 5,
+    "uniqueAbility": {
+      "id": "redirect_path",
+      "name": "Redirect Path",
+      "description": "Generates a new path for enemies to follow",
+      "manaCost": 5,
+      "icon": "↪️",
+      "cooldown": 0
+    }
+  },
+  "engineer": {
+    "name": "Engineer",
+    "description": "Tower specialist focusing on enhancement and efficiency.",
+    "icon": "⚙️",
+    "color": "#ff9800",
+    "baseMaxMana": 10,
+    "startingMana": 5,
+    "uniqueAbility": {
+      "id": "power_surge",
+      "name": "Power Surge",
+      "description": "Temporarily doubles all tower damage",
+      "manaCost": 6,
+      "icon": "⚡",
+      "cooldown": 0
+    }
+  },
+  "tactician": {
+    "name": "Tactician",
+    "description": "Combat specialist with powerful offensive abilities.",
+    "icon": "🎯",
+    "color": "#f44336",
+    "baseMaxMana": 12,
+    "startingMana": 6,
+    "uniqueAbility": {
+      "id": "precision_strike",
+      "name": "Precision Strike",
+      "description": "Deal 30% max health damage to all enemies on screen",
+      "manaCost": 7,
+      "icon": "💥",
+      "cooldown": 0
+    }
+  },
+  "mystic": {
+    "name": "Mystic",
+    "description": "Manipulator of time and space with temporal abilities.",
+    "icon": "🔮",
+    "color": "#9c27b0",
+    "baseMaxMana": 10,
+    "startingMana": 5,
+    "uniqueAbility": {
+      "id": "time_warp",
+      "name": "Time Warp",
+      "description": "Slows all enemies by 50% for 8 seconds",
+      "manaCost": 5,
+      "icon": "⏱️",
+      "cooldown": 0
+    }
+  },
+  "arithmetician": {
+    "name": "Arithmetician",
+    "description": "Sudoku specialist with puzzle-solving powers.",
+    "icon": "🔢",
+    "color": "#4caf50",
+    "baseMaxMana": 8,
+    "startingMana": 4,
+    "uniqueAbility": {
+      "id": "number_insight",
+      "name": "Number Insight",
+      "description": "Reveals 1 correct cell in the puzzle",
+      "manaCost": 4,
+      "icon": "💡",
+      "cooldown": 0
+    }
+  },
+  "architect": {
+    "name": "Architect",
+    "description": "Master builder who specializes in upgrading and reinforcing structures.",
+    "icon": "🏛️",
+    "color": "#795548",
+    "baseMaxMana": 10,
+    "startingMana": 5,
+    "uniqueAbility": {
+      "id": "fortify_grid",
+      "name": "Fortify Grid",
+      "description": "Upgrades 3 random existing towers by one level",
+      "manaCost": 6,
+      "icon": "⬆️",
+      "cooldown": 0
+    }
+  },
+  "oracle": {
+    "name": "Oracle",
+    "description": "Seer who can glimpse the future flow of the battlefield.",
+    "icon": "👁️",
+    "color": "#3f51b5",
+    "baseMaxMana": 8,
+    "startingMana": 3,
+    "uniqueAbility": {
+      "id": "future_sight",
+      "name": "Future Sight",
+      "description": "Shows the next 3 waves of enemies",
+      "manaCost": 3,
+      "icon": "🔍",
+      "cooldown": 0
+    }
+  },
+  "alchemist": {
+    "name": "Alchemist",
+    "description": "Master of transformation who can correct mistakes and turn weaknesses into strengths.",
+    "icon": "🧪",
+    "color": "#8bc34a",
+    "baseMaxMana": 10,
+    "startingMana": 5,
+    "uniqueAbility": {
+      "id": "transmutation",
+      "name": "Transmutation",
+      "description": "Converts an incorrect tower into a correct one",
+      "manaCost": 5,
+      "icon": "✨",
+      "cooldown": 0
+    }
+  },
+  "tinkerer": {
+    "name": "Tinkerer",
+    "description": "Quick-thinking inventor who creates temporary solutions to immediate problems.",
+    "icon": "🔧",
+    "color": "#607d8b",
+    "baseMaxMana": 10,
+    "startingMana": 6,
+    "uniqueAbility": {
+      "id": "rapid_deployment",
+      "name": "Rapid Deployment",
+      "description": "Places 3 temporary towers at random valid positions",
+      "manaCost": 6,
+      "icon": "⚙️",
+      "cooldown": 0
+    }
+  },
+  "chronomancer": {
+    "name": "Chronomancer",
+    "description": "Master of time who can momentarily halt the flow of battle.",
+    "icon": "⏳",
+    "color": "#e91e63",
+    "baseMaxMana": 12,
+    "startingMana": 4,
+    "uniqueAbility": {
+      "id": "time_freeze",
+      "name": "Time Freeze",
+      "description": "Completely pauses enemy movement for 5 seconds",
+      "manaCost": 8,
+      "icon": "❄️",
+      "cooldown": 0
+    }
+  },
+  "gambler": {
+    "name": "Gambler",
+    "description": "A risk-taker who thrives on luck and chaos.",
+    "icon": "🎲",
+    "color": "#ab47bc",
+    "baseMaxMana": 9,
+    "startingMana": 4,
+    "uniqueAbility": {
+      "id": "lucky_draw",
+      "name": "Lucky Draw",
+      "description": "Roll for a reward: gain 100 currency, gain 2 lives, or lose 1 life.",
+      "manaCost": 4,
+      "icon": "🎰",
+      "cooldown": 0
+    }
+  },
+  "paladin": {
+    "name": "Paladin",
+    "description": "A divine protector who restores hope in battle.",
+    "icon": "🛡️",
+    "color": "#fdd835",
+    "baseMaxMana": 8,
+    "startingMana": 4,
+    "uniqueAbility": {
+      "id": "divine_renewal",
+      "name": "Divine Renewal",
+      "description": "Restore 1 life.",
+      "manaCost": 6,
+      "icon": "❤️",
+      "cooldown": 0
+    }
+  },
+  "merchant": {
+    "name": "Merchant",
+    "description": "A savvy trader who always finds a profit margin.",
+    "icon": "💰",
+    "color": "#ffb300",
+    "baseMaxMana": 8,
+    "startingMana": 5,
+    "uniqueAbility": {
+      "id": "gold_rush",
+      "name": "Gold Rush",
+      "description": "Gain 50 currency.",
+      "manaCost": 3,
+      "icon": "🪙",
+      "cooldown": 0
+    }
+  },
+  "completer": {
+    "name": "Completer",
+    "description": "Snaps close-to-complete sections into place.",
+    "icon": "✅",
+    "color": "#00c853",
+    "baseMaxMana": 10,
+    "startingMana": 5,
+    "uniqueAbility": {
+      "id": "auto_complete_one_missing",
+      "name": "Sudoku Finisher",
+      "description": "Completes any row, column, or 3x3 box missing only one number.",
+      "manaCost": 6,
+      "icon": "➕",
+      "cooldown": 0
+    }
+  },
+  "solver": {
+    "name": "Solver",
+    "description": "Applies logic to deduce safe placements without committing.",
+    "icon": "🧠",
+    "color": "#4db6ac",
+    "baseMaxMana": 9,
+    "startingMana": 5,
+    "uniqueAbility": {
+      "id": "hint_mode",
+      "name": "Hint Mode",
+      "description": "Temporarily shows 3 suggested correct values in unused cells.",
+      "manaCost": 5,
+      "icon": "💡",
+      "cooldown": 0
+    }
+  },
+  "speedSolver": {
+    "name": "Speed Solver",
+    "description": "Gains power from quickly solving sections of the puzzle.",
+    "icon": "⏱️",
+    "color": "#ff7043",
+    "baseMaxMana": 9,
+    "startingMana": 5,
+    "uniqueAbility": {
+      "id": "time_challenge",
+      "name": "Time Challenge",
+      "description": "Start a 20-second challenge to solve cells. Each correct placement increases tower damage.",
+      "manaCost": 5,
+      "icon": "🏃",
+      "cooldown": 0
+    }
+  },
+  "visualizer": {
+    "name": "Visualizer",
+    "description": "Uses pattern recognition to identify nearly completed sections.",
+    "icon": "👁️‍🗨️",
+    "color": "#4db6ac",
+    "baseMaxMana": 8,
+    "startingMana": 4,
+    "uniqueAbility": {
+      "id": "heat_vision",
+      "name": "Heat Vision",
+      "description": "Highlights up to 3 rows, columns, or grids that are closest to completion.",
+      "manaCost": 4,
+      "icon": "🔍",
+      "cooldown": 0
+    }
+  },
+  "beastmaster": {
+    "name": "Beastmaster",
+    "description": "Summons a random beast that attacks enemies on the path.",
+    "icon": "🐺",
+    "color": "#8d6e63",
+    "baseMaxMana": 12,
+    "startingMana": 8,
+    "uniqueAbility": {
+      "id": "summon_beast",
+      "name": "Summon Beast",
+      "description": "Summons a random beast (snail, goat, crocodile, or cat) to fight enemies",
+      "manaCost": 6,
+      "icon": "🐾",
+      "cooldown": 0
+    }
+  },
+  "pyromancer": {
+    "name": "Pyromancer",
+    "description": "Unleashes a wave of fire that burns enemies over time.",
+    "icon": "🔥",
+    "color": "#ef5350",
+    "baseMaxMana": 10,
+    "startingMana": 4,
+    "uniqueAbility": {
+      "id": "fire_wave",
+      "name": "Fire Wave",
+      "description": "Deals burn damage (5/sec for 5s) to all enemies.",
+      "manaCost": 6,
+      "icon": "♨️",
+      "cooldown": 0
+    }
+  }
+}
