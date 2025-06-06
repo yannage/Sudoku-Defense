@@ -1,0 +1,181 @@
+{
+  "1": {
+    "spriteClass": "enemy-type-1",
+    "name": "Scout",
+    "health": 60,
+    "speed": 1.1,
+    "reward": 15,
+    "points": 5,
+    "behavior": "basic",
+    "description": "Fast scout with low health"
+  },
+  "2": {
+    "spriteClass": "enemy-type-2",
+    "name": "Soldier",
+    "health": 90,
+    "speed": 0.9,
+    "reward": 18,
+    "points": 7,
+    "behavior": "basic",
+    "description": "Balanced enemy with moderate health and speed"
+  },
+  "3": {
+    "spriteClass": "enemy-type-3",
+    "name": "Armored",
+    "health": 80,
+    "speed": 0.8,
+    "reward": 21,
+    "points": 9,
+    "behavior": "armored",
+    "armorValue": 0.3,
+    "description": "Damage resistant enemy that's vulnerable to pierce towers"
+  },
+  "4": {
+    "spriteClass": "enemy-type-4",
+    "name": "Rusher",
+    "health": 70,
+    "speed": 0.7,
+    "reward": 24,
+    "points": 11,
+    "behavior": "accelerate",
+    "speedRamp": 0.015,
+    "maxSpeedMultiplier": 2.5,
+    "description": "Accelerates dramatically as it takes damage"
+  },
+  "5": {
+    "spriteClass": "enemy-type-5",
+    "name": "Splitter",
+    "health": 120,
+    "speed": 0.8,
+    "reward": 27,
+    "points": 13,
+    "behavior": "split",
+    "splitInto": [
+      1,
+      1
+    ],
+    "description": "Splits into two smaller enemies when destroyed"
+  },
+  "6": {
+    "spriteClass": "enemy-type-6",
+    "name": "Medic",
+    "health": 100,
+    "speed": 0.9,
+    "reward": 30,
+    "points": 15,
+    "behavior": "heal",
+    "healRadius": 2,
+    "healAmount": 8,
+    "healInterval": 3,
+    "description": "Heals nearby enemies - high priority target"
+  },
+  "7": {
+    "spriteClass": "enemy-type-7",
+    "name": "Phantom",
+    "health": 110,
+    "speed": 1,
+    "reward": 33,
+    "points": 17,
+    "behavior": "phasing",
+    "phaseInterval": 4,
+    "phaseDuration": 2,
+    "description": "Periodically phases to become immune to damage"
+  },
+  "8": {
+    "spriteClass": "enemy-type-8",
+    "name": "Teleporter",
+    "health": 90,
+    "speed": 1,
+    "reward": 36,
+    "points": 19,
+    "behavior": "teleport",
+    "teleportChance": 0.15,
+    "teleportDistance": 3,
+    "description": "Randomly teleports forward along the path"
+  },
+  "9": {
+    "spriteClass": "enemy-type-9",
+    "name": "Commander",
+    "health": 130,
+    "speed": 0.8,
+    "reward": 39,
+    "points": 21,
+    "behavior": "buff",
+    "buffRadius": 2,
+    "buffEffect": {
+      "speedBoost": 0.3
+    },
+    "description": "Increases the speed of nearby enemies"
+  },
+  "swarm_lord": {
+    "spriteClass": "enemy-type-10",
+    "name": "Swarm Lord",
+    "health": 300,
+    "speed": 0.6,
+    "reward": 80,
+    "points": 40,
+    "behavior": "summoner",
+    "summonType": 1,
+    "summonCount": 3,
+    "summonInterval": 6,
+    "scale": 1.2,
+    "isMinibloss": true,
+    "description": "Mini-boss that summons swarms of fast scouts"
+  },
+  "titan": {
+    "spriteClass": "enemy-type-11",
+    "name": "Titan",
+    "health": 450,
+    "speed": 0.4,
+    "reward": 90,
+    "points": 45,
+    "behavior": "tank",
+    "damageReduction": 0.4,
+    "vulnerabilityHitcount": 5,
+    "scale": 1.3,
+    "isMinibloss": true,
+    "description": "Mini-boss with extremely high health but very slow movement"
+  },
+  "numeromancer": {
+    "spriteClass": "enemy-type-12",
+    "name": "Numeromancer",
+    "health": 350,
+    "speed": 0.7,
+    "reward": 100,
+    "points": 50,
+    "behavior": "scrambler",
+    "disableRadius": 2,
+    "disableDuration": 4,
+    "disableInterval": 8,
+    "scale": 1.2,
+    "isMinibloss": true,
+    "description": "Mini-boss that temporarily disables nearby towers"
+  },
+  "boss": {
+    "spriteClass": "enemy-type-13",
+    "name": "Void Devourer",
+    "health": 800,
+    "speed": 0.5,
+    "reward": 150,
+    "points": 100,
+    "behavior": "multiphase",
+    "phases": [
+      {
+        "behavior": "tank",
+        "threshold": 0.7
+      },
+      {
+        "behavior": "rage",
+        "threshold": 0.4,
+        "speedBoost": 0.5
+      },
+      {
+        "behavior": "desperate",
+        "threshold": 0
+      }
+    ],
+    "scale": 1.5,
+    "isBoss": true,
+    "description": "Main boss with multiple phases and devastating abilities"
+  }
+}
