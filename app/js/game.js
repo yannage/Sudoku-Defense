@@ -6,6 +6,8 @@ const Game = (function() {
     let lastUpdateTime = 0;
     let cellSize = 0;
     let boardElement = null;
+    let pixiApp = null;
+    let enemySpriteContainer = null;
     
     /**
      * Initialize the game
@@ -23,10 +25,29 @@ const Game = (function() {
     // Calculate cell size based on board size
     const boardWidth = boardElement.clientWidth;
     cellSize = Math.floor(boardWidth / 9);
+
+    // Create Pixi application and enemy sprite container
+    if (window.PIXI) {
+        pixiApp = new PIXI.Application({
+            width: boardWidth,
+            height: boardWidth,
+            transparent: true
+        });
+        pixiApp.view.style.position = 'absolute';
+        pixiApp.view.style.top = '0';
+        pixiApp.view.style.left = '0';
+        pixiApp.view.style.pointerEvents = 'none';
+
+        enemySpriteContainer = new PIXI.Container();
+        pixiApp.stage.addChild(enemySpriteContainer);
+
+        boardElement.appendChild(pixiApp.view);
+    }
     
     // Initialize game settings
     const gameSettings = {
-        cellSize: cellSize
+        cellSize: cellSize,
+        pixiContainer: enemySpriteContainer
     };
     
     // Initialize BoardManager first
@@ -162,7 +183,7 @@ function reset() {
         console.warn("BoardManager not available for puzzle generation!");
     }
     
-    EnemiesModule.init();
+    EnemiesModule.init({ cellSize, pixiContainer: enemySpriteContainer });
     TowersModule.init();
     
     // Force full re-initialization
@@ -231,122 +252,17 @@ function reset() {
      * MODIFIED: Enemies now follow grid cells exactly
      */
     function renderEnemies() {
-        // Get all enemies
-const enemies = EnemiesModule.getEnemies();
+        const enemies = EnemiesModule.getEnemies();
+        const size = EnemiesModule.getCellSize();
 
-// Get or create enemy container
-let enemyContainer = document.getElementById('enemy-container');
-
-if (!enemyContainer) {
-    enemyContainer = document.createElement('div');
-    enemyContainer.id = 'enemy-container';
-    enemyContainer.style.position = 'absolute';
-    enemyContainer.style.top = '0';
-    enemyContainer.style.left = '0';
-    enemyContainer.style.width = '100%';
-    enemyContainer.style.height = '100%';
-    enemyContainer.style.pointerEvents = 'none';
-    boardElement.appendChild(enemyContainer);
-}
-
-// Update existing enemy elements and create new ones as needed
-enemies.forEach(enemy => {
-    let enemyElement = document.getElementById(enemy.id);
-    
-    if (!enemyElement) {
-        // Create new enemy element
-        enemyElement = document.createElement('div');
-        enemyElement.id = enemy.id;
-        enemyElement.className = 'enemy';
-        
-        // Use sprite instead of emoji
-        // Use sprite instead of emoji
-const sprite = document.createElement('div');
-sprite.className = 'enemy-sprite';
-if (enemy.spriteClass) {
-    sprite.classList.add(enemy.spriteClass);
-}
-
-// Fix for alignment: adjust scale and position
-const scale = cellSize / 256;
-sprite.style.setProperty('--enemy-scale', scale);
-sprite.style.position = 'absolute';
-sprite.style.left = `${(cellSize - 256 * scale) / 2}px`;
-sprite.style.top = `${(cellSize - 288 * scale) / 2}px`;
-
-enemyElement.appendChild(sprite);
-        
-        // Apply grid cell styling
-        enemyElement.style.position = 'absolute';
-        enemyElement.style.display = 'flex';
-        enemyElement.style.justifyContent = 'center';
-        enemyElement.style.alignItems = 'center';
-        enemyElement.style.width = `${cellSize}px`;
-        enemyElement.style.height = `${cellSize}px`;
-        enemyElement.style.fontSize = `${cellSize * 0.6}px`;
-        enemyElement.style.zIndex = '10';
-        
-        // Create health bar
-        const healthBar = document.createElement('div');
-        healthBar.className = 'enemy-health-bar';
-        healthBar.style.position = 'absolute';
-        healthBar.style.bottom = '4px';
-        healthBar.style.left = '10%';
-        healthBar.style.width = '80%';
-        healthBar.style.height = '4px';
-        healthBar.style.backgroundColor = '#333';
-        
-        const healthFill = document.createElement('div');
-        healthFill.className = 'enemy-health-fill';
-        healthFill.style.width = '100%';
-        healthFill.style.height = '100%';
-        healthFill.style.backgroundColor = '#ff0000';
-        
-        healthBar.appendChild(healthFill);
-        enemyElement.appendChild(healthBar);
-        
-        // Place at exact position immediately before adding to DOM (prevents flashing)
-        const left = enemy.col * cellSize;
-        const top = enemy.row * cellSize;
-        enemyElement.style.left = `${left}px`;
-        enemyElement.style.top = `${top}px`;
-        
-        // Add to container only after all styles are set
-        enemyContainer.appendChild(enemyElement);
-    }
-    
-    // Calculate position based on grid coordinates (with decimal precision for smooth movement)
-    const left = enemy.col * cellSize;
-    const top = enemy.row * cellSize;
-    
-    // Use requestAnimationFrame for smoother updates
-    requestAnimationFrame(() => {
-        // Update enemy position
-        enemyElement.style.left = `${left}px`;
-        enemyElement.style.top = `${top}px`;
-        
-        // Update health bar
-        const healthFill = enemyElement.querySelector('.enemy-health-fill');
-        if (healthFill) {
-            const healthPercent = (enemy.health / enemy.maxHealth) * 100;
-            healthFill.style.width = `${healthPercent}%`;
-        }
-    });
-});
-
-// Remove enemy elements for defeated enemies
-const enemyElements = enemyContainer.getElementsByClassName('enemy');
-
-for (let i = enemyElements.length - 1; i >= 0; i--) {
-    const element = enemyElements[i];
-    const enemyId = element.id;
-    
-    if (!enemies.find(e => e.id === enemyId)) {
-        element.remove();
-    }
-}
-        
-        
+        enemies.forEach(enemy => {
+            if (enemy.sprite) {
+                enemy.sprite.x = enemy.col * size;
+                enemy.sprite.y = enemy.row * size;
+                const scale = (size / 256) * (enemy.scale || 1);
+                enemy.sprite.scale.set(scale);
+            }
+        });
     }
     
     /**
@@ -389,6 +305,11 @@ for (let i = enemyElements.length - 1; i >= 0; i--) {
         console.log("Clearing board");
         while (boardElement.firstChild) {
             boardElement.removeChild(boardElement.firstChild);
+        }
+        if (pixiApp) {
+            pixiApp.destroy(true, {children: true});
+            pixiApp = null;
+            enemySpriteContainer = null;
         }
     }
     
@@ -784,10 +705,16 @@ EventSystem.subscribe(GameEvents.GAME_OVER, function(data) {
   // Listen for window resize to adjust cell size
   window.addEventListener('resize', function() {
     if (!boardElement) return;
-    
+
     const boardWidth = boardElement.clientWidth;
     cellSize = Math.floor(boardWidth / 9);
-    
+
+    if (pixiApp) {
+      pixiApp.renderer.resize(boardWidth, boardWidth);
+      pixiApp.view.style.width = boardWidth + 'px';
+      pixiApp.view.style.height = boardWidth + 'px';
+    }
+
     // Update cell size in other modules
     EnemiesModule.setCellSize(cellSize);
     TowersModule.setCellSize(cellSize);

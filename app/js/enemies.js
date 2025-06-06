@@ -14,6 +14,8 @@ const EnemiesModule = (function() {
     let enemiesRemaining = 0;
     let path = [];
     let cellSize = 0;
+    let pixiContainer = null;
+    let baseTexture = null;
 
     // Loaded enemy type definitions
     let enemyTypes = {};
@@ -590,6 +592,7 @@ function getPlayerPerformanceMetrics() {
   isWaveActive = false;
   enemiesRemaining = 0;
   cellSize = options.cellSize || 55; // Default cell size
+  pixiContainer = options.pixiContainer || pixiContainer;
 
   // Load enemy definitions
   loadEnemyTypes();
@@ -677,6 +680,8 @@ function createEnemy(type, adjustment = { health: 1.0, speed: 1.0 }) {
     // Initialize behavior-specific properties
     ...initializeBehavior(typeData)
   };
+
+  createEnemySprite(enemy);
   
   console.log(`Enhanced enemy created at position: (${enemy.row}, ${enemy.col})`);
   
@@ -756,6 +761,30 @@ function initializeBehavior(typeData) {
   }
   
   return props;
+}
+
+function createEnemySprite(enemy) {
+  if (!pixiContainer || !window.PIXI) return;
+  if (!baseTexture) {
+    baseTexture = PIXI.BaseTexture.from('assets/enemy-sprites.png');
+  }
+  const match = enemy.spriteClass && enemy.spriteClass.match(/enemy-type-(\d+)/);
+  let rect;
+  if (match) {
+    const index = parseInt(match[1], 10) - 1;
+    const col = index % 3;
+    const row = Math.floor(index / 3);
+    rect = new PIXI.Rectangle(col * 256, row * 288, 256, 288);
+  } else {
+    rect = new PIXI.Rectangle(0, 0, 256, 288);
+  }
+  const texture = new PIXI.Texture(baseTexture, rect);
+  const sprite = new PIXI.Sprite(texture);
+  sprite.anchor.set(0);
+  const scale = (cellSize / 256) * (enemy.scale || 1);
+  sprite.scale.set(scale);
+  pixiContainer.addChild(sprite);
+  enemy.sprite = sprite;
 }
 
 // Add a direct debug function to check path availability
@@ -1425,11 +1454,17 @@ function moveEnemy(enemy, deltaTime) {
      * Handle an enemy reaching the end of the path
      * @param {Object} enemy - The enemy that reached the end
      */
-    function enemyReachedEnd(enemy) {
-        enemy.active = false;
-        
-        // Remove from enemies array
-        enemies = enemies.filter(e => e.id !== enemy.id);
+function enemyReachedEnd(enemy) {
+    enemy.active = false;
+
+    if (enemy.sprite && pixiContainer) {
+        pixiContainer.removeChild(enemy.sprite);
+        enemy.sprite.destroy();
+        enemy.sprite = null;
+    }
+
+    // Remove from enemies array
+    enemies = enemies.filter(e => e.id !== enemy.id);
         
         // Publish event
         EventSystem.publish(GameEvents.ENEMY_REACHED_END, enemy);
@@ -1559,6 +1594,12 @@ function splitEnemy(enemy) {
  */
 function defeatEnemy(enemy) {
   enemy.active = false;
+
+  if (enemy.sprite && pixiContainer) {
+    pixiContainer.removeChild(enemy.sprite);
+    enemy.sprite.destroy();
+    enemy.sprite = null;
+  }
   
   // Remove from enemies array
   enemies = enemies.filter(e => e.id !== enemy.id);
@@ -1670,6 +1711,11 @@ function createDefeatParticles(enemy, enemyEl) {
      */
     function defeatEnemy(enemy) {
         enemy.active = false;
+        if (enemy.sprite && pixiContainer) {
+            pixiContainer.removeChild(enemy.sprite);
+            enemy.sprite.destroy();
+            enemy.sprite = null;
+        }
         
         // Remove from enemies array
         enemies = enemies.filter(e => e.id !== enemy.id);
@@ -1688,12 +1734,16 @@ function createDefeatParticles(enemy, enemyEl) {
     /**
      * Handle wave completion
      */
-    function waveComplete() {
+function waveComplete() {
     isWaveActive = false;
 
-
-  
   // Clear any enemies that might still be around
+  enemies.forEach(e => {
+    if (e.sprite && pixiContainer) {
+      pixiContainer.removeChild(e.sprite);
+      e.sprite.destroy();
+    }
+  });
   enemies = [];
   
   // Reset the recent tower placements list
