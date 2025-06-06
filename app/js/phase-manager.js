@@ -852,3 +852,5 @@ if (BoardManager?.init) {
 
 // Make the module available globally
 window.PhaseManager = PhaseManager;
+
+export {};

@@ -1,6 +1,9 @@
-const path = require('path');
+import path from 'path';
+import { jest } from "@jest/globals";
+import { fileURLToPath, pathToFileURL } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-function setup() {
+function setup(){
   global.window = {};
   jest.useFakeTimers();
   jest.resetModules();
@@ -40,13 +43,12 @@ function setup() {
   };
   global.PlayerModule = window.PlayerModule;
 
-  require(path.join('..','app','js','towers.js'));
-  return { fixed, pathCells };
+  return import(pathToFileURL(path.join(__dirname,'..','app','js','towers.js'))).then(()=>({fixed, pathCells}));
 }
 
 describe('TowersModule placement and removal', () => {
-  test('createTower places tower when valid', () => {
-    setup();
+  test('createTower places tower when valid', async () => {
+    await setup();
     const tower = window.TowersModule.createTower('1',0,0);
     jest.runOnlyPendingTimers();
     expect(tower).toBeTruthy();
@@ -54,16 +56,16 @@ describe('TowersModule placement and removal', () => {
     expect(window.TowersModule.getTowerAt(0,0)).toBeTruthy();
   });
 
-  test('createTower fails on fixed cell', () => {
-    const { fixed } = setup();
+  test('createTower fails on fixed cell', async () => {
+    const { fixed } = await setup();
     fixed[0][0] = true;
     const tower = window.TowersModule.createTower('1',0,0);
     expect(tower).toBeNull();
     expect(window.BoardManager.setCellValue).not.toHaveBeenCalled();
   });
 
-  test('removeTower clears cell and list', () => {
-    setup();
+  test('removeTower clears cell and list', async () => {
+    await setup();
     const tower = window.TowersModule.createTower('1',0,0);
     jest.runOnlyPendingTimers();
     const result = window.TowersModule.removeTower(tower.id);

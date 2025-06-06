@@ -743,3 +743,6 @@ window.AbilitySystem = AbilitySystem;
 
 // Log availability
 console.log("AbilitySystem module registered:", !!window.AbilitySystem);
+
+
+export {};

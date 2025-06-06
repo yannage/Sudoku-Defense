@@ -67,3 +67,6 @@ const BoardManager = (function() {
 })();
 
 if (typeof window !== 'undefined') window.BoardManager = BoardManager;
+
+
+export {};

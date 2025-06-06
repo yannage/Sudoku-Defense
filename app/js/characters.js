@@ -1823,3 +1823,5 @@ function showWavePreview(wavePreview) {
 
 // At the end of characters.js
 window.characters = characters;
+
+export {};

@@ -390,3 +390,5 @@ function shouldApplySteamDeckLayout() {
     // Launch the initialization
     initialize();
 })();
+
+export {};

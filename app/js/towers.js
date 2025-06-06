@@ -1170,3 +1170,5 @@ window.TowersModule = TowersModule;
         }
     });
 })();
+
+export {};

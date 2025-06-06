@@ -1,10 +1,12 @@
-const path = require('path');
+import path from 'path';
+import { jest } from "@jest/globals";
+import { fileURLToPath, pathToFileURL } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-beforeEach(() => {
+beforeEach(async () => {
   global.window = {};
-  // Clear cached module to reset EventSystem state
   jest.resetModules();
-  require(path.join('..', 'app', 'js', 'events.js'));
+  await import(pathToFileURL(path.join(__dirname, '..', 'app', 'js', 'events.js')));
 });
 
 describe('EventSystem', () => {

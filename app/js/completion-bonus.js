@@ -2113,3 +2113,5 @@ window.CompletionBonusModule = {
   // Initialize
   init();
 })();
+
+export {};

@@ -85,3 +85,6 @@ const PuzzleGenerator = (function() {
 })();
 
 if (typeof window !== 'undefined') window.PuzzleGenerator = PuzzleGenerator;
+
+
+export {};
