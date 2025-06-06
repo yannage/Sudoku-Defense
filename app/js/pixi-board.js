@@ -48,7 +48,8 @@ const PixiBoard = (function() {
     canvas.style.height = '100%';
     canvas.style.pointerEvents = 'none';
     canvas.style.imageRendering = 'pixelated';
-    boardElement.appendChild(canvas);
+    canvas.style.zIndex = '0';
+    boardElement.insertBefore(canvas, boardElement.firstChild);
 
     boardContainer = new PIXI.Container();
     entityContainer = new PIXI.Container();
@@ -230,6 +231,14 @@ const PixiBoard = (function() {
     }
   }
 
+  function rotateTowerTowards(tower, enemy) {
+    const obj = towerSprites[tower.id];
+    if (!obj || !obj.barrel) return;
+    const dx = enemy.col - tower.col;
+    const dy = enemy.row - tower.row;
+    obj.barrel.rotation = Math.atan2(dy, dx);
+  }
+
   return {
     init,
     renderBoard,
@@ -238,8 +247,17 @@ const PixiBoard = (function() {
     removeTowerSprite,
     addEnemySprite,
     updateEnemySprite,
-    removeEnemySprite
+    removeEnemySprite,
+    rotateTowerTowards
   };
 })();
 
 window.PixiBoard = PixiBoard;
+
+if (window.EventSystem && window.GameEvents) {
+  EventSystem.subscribe(GameEvents.TOWER_ATTACK, data => {
+    if (data && data.tower && data.enemy) {
+      PixiBoard.rotateTowerTowards?.(data.tower, data.enemy);
+    }
+  });
+}
