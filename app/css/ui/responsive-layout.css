@@ -111,9 +111,16 @@ aside.right-column {
         background: #333;
         color: #fff;
         border: none;
-        border-radius: 20px;
-        padding: 6px 12px;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
+        padding: 0;
+        line-height: 1;
     }
 
     #mission-control.overlay {

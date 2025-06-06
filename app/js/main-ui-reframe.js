@@ -7,8 +7,17 @@
     const toggle = document.getElementById('mission-toggle');
     if (panel && column && toggle) {
       const updateLabel = (open) => {
-        toggle.textContent = open ? 'Hide Tips' : 'Show Tips';
+        const wide = window.matchMedia('(min-width: 768px)').matches;
+        if (wide) {
+          toggle.textContent = open ? 'Hide Tips' : 'Show Tips';
+        } else {
+          toggle.textContent = open ? '✖' : '☰';
+          toggle.setAttribute('aria-label', open ? 'Hide Tips' : 'Show Tips');
+        }
       };
+
+      // set initial label
+      updateLabel(column.classList.contains('open'));
 
       toggle.addEventListener('click', function() {
         const wide = window.matchMedia('(min-width: 768px)').matches;
