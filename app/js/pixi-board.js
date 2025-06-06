@@ -15,13 +15,22 @@ const PixiBoard = (function() {
     cellSize = options.cellSize || cellSize;
     clickHandler = options.onCellClick || null;
     const boardElement = document.getElementById('sudoku-board');
-    boardElement.innerHTML = '';
+    boardElement.style.position = 'relative';
+    const boardSize = boardElement.clientWidth || cellSize * 9;
+    cellSize = boardSize / 9;
     app = new PIXI.Application({
-      width: cellSize * 9,
-      height: cellSize * 9,
+      width: boardSize,
+      height: boardSize,
       backgroundAlpha: 0
     });
-    boardElement.appendChild(app.view);
+    const canvas = app.view;
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.pointerEvents = 'none';
+    boardElement.appendChild(canvas);
 
     boardContainer = new PIXI.Container();
     entityContainer = new PIXI.Container();
@@ -37,22 +46,43 @@ const PixiBoard = (function() {
       for (let col = 0; col < 9; col++) {
         const g = new PIXI.Graphics();
         g.lineStyle(1, 0x333333, 1);
-        g.beginFill(0xffffff);
+        g.beginFill(0xffffff, 0); // transparent fill
         g.drawRect(col * cellSize, row * cellSize, cellSize, cellSize);
         g.endFill();
-        g.interactive = true;
-        g.on('pointerdown', () => {
-          if (typeof clickHandler === 'function') {
-            clickHandler(row, col);
-          }
-        });
         boardContainer.addChild(g);
       }
     }
   }
 
-  function renderBoard() {
-    // grid visuals currently static; future enhancements could recolor cells
+  function renderBoard(board, fixedCells, pathCells, towers, isWavePhase) {
+    if (!app) return;
+
+    const boardElement = document.getElementById('sudoku-board');
+    const size = boardElement.clientWidth;
+    if (size && size !== app.renderer.width) {
+      cellSize = size / 9;
+      app.renderer.resize(size, size);
+      drawGrid();
+      // resize sprites
+      Object.values(towerSprites).forEach(s => {
+        s.width = cellSize;
+        s.height = cellSize;
+        if (typeof s._col === 'number' && typeof s._row === 'number') {
+          s.x = s._col * cellSize + cellSize / 2;
+          s.y = s._row * cellSize + cellSize / 2;
+        }
+      });
+      Object.values(enemySprites).forEach(s => {
+        s.width = cellSize;
+        s.height = cellSize;
+        if (typeof s._col === 'number' && typeof s._row === 'number') {
+          s.x = s._col * cellSize + cellSize / 2;
+          s.y = s._row * cellSize + cellSize / 2;
+        }
+      });
+    }
+
+    towers.forEach(updateTowerSprite);
   }
 
   function addTowerSprite(tower) {
@@ -64,6 +94,8 @@ const PixiBoard = (function() {
     sprite.anchor.set(0.5);
     sprite.x = tower.col * cellSize + cellSize / 2;
     sprite.y = tower.row * cellSize + cellSize / 2;
+    sprite._row = tower.row;
+    sprite._col = tower.col;
     entityContainer.addChild(sprite);
     towerSprites[tower.id] = sprite;
     tower.sprite = sprite;
@@ -74,6 +106,8 @@ const PixiBoard = (function() {
     if (sprite) {
       sprite.x = tower.col * cellSize + cellSize / 2;
       sprite.y = tower.row * cellSize + cellSize / 2;
+      sprite._row = tower.row;
+      sprite._col = tower.col;
     }
   }
 
@@ -95,6 +129,8 @@ const PixiBoard = (function() {
     sprite.anchor.set(0.5);
     sprite.x = enemy.col * cellSize + cellSize / 2;
     sprite.y = enemy.row * cellSize + cellSize / 2;
+    sprite._row = enemy.row;
+    sprite._col = enemy.col;
     entityContainer.addChild(sprite);
     enemySprites[enemy.id] = sprite;
     enemy.sprite = sprite;
@@ -105,6 +141,8 @@ const PixiBoard = (function() {
     if (sprite) {
       sprite.x = enemy.col * cellSize + cellSize / 2;
       sprite.y = enemy.row * cellSize + cellSize / 2;
+      sprite._row = enemy.row;
+      sprite._col = enemy.col;
     }
   }
 
