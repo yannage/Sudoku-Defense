@@ -18,10 +18,12 @@ describe('PathGenerator.generateEnemyPath', () => {
     expect(set.size).toBe(pathArr.length);
   });
 
-  test('path progresses one column at a time', () => {
+  test('path moves without diagonal jumps', () => {
     const pathArr = window.PathGenerator.generateEnemyPath(13);
     for (let i = 1; i < pathArr.length; i++) {
-      expect(pathArr[i][1]).toBe(pathArr[i - 1][1] + 1);
+      const dr = Math.abs(pathArr[i][0] - pathArr[i - 1][0]);
+      const dc = Math.abs(pathArr[i][1] - pathArr[i - 1][1]);
+      expect(dr + dc).toBe(1);
     }
   });
 });

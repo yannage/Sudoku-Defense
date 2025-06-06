@@ -8,12 +8,21 @@ const PathGenerator = (function() {
     pathCells.add(`${row},${col}`);
 
     while (col < 8 && pathCells.size < maxLength) {
-      col++; // always progress to the right
-      const rows = [row];
-      if (row > 0) rows.push(row - 1);
-      if (row < 8) rows.push(row + 1);
-      row = rows[Math.floor(Math.random() * rows.length)];
-      pathCells.add(`${row},${col}`);
+      // optionally move vertically before advancing right
+      if (Math.random() < 0.5 && pathCells.size < maxLength - 1) {
+        const directions = [];
+        if (row > 0) directions.push(-1);
+        if (row < 8) directions.push(1);
+        if (directions.length) {
+          row += directions[Math.floor(Math.random() * directions.length)];
+          pathCells.add(`${row},${col}`);
+        }
+      }
+
+      if (col < 8 && pathCells.size < maxLength) {
+        col++;
+        pathCells.add(`${row},${col}`);
+      }
     }
 
     while (col < 8) {
