@@ -57,31 +57,31 @@ const LevelsModule = (function() {
  */
 function startWave() {
   console.log("LevelsModule.startWave called");
-  
+
   if (EnemiesModule.isWaveInProgress()) {
     EventSystem.publish(GameEvents.STATUS_MESSAGE, "Wave already in progress!");
     return;
   }
-  
-  // Get the current path from BoardManager or BoardManager
+
+  // Grab the current path from BoardManager
   const boardManager = window.BoardManager;
-  
-  // IMPORTANT: Generate a new path that considers recent tower placements
-  let currentPath = null;
-  if (boardManager && typeof boardManager.generateEnemyPath === 'function') {
-    console.log("Generating new path with consideration for recent tower placements");
+  let currentPath =
+    boardManager && typeof boardManager.getPathArray === 'function'
+      ? boardManager.getPathArray()
+      : null;
+
+  // If no path exists (fallback for edge cases), generate one
+  if ((!currentPath || currentPath.length === 0) &&
+      boardManager && typeof boardManager.generateEnemyPath === 'function') {
+    console.log("Generating path for wave start");
     currentPath = boardManager.generateEnemyPath();
-    console.log("Path generated:", currentPath);
-    
-    // Explicitly ensure EnemiesModule has the current path
-    if (window.EnemiesModule && Array.isArray(currentPath) && currentPath.length > 0) {
-      console.log("Explicitly setting path in EnemiesModule");
-      EnemiesModule.path = currentPath;
-      
-      // Also publish a path update event
-      EventSystem.publish('path:updated', currentPath);
-    }
-  } else {
+  }
+
+  if (window.EnemiesModule && Array.isArray(currentPath) && currentPath.length > 0) {
+    // Ensure EnemiesModule uses the same path
+    EnemiesModule.path = currentPath;
+    EventSystem.publish('path:updated', currentPath);
+  } else if (!currentPath || currentPath.length === 0) {
     console.error("Cannot get path data - no path provider available");
   }
   
