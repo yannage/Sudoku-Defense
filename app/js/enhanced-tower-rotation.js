@@ -7,9 +7,70 @@
 
 (function() {
   console.log("Setting up Tower Rotation Integration");
-  
+
   // Configuration flag - set to true to use the enhanced version with barrels
   const USE_ENHANCED_BARREL_VERSION = true;
+
+  // Define sprite positions for each tower type
+  const spritePositions = {
+    1: { x: 0, y: 0 },
+    2: { x: -32, y: 0 },
+    3: { x: -64, y: 0 },
+    4: { x: 0, y: -32 },
+    5: { x: -32, y: -32 },
+    6: { x: -64, y: -32 },
+    7: { x: 0, y: -64 },
+    8: { x: -32, y: -64 },
+    9: { x: -64, y: -64 }
+  };
+
+  // Track towers that need rotation
+  const activeRotations = {};
+
+  /**
+   * Add barrel elements to towers
+   */
+  function addBarrelsToTowers() {
+    // Get all tower elements
+    const towerElements = document.querySelectorAll('.tower');
+
+    towerElements.forEach(towerElement => {
+      // Skip if already has a barrel
+      if (towerElement.querySelector('.tower-barrel')) return;
+
+      // Get tower type from the parent cell's data attribute or the tower's class
+      let towerType = 1; // Default to type 1
+      const cellElement = towerElement.closest('.sudoku-cell');
+      if (cellElement) {
+        const cellValue = cellElement.getAttribute('data-value');
+        if (cellValue && !isNaN(parseInt(cellValue))) {
+          towerType = parseInt(cellValue);
+        }
+      }
+
+      // For tower classes like 'tower-1', 'tower-2', etc.
+      const towerClassMatch = Array.from(towerElement.classList)
+        .find(cls => cls.startsWith('tower-') && !isNaN(parseInt(cls.replace('tower-', ''))));
+      if (towerClassMatch) {
+        towerType = parseInt(towerClassMatch.replace('tower-', ''));
+      }
+
+      // Create barrel element
+      const barrelElement = document.createElement('div');
+      barrelElement.className = 'tower-barrel';
+      barrelElement.setAttribute('data-type', towerType);
+
+      // Set the background image and position based on tower type
+      const spritePos = spritePositions[towerType] || spritePositions[1];
+      barrelElement.style.backgroundImage = 'url("assets/aimsheet3.png")';
+      barrelElement.style.backgroundSize = '96px 96px';
+      barrelElement.style.backgroundPosition = `${spritePos.x}px ${spritePos.y}px`;
+      barrelElement.style.backgroundRepeat = 'no-repeat';
+      barrelElement.style.imageRendering = 'pixelated';
+
+      towerElement.appendChild(barrelElement);
+    });
+  }
   
   /**
    * Initialize the tower rotation system
@@ -43,67 +104,6 @@ loadEnhancedBarrelSystem();
     console.log("Initializing Enhanced Tower Rotation System");
     
     // Styles are defined in CSS
-    
-    // Define sprite positions for each tower type
-    const spritePositions = {
-      1: { x: 0, y: 0 },
-      2: { x: -32, y: 0 },
-      3: { x: -64, y: 0 },
-      4: { x: 0, y: -32 },
-      5: { x: -32, y: -32 },
-      6: { x: -64, y: -32 },
-      7: { x: 0, y: -64 },
-      8: { x: -32, y: -64 },
-      9: { x: -64, y: -64 }
-    };
-    
-    // Track towers that need rotation
-    const activeRotations = {};
-    
-    /**
-     * Add barrel elements to towers
-     */
-    function addBarrelsToTowers() {
-      // Get all tower elements
-      const towerElements = document.querySelectorAll('.tower');
-      
-      towerElements.forEach(towerElement => {
-        // Skip if already has a barrel
-        if (towerElement.querySelector('.tower-barrel')) return;
-        
-        // Get tower type from the parent cell's data attribute or the tower's class
-        let towerType = 1; // Default to type 1
-        const cellElement = towerElement.closest('.sudoku-cell');
-        if (cellElement) {
-          const cellValue = cellElement.getAttribute('data-value');
-          if (cellValue && !isNaN(parseInt(cellValue))) {
-            towerType = parseInt(cellValue);
-          }
-        }
-        
-        // For tower classes like 'tower-1', 'tower-2', etc.
-        const towerClassMatch = Array.from(towerElement.classList)
-          .find(cls => cls.startsWith('tower-') && !isNaN(parseInt(cls.replace('tower-', ''))));
-        if (towerClassMatch) {
-          towerType = parseInt(towerClassMatch.replace('tower-', ''));
-        }
-        
-        // Create barrel element
-        const barrelElement = document.createElement('div');
-        barrelElement.className = 'tower-barrel';
-        barrelElement.setAttribute('data-type', towerType);
-        
-        // Set the background image and position based on tower type
-        const spritePos = spritePositions[towerType] || spritePositions[1];
-        barrelElement.style.backgroundImage = 'url("assets/aimsheet3.png")';
-        barrelElement.style.backgroundSize = '96px 96px';
-        barrelElement.style.backgroundPosition = `${spritePos.x}px ${spritePos.y}px`;
-        barrelElement.style.backgroundRepeat = 'no-repeat';
-        barrelElement.style.imageRendering = 'pixelated';
-        
-        towerElement.appendChild(barrelElement);
-      });
-    }
     
     /**
      * Calculate angle between tower and enemy
@@ -278,50 +278,6 @@ barrelElement.style.transform = `translate(-50%, -50%) rotate(${angle}deg) scale
     }
   }
 
-  /**
-   * Function to add barrels to all towers
-   * Used by both the event handlers and utility function
-   */
-  function addBarrelsToTowers() {
-    const towerElements = document.querySelectorAll('.tower');
-    towerElements.forEach(towerElement => {
-      // Skip if already has a barrel
-      if (towerElement.querySelector('.tower-barrel')) return;
-      
-      // Get tower type from the parent cell's data attribute or the tower's class
-      let towerType = 1; // Default to type 1
-      const cellElement = towerElement.closest('.sudoku-cell');
-      if (cellElement) {
-        const cellValue = cellElement.getAttribute('data-value');
-        if (cellValue && !isNaN(parseInt(cellValue))) {
-          towerType = parseInt(cellValue);
-        }
-      }
-      
-      // For tower classes like 'tower-1', 'tower-2', etc.
-      const towerClassMatch = Array.from(towerElement.classList)
-        .find(cls => cls.startsWith('tower-') && !isNaN(parseInt(cls.replace('tower-', ''))));
-      if (towerClassMatch) {
-        towerType = parseInt(towerClassMatch.replace('tower-', ''));
-      }
-      
-      // Create barrel element
-      const barrelElement = document.createElement('div');
-      barrelElement.className = 'tower-barrel';
-      barrelElement.setAttribute('data-type', towerType);
-      
-      // Set the background image and position based on tower type
-      const spritePos = spritePositions[towerType] || { x: 0, y: 0 };
-      barrelElement.style.backgroundImage = 'url("assets/aimsheet3.png")';
-      barrelElement.style.backgroundSize = '96px 96px';
-      barrelElement.style.backgroundPosition = `${spritePos.x}px ${spritePos.y}px`;
-      barrelElement.style.backgroundRepeat = 'no-repeat';
-      barrelElement.style.imageRendering = 'pixelated';
-      
-      towerElement.appendChild(barrelElement);
-    });
-    return towerElements.length;
-  }
   
   // Initialize the tower rotation system after a delay to ensure other modules are loaded
   setTimeout(initTowerRotation, 1000);
@@ -329,9 +285,6 @@ barrelElement.style.transform = `translate(-50%, -50%) rotate(${angle}deg) scale
   // Expose utilities to the global scope for debugging
   window.TowerRotationUtils = {
     initialize: initTowerRotation,
-    addBarrelsToAllTowers: function() {
-      const count = addBarrelsToTowers();
-      return `Added barrels to ${count} towers`;
-    }
+    addBarrelsToTowers
   };
 })();
