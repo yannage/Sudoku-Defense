@@ -49,3 +49,9 @@ npm test
 ```
 
 This will execute all test suites located in the `test/` directory.
+
+## Canvas renderer
+
+A basic canvas renderer is included in `app/js/render-canvas.js`. It draws towers, enemies, and projectiles on an HTML5 canvas overlay instead of using DOM elements. The module automatically starts when the page loads and exposes a `logFPSComparison()` method to print the current DOM and canvas frame rates to the console.
+
+Call `CanvasRenderer.logFPSComparison()` in the browser console to compare performance between the DOM and canvas implementations.
