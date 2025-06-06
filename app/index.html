@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="css/features/characters.css">
 <link rel="stylesheet" href="css/features/save-system.css">
 <link rel="stylesheet" href="css/features/font-manager.css">
+<link rel="stylesheet" href="css/features/pixi-demo.css">
 
 <!-- Gameplay CSS -->
 <link rel="stylesheet" href="css/gameplay/board/sudoku-board-select.css">
@@ -87,6 +88,7 @@
             </aside>
             <div class="middle-column">
                 <div id="sudoku-board"></div>
+                <div id="pixi-container"></div>
                 <ul id="tower-selection">
   <li class="tower-option" data-tower-type="1" title="Rapid Tower: Fast-firing with 3x attack speed but lower damage">1️⃣</li>
   <li class="tower-option" data-tower-type="2" title="Slowing Tower: Reduces enemy speed by 30% for 3 seconds">2️⃣</li>
@@ -126,7 +128,9 @@
         <button id="mission-toggle" class="mission-toggle">Hide Tips</button>
     </div>
     <!-- Load the modules in the correct order -->
-<script src="js/events.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.0/pixi.min.js"></script>
+    <script src="js/pixi-demo.js"></script>
+    <script src="js/events.js"></script>
 <script src="js/phase-manager.js"></script>
 <script src="js/puzzle-generator.js"></script>
 <script src="js/path-generator.js"></script>
