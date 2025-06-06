@@ -131,3 +131,17 @@ aside.right-column {
         right: 0.5rem;
     }
 }
+
+@media (max-width: 480px) {
+    #game-container {
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+
+    #layout-grid,
+    aside.left-column,
+    aside.right-column,
+    .middle-column {
+        gap: 0.5rem;
+    }
+}
