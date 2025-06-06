@@ -73,21 +73,26 @@ const PixiBoard = (function() {
     }
   }
 
+  const TOWER_COLS = 16;
+  const TOWER_ROWS = 16;
+
   function getTowerTexture(type) {
     if (!towerBaseTexture) return null;
-    const w = towerBaseTexture.width / 3;
-    const h = towerBaseTexture.height / 3;
-    const col = (type - 1) % 3;
-    const row = Math.floor((type - 1) / 3);
+    const w = towerBaseTexture.width / TOWER_COLS;
+    const h = towerBaseTexture.height / TOWER_ROWS;
+    const index = (Number(type) || 1) - 1;
+    const col = index % TOWER_COLS;
+    const row = Math.floor(index / TOWER_COLS);
     return new PIXI.Texture(towerBaseTexture, new PIXI.Rectangle(col * w, row * h, w, h));
   }
 
   function getBarrelTexture(type) {
     if (!towerBarrelTexture) return null;
-    const w = towerBarrelTexture.width / 3;
-    const h = towerBarrelTexture.height / 3;
-    const col = (type - 1) % 3;
-    const row = Math.floor((type - 1) / 3);
+    const w = towerBarrelTexture.width / TOWER_COLS;
+    const h = towerBarrelTexture.height / TOWER_ROWS;
+    const index = (Number(type) || 1) - 1;
+    const col = index % TOWER_COLS;
+    const row = Math.floor(index / TOWER_COLS);
     return new PIXI.Texture(towerBarrelTexture, new PIXI.Rectangle(col * w, row * h, w, h));
   }
 
@@ -95,10 +100,13 @@ const PixiBoard = (function() {
     if (!enemyBaseTexture || !spriteClass) return null;
     const match = /enemy-type-(\d+)/.exec(spriteClass);
     const typeNum = match ? parseInt(match[1], 10) : 1;
-    const w = enemyBaseTexture.width / 3;
-    const h = enemyBaseTexture.height / 4;
-    const col = (typeNum - 1) % 3;
-    const row = Math.floor((typeNum - 1) / 3);
+    const ENEMY_COLS = 16;
+    const ENEMY_ROWS = 24;
+    const w = enemyBaseTexture.width / ENEMY_COLS;
+    const h = enemyBaseTexture.height / ENEMY_ROWS;
+    const index = (typeNum || 1) - 1;
+    const col = index % ENEMY_COLS;
+    const row = Math.floor(index / ENEMY_COLS);
     return new PIXI.Texture(enemyBaseTexture, new PIXI.Rectangle(col * w, row * h, w, h));
   }
 
