@@ -4,11 +4,6 @@
     btn.id = 'test-game-button';
     btn.textContent = 'Test Game';
     Object.assign(btn.style, {
-      position: 'fixed',
-      top: '10px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      zIndex: '10000',
       padding: '8px 16px',
       fontSize: '16px',
       background: '#ff5722',
@@ -52,7 +47,12 @@
       }
     });
 
-    document.body.appendChild(btn);
+    const controls = document.getElementById('game-controls');
+    if (controls) {
+      controls.appendChild(btn);
+    } else {
+      document.body.appendChild(btn);
+    }
   }
 
   if (document.readyState === 'loading') {

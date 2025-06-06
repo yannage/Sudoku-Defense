@@ -1,0 +1,38 @@
+#game-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 220px;
+  max-height: 100vh;
+  background-color: rgba(0,0,0,0.8);
+  color: #fff;
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+#game-menu.overlay {
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform 0.3s, visibility 0s linear 0.3s;
+}
+
+#game-menu.overlay.open {
+  transform: translateX(0);
+  visibility: visible;
+  transition: transform 0.3s;
+}
+
+.menu-toggle {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1100;
+  background: #333;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
