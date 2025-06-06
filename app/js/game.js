@@ -230,7 +230,12 @@ function reset() {
      * Render enemies on the board
      * MODIFIED: Enemies now follow grid cells exactly
      */
-    function renderEnemies() {
+function renderEnemies() {
+        if (window.PixiBoard && typeof PixiBoard.updateEnemySprite === 'function') {
+            // Pixi sprites updated during enemy movement
+            return;
+        }
+
         // Get all enemies
 const enemies = EnemiesModule.getEnemies();
 
@@ -358,25 +363,10 @@ for (let i = enemyElements.length - 1; i >= 0; i--) {
         // Clear any existing board
         clearBoard();
         
-        // Create cells
-        for (let row = 0; row < 9; row++) {
-            for (let col = 0; col < 9; col++) {
-                const cell = document.createElement('div');
-                cell.className = 'sudoku-cell';
-                cell.dataset.row = row;
-                cell.dataset.col = col;
-                
-                // Add click event listener
-                cell.addEventListener('click', function() {
-                    handleCellClick(row, col);
-                });
-                
-                boardElement.appendChild(cell);
-            }
+        // Initialize Pixi board for rendering
+        if (window.PixiBoard && typeof PixiBoard.init === 'function') {
+            PixiBoard.init({ cellSize: cellSize, onCellClick: handleCellClick });
         }
-        
-        // Count cells to ensure all were created
-        console.log("Created " + boardElement.childElementCount + " cells");
         
         // Update board with initial values
         updateBoard();
@@ -398,12 +388,18 @@ for (let i = enemyElements.length - 1; i >= 0; i--) {
      */
 function updateBoard() {
   console.log("Updating board display");
-  
+
   const board = BoardManager.getBoard();
   const fixedCells = BoardManager.getFixedCells();
   const pathCells = BoardManager.getPathCells();
-  const boardElement = document.getElementById("sudoku-board");
   const isWavePhase = Game.displayMode === 'sprites';
+
+  if (window.PixiBoard && typeof PixiBoard.renderBoard === 'function') {
+    PixiBoard.renderBoard(board, fixedCells, pathCells, TowersModule.getTowers(), isWavePhase);
+    return;
+  }
+
+  const boardElement = document.getElementById("sudoku-board");
   
   for (let row = 0; row < 9; row++) {
     for (let col = 0; col < 9; col++) {
