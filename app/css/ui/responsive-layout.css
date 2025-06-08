@@ -34,6 +34,20 @@ aside.right-column {
     gap: 0.5rem;
 }
 
+#left-controls #tower-selection {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    width: 100%;
+    max-width: 360px;
+    list-style: none;
+    padding-left: 0;
+    gap: 0.5rem;
+}
+
+#left-controls #tower-selection li.tower-option {
+    width: 100%;
+}
+
 aside.right-column {
     display: flex;
 }
