@@ -42,17 +42,13 @@ aside.right-column {
 
 @media (min-width: 768px) {
     #layout-grid {
-        /*
-         * Give the puzzle the lion's share of the width. The side columns
-         * shrink down to roughly 10% of the viewport each (never smaller
-         * than 80px) so the board can occupy close to 80%.
-         */
-        grid-template-columns: minmax(80px, 10%) 1fr minmax(80px, 10%);
+        /* Middle column reduced to around 40% for better fit on 16:10 displays */
+        grid-template-columns: 30% 40% 30%;
         align-items: start;
     }
 
     #sudoku-board {
-        max-width: 80vw;
+        max-width: 90%;
     }
 }
 
@@ -78,16 +74,29 @@ aside.right-column {
     max-width: 360px;
 }
 
+.board-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#placement-options {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    background: #333;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
 .next-wave {
     margin-top: 0.5rem;
 }
 
 
 .mission-toggle {
-    position: fixed;
-    bottom: 0.5rem;
-    right: 0.5rem;
-    z-index: 1100;
+    align-self: flex-end;
+    margin-top: 1rem;
     background: #333;
     color: #fff;
     border: none;
@@ -127,8 +136,8 @@ aside.right-column {
     }
 
     #mission-toggle {
-        bottom: 0.5rem;
-        right: 0.5rem;
+        bottom: auto;
+        right: auto;
     }
 }
 
