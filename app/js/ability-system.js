@@ -20,17 +20,23 @@ const AbilitySystem = (function() {
    */
   function init() {
     console.log("Ability System initializing...");
-    
-    // Load any saved state
-    loadState();
-    
-    // Create UI
-    createUI();
-    
-    // Set up event listeners
-    setupEventListeners();
-    
-    console.log("Ability System initialized");
+
+    return CharactersModule.load()
+      .then(() => {
+        // Load any saved state now that characters are available
+        loadState();
+
+        // Create UI
+        createUI();
+
+        // Set up event listeners
+        setupEventListeners();
+
+        console.log("Ability System initialized");
+      })
+      .catch((err) => {
+        console.error("Ability System failed to initialize:", err);
+      });
   }
   
   /**
@@ -113,8 +119,13 @@ const AbilitySystem = (function() {
       cardsContainer.scrollBy({ left: 240, behavior: 'smooth' });
     });
     
+    if (!window.characters) {
+      console.error('Ability System: character data not loaded');
+      return;
+    }
+
     // Add character cards
-    Object.entries(window.characters || characters).forEach(([id, char]) => {
+    Object.entries(window.characters).forEach(([id, char]) => {
       const card = document.createElement('div');
       card.className = 'character-card';
       card.dataset.character = id;
@@ -283,13 +294,15 @@ const AbilitySystem = (function() {
     characterIndicator.className = 'character-indicator';
     characterIndicator.id = 'character-indicator';
     
-    if (currentCharacter) {
-      const character = window.characters[currentCharacter] || characters[currentCharacter];
-      characterIndicator.innerHTML = `
+    if (currentCharacter && window.characters) {
+      const character = window.characters[currentCharacter];
+      if (character) {
+        characterIndicator.innerHTML = `
                 <div class="character-indicator-icon">${character.icon}</div>
                 <div class="character-indicator-name">${character.name}</div>
             `;
-      characterIndicator.style.setProperty('--character-color', character.color);
+        characterIndicator.style.setProperty('--character-color', character.color);
+      }
     }
     
     document.body.appendChild(characterIndicator);
@@ -301,7 +314,7 @@ const AbilitySystem = (function() {
   function loadState() {
     try {
       const savedCharacter = localStorage.getItem('sudoku_td_character');
-      if (savedCharacter && (window.characters?.[savedCharacter] || characters?.[savedCharacter])) {
+      if (savedCharacter && window.characters?.[savedCharacter]) {
         currentCharacter = savedCharacter;
         characterSelected = true;
       } else {
@@ -314,7 +327,7 @@ const AbilitySystem = (function() {
       if (!isNaN(savedLevel) && savedLevel > 0) {
         playerLevel = savedLevel;
         // For new system, calculate max mana based on level
-        const characterData = window.characters?.[currentCharacter] || characters?.[currentCharacter];
+        const characterData = window.characters?.[currentCharacter];
         if (characterData) {
           maxMana = characterData.baseMaxMana + Math.floor(savedLevel / 5);
         }
@@ -333,8 +346,13 @@ const AbilitySystem = (function() {
    * @param {string} characterId - ID of the character to select
    */
   function selectCharacter(characterId) {
-    const charactersObject = window.characters || characters;
-    
+    if (!window.characters) {
+      console.error('Ability System: character data not loaded');
+      return false;
+    }
+
+    const charactersObject = window.characters;
+
     if (!charactersObject[characterId]) {
       console.warn("Character not found:", characterId);
       return false;
@@ -400,7 +418,11 @@ const AbilitySystem = (function() {
     abilityBar.innerHTML = '';
     
     // Get character data
-    const charactersObject = window.characters || characters;
+    if (!window.characters) {
+      console.error('Ability System: character data not loaded');
+      return;
+    }
+    const charactersObject = window.characters;
     const character = charactersObject[currentCharacter];
     if (!character) return;
     
@@ -449,8 +471,8 @@ const AbilitySystem = (function() {
     }
     
     // Update ability states
-    if (currentCharacter) {
-      const charactersObject = window.characters || characters;
+    if (currentCharacter && window.characters) {
+      const charactersObject = window.characters;
       const character = charactersObject[currentCharacter];
       const ability = character?.uniqueAbility;
       
@@ -569,8 +591,12 @@ const AbilitySystem = (function() {
    */
   function useAbility() {
     if (!currentCharacter) return false;
-    
-    const charactersObject = window.characters || characters;
+    if (!window.characters) {
+      console.error('Ability System: character data not loaded');
+      return false;
+    }
+
+    const charactersObject = window.characters;
     const character = charactersObject[currentCharacter];
     if (!character) return false;
     
@@ -652,7 +678,8 @@ console.log("placeTowerWithBoardSync function updated to trigger completion chec
     setInterval(() => {
       if (!currentCharacter) return;
       
-      const charactersObject = window.characters || characters;
+      if (!window.characters) return;
+      const charactersObject = window.characters;
       const character = charactersObject[currentCharacter];
       if (!character) return;
       
