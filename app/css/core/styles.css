@@ -156,16 +156,13 @@ h1 {
 }
 
 #mission-control {
-  position: absolute;
-  right: 20px;
-  top: 100px;
-  width: 220px;
+  position: relative;
+  width: 100%;
   background: rgba(20, 20, 40, 0.9);
   color: white;
   font-family: monospace;
   padding: 10px;
   border-radius: 10px;
-  z-index: 1000;
   box-shadow: 0 0 10px #222;
 }
 

@@ -161,7 +161,13 @@
       modeToggleButton = document.createElement('button');
       modeToggleButton.id = 'sudoku-mode-toggle';
       modeToggleButton.innerHTML = '<span class="icon">🎯</span> Place Mode <span class="keyboard-hint">Tab</span>';
-      document.body.appendChild(modeToggleButton);
+
+      const controls = document.querySelector('.board-controls');
+      if (controls) {
+        controls.appendChild(modeToggleButton);
+      } else {
+        document.body.appendChild(modeToggleButton);
+      }
       
       // Add click handler for mode toggle
       modeToggleButton.addEventListener('click', toggleInteractionMode);
