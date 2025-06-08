@@ -84,7 +84,10 @@
                     <div>Currency: <span id="currency-value">100</span></div>
                     <div id="status-message">Place towers to defend against enemies!</div>
                 </div>
-
+                <div id="left-controls">
+                    <button id="start-wave" class="next-wave">Next Wave</button>
+                    <button id="placement-options" class="placement-options">Options</button>
+                </div>
             </aside>
             <div class="middle-column">
                 <div id="sudoku-board"></div>
@@ -101,11 +104,17 @@
   <li class="tower-option" data-tower-type="8" title="Sniper Tower: Long range with 20% chance for critical hits">8️⃣</li>
   <li class="tower-option" data-tower-type="9" title="Support Tower: Boosts damage of adjacent towers by 20%">9️⃣</li>
                 </ul>
-                <button id="placement-options" class="placement-options">Options</button>
                 </div>
-                <button id="start-wave" class="next-wave">Next Wave</button>
             </div>
-            <aside class="right-column"></aside>
+            <aside class="right-column">
+                <div id="mission-control" class="overlay open">
+                    <h3>Mission Control</h3>
+                    <ul id="mission-tips">
+                        <li>Scanning board...</li>
+                    </ul>
+                    <button id="mission-toggle" class="mission-toggle">Hide Tips</button>
+                </div>
+            </aside>
         </div>
         </main>
         <div id="game-menu" class="overlay">
@@ -122,13 +131,6 @@
             </nav>
         </div>
         <button id="menu-toggle" class="menu-toggle">Menu</button>
-        <div id="mission-control" class="overlay open">
-            <h3>Mission Control</h3>
-            <ul id="mission-tips">
-                <li>Scanning board...</li>
-            </ul>
-            <button id="mission-toggle" class="mission-toggle">Hide Tips</button>
-        </div>
     </div>
     <!-- Load the modules in the correct order -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.0/pixi.min.js"></script>
