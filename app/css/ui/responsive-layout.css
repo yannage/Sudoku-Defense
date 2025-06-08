@@ -86,14 +86,6 @@ aside.right-column {
     gap: 0.5rem;
 }
 
-#placement-options {
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    background: #333;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-}
 
 .next-wave {
     margin-top: 0.5rem;
