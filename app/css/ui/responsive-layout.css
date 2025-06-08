@@ -26,6 +26,8 @@ aside.right-column {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    /* Allow columns to shrink so content doesn't push the Sudoku board */
+    min-width: 0;
 }
 
 #left-controls {
@@ -36,6 +38,8 @@ aside.right-column {
 
 aside.right-column {
     display: flex;
+    /* Prevent the mission panel from forcing extra width */
+    min-width: 0;
 }
 
 .middle-column {
@@ -44,6 +48,8 @@ aside.right-column {
     justify-content: center;
     align-items: center;
     gap: 1rem;
+    /* Avoid Sudoku board overflow when space is tight */
+    min-width: 0;
 }
 
 @media (min-width: 768px) {
