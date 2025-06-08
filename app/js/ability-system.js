@@ -228,23 +228,38 @@ const AbilitySystem = (function() {
     // Check if experience bar already exists
     if (document.getElementById('experience-bar')) return;
     
-    const experienceBar = document.createElement('div');
-    experienceBar.className = 'experience-bar';
-    experienceBar.id = 'experience-bar';
-    
-    const experienceFill = document.createElement('div');
-    experienceFill.className = 'experience-fill';
-    experienceFill.style.height = '100%';
-    experienceBar.appendChild(experienceFill);
-    
-    document.body.appendChild(experienceBar);
-    
+    const parent = document.querySelector('#left-controls') ||
+                   document.querySelector('.left-column') ||
+                   document.getElementById('game-container') ||
+                   document.body;
+
+    const manaBarContainer = document.getElementById('mana-bar-container');
+
     // Create experience text separately
     const experienceText = document.createElement('div');
     experienceText.className = 'experience-text';
     experienceText.id = 'experience-text';
     experienceText.textContent = `Level ${playerLevel} (${playerExperience}/${experienceToNextLevel})`;
-    document.body.appendChild(experienceText);
+    if (manaBarContainer) {
+      parent.insertBefore(experienceText, manaBarContainer);
+    } else {
+      parent.appendChild(experienceText);
+    }
+
+    const experienceBar = document.createElement('div');
+    experienceBar.className = 'experience-bar';
+    experienceBar.id = 'experience-bar';
+
+    const experienceFill = document.createElement('div');
+    experienceFill.className = 'experience-fill';
+    experienceFill.style.height = '100%';
+    experienceBar.appendChild(experienceFill);
+
+    if (manaBarContainer) {
+      parent.insertBefore(experienceBar, manaBarContainer);
+    } else {
+      parent.appendChild(experienceBar);
+    }
     
     // Create level up effect element
     const levelUpEffect = document.createElement('div');
