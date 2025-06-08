@@ -83,10 +83,8 @@
       
       /* Mode toggle button */
       #sudoku-mode-toggle {
-        position: fixed;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
+        position: relative;
+        margin-top: 8px;
         background-color: #333;
         color: white;
         border: none;
@@ -94,11 +92,12 @@
         padding: 6px 15px;
         font-size: 14px;
         cursor: pointer;
-        z-index: 1000;
+        z-index: 1;
         display: flex;
         align-items: center;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         transition: background-color 0.3s;
+        align-self: center;
       }
       
       #sudoku-mode-toggle:hover {

@@ -82,6 +82,7 @@ aside.right-column {
 
 .board-controls {
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 0.5rem;
 }
