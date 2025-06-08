@@ -5,6 +5,8 @@
   color: white;
   max-height: calc(100vh - 120px);
   overflow-y: auto;
+  /* Prevent the panel from overflowing its column */
+  max-width: 100%;
 }
 
 #mission-control h3 {
