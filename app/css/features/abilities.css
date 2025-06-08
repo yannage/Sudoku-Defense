@@ -113,17 +113,16 @@
     transition: width 0.3s;
 }
 
-/* === Experience Bar - Positioned at top-left === */
+/* === Experience Bar - Aligned with mana bar === */
 .experience-bar {
-    position: fixed;
-    top: 35px;
-    left: 15px;
-    width: 200px;
+    position: relative;
+    width: 300px;
     height: 10px;
     background-color: rgba(0, 0, 0, 0.5);
     border-radius: 5px;
     overflow: hidden;
     z-index: 899;
+    margin-top: 0.25rem;
 }
 
 .experience-fill {
@@ -149,8 +148,8 @@
 }
 
 .experience-text {
-    top: 15px;
-    left: 15px;
+    align-self: center;
+    margin-top: 0.25rem;
 }
 
 .level-up-effect {
