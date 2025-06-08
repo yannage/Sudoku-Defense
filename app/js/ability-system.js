@@ -190,7 +190,7 @@ const AbilitySystem = (function() {
     // Place the ability bar inside the main game layout so it's
     // positioned close to the board rather than floating over the
     // entire page.
-    const parent = document.querySelector('.middle-column') ||
+    const parent = document.querySelector('.left-column') ||
                    document.getElementById('game-container') ||
                    document.body;
     parent.appendChild(abilityBar);

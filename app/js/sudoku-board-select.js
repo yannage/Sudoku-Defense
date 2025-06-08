@@ -158,11 +158,15 @@
   function createModeUI() {
     // Create mode toggle button if it doesn't exist
     if (!modeToggleButton) {
-      modeToggleButton = document.createElement('button');
-      modeToggleButton.id = 'sudoku-mode-toggle';
-      modeToggleButton.innerHTML = '<span class="icon">🎯</span> Place Mode <span class="keyboard-hint">Tab</span>';
-      document.body.appendChild(modeToggleButton);
-      
+      modeToggleButton = document.getElementById('sudoku-mode-toggle');
+      if (!modeToggleButton) {
+        modeToggleButton = document.createElement('button');
+        modeToggleButton.id = 'sudoku-mode-toggle';
+        modeToggleButton.innerHTML = '<span class="icon">🎯</span> Place Mode <span class="keyboard-hint">Tab</span>';
+        const parent = document.querySelector('.board-controls') || document.body;
+        parent.appendChild(modeToggleButton);
+      }
+
       // Add click handler for mode toggle
       modeToggleButton.addEventListener('click', toggleInteractionMode);
     }

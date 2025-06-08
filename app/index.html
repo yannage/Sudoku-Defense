@@ -84,11 +84,12 @@
                     <div>Currency: <span id="currency-value">100</span></div>
                     <div id="status-message">Place towers to defend against enemies!</div>
                 </div>
-
+                <button id="start-wave" class="next-wave">Next Wave</button>
             </aside>
             <div class="middle-column">
                 <div id="sudoku-board"></div>
-               
+
+                <div class="board-controls">
                 <ul id="tower-selection">
   <li class="tower-option" data-tower-type="1" title="Rapid Tower: Fast-firing with 3x attack speed but lower damage">1️⃣</li>
   <li class="tower-option" data-tower-type="2" title="Slowing Tower: Reduces enemy speed by 30% for 3 seconds">2️⃣</li>
@@ -100,9 +101,18 @@
   <li class="tower-option" data-tower-type="8" title="Sniper Tower: Long range with 20% chance for critical hits">8️⃣</li>
   <li class="tower-option" data-tower-type="9" title="Support Tower: Boosts damage of adjacent towers by 20%">9️⃣</li>
                 </ul>
-                <button id="start-wave" class="next-wave">Next Wave</button>
+                <button id="sudoku-mode-toggle" class="sudoku-mode-toggle">Place Mode</button>
+                </div>
             </div>
-            <aside class="right-column"></aside>
+            <aside class="right-column">
+                <div id="mission-control" class="open">
+                    <h3>Mission Control</h3>
+                    <ul id="mission-tips">
+                        <li>Scanning board...</li>
+                    </ul>
+                    <button id="mission-toggle" class="mission-toggle">Hide Tips</button>
+                </div>
+            </aside>
         </div>
         </main>
         <div id="game-menu" class="overlay">
@@ -119,13 +129,6 @@
             </nav>
         </div>
         <button id="menu-toggle" class="menu-toggle">Menu</button>
-        <div id="mission-control" class="overlay open">
-            <h3>Mission Control</h3>
-            <ul id="mission-tips">
-                <li>Scanning board...</li>
-            </ul>
-        </div>
-        <button id="mission-toggle" class="mission-toggle">Hide Tips</button>
     </div>
     <!-- Load the modules in the correct order -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.0/pixi.min.js"></script>
