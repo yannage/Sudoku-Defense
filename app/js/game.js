@@ -230,7 +230,12 @@ function reset() {
      * Render enemies on the board
      * MODIFIED: Enemies now follow grid cells exactly
      */
-    function renderEnemies() {
+function renderEnemies() {
+        if (window.PixiBoard && typeof PixiBoard.updateEnemySprite === 'function') {
+            // Pixi sprites updated during enemy movement
+            return;
+        }
+
         // Get all enemies
 const enemies = EnemiesModule.getEnemies();
 
@@ -365,19 +370,24 @@ for (let i = enemyElements.length - 1; i >= 0; i--) {
                 cell.className = 'sudoku-cell';
                 cell.dataset.row = row;
                 cell.dataset.col = col;
-                
+
                 // Add click event listener
                 cell.addEventListener('click', function() {
                     handleCellClick(row, col);
                 });
-                
+
                 boardElement.appendChild(cell);
             }
         }
-        
+
         // Count cells to ensure all were created
         console.log("Created " + boardElement.childElementCount + " cells");
-        
+
+        // Initialize Pixi board for rendering (overlay)
+        if (window.PixiBoard && typeof PixiBoard.init === 'function') {
+            PixiBoard.init({ cellSize: cellSize });
+        }
+
         // Update board with initial values
         updateBoard();
     }
@@ -398,12 +408,13 @@ for (let i = enemyElements.length - 1; i >= 0; i--) {
      */
 function updateBoard() {
   console.log("Updating board display");
-  
+
   const board = BoardManager.getBoard();
   const fixedCells = BoardManager.getFixedCells();
   const pathCells = BoardManager.getPathCells();
-  const boardElement = document.getElementById("sudoku-board");
   const isWavePhase = Game.displayMode === 'sprites';
+
+  const boardElement = document.getElementById("sudoku-board");
   
   for (let row = 0; row < 9; row++) {
     for (let col = 0; col < 9; col++) {
@@ -422,26 +433,26 @@ function updateBoard() {
       cellElement.classList.remove('path', 'dirt', 'prewave-path', 'prewave', 'grass', 'dark-grass', 'tower-number');
       
       // --- WAVE PHASE ---
-      if (isWavePhase) {
-        if (isPath) {
-          cellElement.classList.add('dirt'); // brown dirt path
-        } else if (isFixed) {
-          cellElement.classList.add('dark-grass'); // fixed cells = dark grass
-        } else {
-          cellElement.classList.add('grass'); // default green
-        }
-        
-        if (tower) {
-          const sprite = document.createElement('div');
-          sprite.classList.add('tower', `tower-${tower.type}`);
-          if (tower.level > 1) {
-            const levelIndicator = document.createElement('span');
-            levelIndicator.className = 'tower-level';
-            levelIndicator.textContent = tower.level;
-            sprite.appendChild(levelIndicator);
+        if (isWavePhase) {
+          if (isPath) {
+            cellElement.classList.add('dirt'); // brown dirt path
+          } else if (isFixed) {
+            cellElement.classList.add('dark-grass'); // fixed cells = dark grass
+          } else {
+            cellElement.classList.add('grass'); // default green
           }
-          cellElement.appendChild(sprite);
-        }
+
+          if (tower && !(window.PixiBoard && typeof PixiBoard.addTowerSprite === 'function')) {
+            const sprite = document.createElement('div');
+            sprite.classList.add('tower', `tower-${tower.type}`);
+            if (tower.level > 1) {
+              const levelIndicator = document.createElement('span');
+              levelIndicator.className = 'tower-level';
+              levelIndicator.textContent = tower.level;
+              sprite.appendChild(levelIndicator);
+            }
+            cellElement.appendChild(sprite);
+          }
         
         // --- SUDOKU PHASE ---
       } else {
@@ -464,7 +475,11 @@ function updateBoard() {
       }
     }
   }
-  
+
+  if (window.PixiBoard && typeof PixiBoard.renderBoard === 'function') {
+    PixiBoard.renderBoard(board, fixedCells, pathCells, TowersModule.getTowers(), isWavePhase);
+  }
+
   // Optional fix
   if (typeof BoardManager.fixBoardDiscrepancies === 'function') {
     setTimeout(() => BoardManager.fixBoardDiscrepancies(), 50);
