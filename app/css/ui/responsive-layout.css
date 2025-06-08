@@ -84,10 +84,6 @@ aside.right-column {
 
 
 .mission-toggle {
-    position: fixed;
-    bottom: 0.5rem;
-    right: 0.5rem;
-    z-index: 1100;
     background: #333;
     color: #fff;
     border: none;
@@ -126,10 +122,7 @@ aside.right-column {
         transition: transform 0.3s;
     }
 
-    #mission-toggle {
-        bottom: 0.5rem;
-        right: 0.5rem;
-    }
+
 }
 
 @media (max-width: 480px) {
